@@ -43,6 +43,12 @@ INSTALLED_APPS = [
     'consumption',
     'flock',
     'finance',
+
+    # Laying module
+    'laying_flock',
+    'egg_production',
+    'laying_finance',
+    'erp_config',
 ]
 
 MIDDLEWARE = [

@@ -16,92 +16,175 @@
     </a>
 </div>
 
-<!-- KPI cards -->
-<div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
-
-    <div class="bg-sidebar border border-border rounded-xl p-4 border-t-2 border-t-blue">
-        <p class="text-xs text-muted mb-1">🐔 Total Chicks</p>
-        <p class="text-2xl font-bold text-blue">{{ total_chicks|default:"0" }}</p>
-    </div>
-
-    <div class="bg-sidebar border border-border rounded-xl p-4 border-t-2 border-t-green">
-        <p class="text-xs text-muted mb-1">✅ Alive</p>
-        <p class="text-2xl font-bold text-green">{{ alive|default:"0" }}</p>
-    </div>
-
-    <div class="bg-sidebar border border-border rounded-xl p-4 border-t-2 border-t-red-500">
-        <p class="text-xs text-muted mb-1">💀 Total Deaths</p>
-        <p class="text-2xl font-bold text-red-400">{{ total_deaths|default:"0" }}</p>
-    </div>
-
-    <div class="bg-sidebar border border-border rounded-xl p-4 border-t-2 border-t-yellow-500">
-        <p class="text-xs text-muted mb-1">📉 Death Rate</p>
-        <p class="text-2xl font-bold text-yellow-400">{{ death_rate|default:"0" }}%</p>
-    </div>
-
-    <div class="bg-sidebar border border-border rounded-xl p-4 border-t-2 border-t-teal">
-        <p class="text-xs text-muted mb-1">💰 Total Expenses</p>
-        <p class="text-2xl font-bold text-teal">₱{{ total_expense|default:"0"|floatformat:0 }}</p>
-    </div>
-
-    <div class="bg-sidebar border border-border rounded-xl p-4 border-t-2 border-t-purple-500">
-        <p class="text-xs text-muted mb-1">📦 Stock Items</p>
-        <p class="text-2xl font-bold text-purple-400">{{ stock_items|default:"0" }}</p>
-    </div>
-
+<!-- toggle buttons -->
+<div class="flex gap-3 mb-6">
+    <button onclick="showTab('growing')" id="btn-growing"
+            class="px-6 py-2 rounded-lg text-sm font-bold transition-all bg-teal text-white">
+        🌱 Growing
+    </button>
+    <button onclick="showTab('laying')" id="btn-laying"
+            class="px-6 py-2 rounded-lg text-sm font-bold transition-all bg-sidebar border border-border text-muted">
+        🥚 Laying
+    </button>
 </div>
 
-<!-- row 2 — mortality trend + expense breakdown -->
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+<!-- ── GROWING TAB ─────────────────────────────────────────── -->
+<div id="tab-growing">
 
-    <!-- mortality trend -->
-    <div class="bg-sidebar border border-border rounded-xl p-5">
-        <h2 class="text-sm font-bold text-white mb-4">📈 Mortality Trend — Last 7 Days</h2>
-        <canvas id="mortChart" height="120"></canvas>
+    <!-- KPI cards -->
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+        <div class="bg-sidebar border border-border rounded-xl p-4 border-t-2 border-t-blue">
+            <p class="text-xs text-muted mb-1">🐔 Total Chicks</p>
+            <p class="text-2xl font-bold text-blue">{{ total_chicks|default:"0" }}</p>
+        </div>
+        <div class="bg-sidebar border border-border rounded-xl p-4 border-t-2 border-t-green">
+            <p class="text-xs text-muted mb-1">✅ Alive</p>
+            <p class="text-2xl font-bold text-green">{{ alive|default:"0" }}</p>
+        </div>
+        <div class="bg-sidebar border border-border rounded-xl p-4 border-t-2 border-t-red-500">
+            <p class="text-xs text-muted mb-1">💀 Total Deaths</p>
+            <p class="text-2xl font-bold text-red-400">{{ total_deaths|default:"0" }}</p>
+        </div>
+        <div class="bg-sidebar border border-border rounded-xl p-4 border-t-2 border-t-yellow-500">
+            <p class="text-xs text-muted mb-1">📉 Death Rate</p>
+            <p class="text-2xl font-bold text-yellow-400">{{ death_rate|default:"0" }}%</p>
+        </div>
+        <div class="bg-sidebar border border-border rounded-xl p-4 border-t-2 border-t-teal">
+            <p class="text-xs text-muted mb-1">💰 Total Expenses</p>
+            <p class="text-2xl font-bold text-teal">₱{{ total_expense|default:"0"|floatformat:0 }}</p>
+        </div>
+        <div class="bg-sidebar border border-border rounded-xl p-4 border-t-2 border-t-purple-500">
+            <p class="text-xs text-muted mb-1">📦 Stock Items</p>
+            <p class="text-2xl font-bold text-purple-400">{{ stock_items|default:"0" }}</p>
+        </div>
     </div>
 
-    <!-- expense breakdown -->
-    <div class="bg-sidebar border border-border rounded-xl p-5">
-        <h2 class="text-sm font-bold text-white mb-4">💰 Expenses by Nature</h2>
-        <canvas id="expChart" height="120"></canvas>
+    <!-- charts row 1 -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+        <div class="bg-sidebar border border-border rounded-xl p-5">
+            <h2 class="text-sm font-bold text-white mb-4">📈 Mortality Trend — Last 7 Days</h2>
+            <canvas id="mortChart" height="120"></canvas>
+        </div>
+        <div class="bg-sidebar border border-border rounded-xl p-5">
+            <h2 class="text-sm font-bold text-white mb-4">💰 Expenses by Nature</h2>
+            <canvas id="expChart" height="120"></canvas>
+        </div>
     </div>
 
-</div>
-
-<!-- row 3 — GH comparison + stock levels -->
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-
-    <!-- GH1 vs GH2 -->
-    <div class="bg-sidebar border border-border rounded-xl p-5">
-        <h2 class="text-sm font-bold text-white mb-4">🏠 GH1 vs GH2 Comparison</h2>
-        <canvas id="ghChart" height="120"></canvas>
-    </div>
-
-    <!-- stock levels -->
-    <div class="bg-sidebar border border-border rounded-xl p-5">
-        <h2 class="text-sm font-bold text-white mb-4">📦 Stock Levels</h2>
-        {% if stocks %}
-        <div class="space-y-3">
-            {% for stock in stocks %}
-            <div>
-                <div class="flex justify-between text-xs mb-1">
-                    <span class="text-white font-semibold">{{ stock.name }}</span>
-                    <span class="{% if stock.quantity <= 5 %}text-red-400{% elif stock.quantity <= 20 %}text-yellow-400{% else %}text-green{% endif %} font-bold">
-                        {{ stock.quantity }}
-                    </span>
-                </div>
-                <div class="w-full bg-content rounded-full h-2">
-                    <div class="h-2 rounded-full transition-all
-                        {% if stock.quantity <= 5 %}bg-red-500{% elif stock.quantity <= 20 %}bg-yellow-500{% else %}bg-green{% endif %}"
-                        style="width: {% if stock.quantity > 100 %}100{% else %}{{ stock.quantity }}{% endif %}%">
+    <!-- charts row 2 -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div class="bg-sidebar border border-border rounded-xl p-5">
+            <h2 class="text-sm font-bold text-white mb-4">🏠 GH1 vs GH2 Comparison</h2>
+            <canvas id="ghChart" height="120"></canvas>
+        </div>
+        <div class="bg-sidebar border border-border rounded-xl p-5">
+            <h2 class="text-sm font-bold text-white mb-4">📦 Stock Levels</h2>
+            {% if stocks %}
+            <div class="space-y-3">
+                {% for stock in stocks %}
+                <div>
+                    <div class="flex justify-between text-xs mb-1">
+                        <span class="text-white font-semibold">{{ stock.name }}</span>
+                        <span class="{% if stock.quantity <= 5 %}text-red-400{% elif stock.quantity <= 20 %}text-yellow-400{% else %}text-green{% endif %} font-bold">
+                            {{ stock.quantity }}
+                        </span>
+                    </div>
+                    <div class="w-full bg-content rounded-full h-2">
+                        <div class="h-2 rounded-full transition-all
+                            {% if stock.quantity <= 5 %}bg-red-500{% elif stock.quantity <= 20 %}bg-yellow-500{% else %}bg-green{% endif %}"
+                            style="width: {% if stock.quantity > 100 %}100{% else %}{{ stock.quantity }}{% endif %}%">
+                        </div>
                     </div>
                 </div>
+                {% endfor %}
             </div>
-            {% endfor %}
+            {% else %}
+            <p class="text-muted text-sm text-center py-8">No stock data available</p>
+            {% endif %}
         </div>
-        {% else %}
-        <p class="text-muted text-sm text-center py-8">No stock data available</p>
-        {% endif %}
+    </div>
+
+</div>
+
+<!-- ── LAYING TAB ──────────────────────────────────────────── -->
+<div id="tab-laying" class="hidden">
+
+    <!-- KPI cards -->
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+        <div class="bg-sidebar border border-border rounded-xl p-4 border-t-2 border-t-amber">
+            <p class="text-xs text-muted mb-1">🐔 Total Hens</p>
+            <p class="text-2xl font-bold text-amber">{{ laying_hens|default:"0" }}</p>
+        </div>
+        <div class="bg-sidebar border border-border rounded-xl p-4 border-t-2 border-t-green">
+            <p class="text-xs text-muted mb-1">🥚 Total Good Eggs</p>
+            <p class="text-2xl font-bold text-green">{{ total_good_eggs|default:"0" }}</p>
+        </div>
+        <div class="bg-sidebar border border-border rounded-xl p-4 border-t-2 border-t-blue">
+            <p class="text-xs text-muted mb-1">📈 Avg Production Rate</p>
+            <p class="text-2xl font-bold text-blue">{{ avg_rate|default:"0" }}%</p>
+        </div>
+        <div class="bg-sidebar border border-border rounded-xl p-4 border-t-2 border-t-red-500">
+            <p class="text-xs text-muted mb-1">💀 Total Deaths</p>
+            <p class="text-2xl font-bold text-red-400">{{ laying_deaths|default:"0" }}</p>
+        </div>
+        <div class="bg-sidebar border border-border rounded-xl p-4 border-t-2 border-t-teal">
+            <p class="text-xs text-muted mb-1">💰 Total Revenue</p>
+            <p class="text-2xl font-bold text-teal">₱{{ total_revenue|default:"0"|floatformat:0 }}</p>
+        </div>
+        <div class="bg-sidebar border border-border rounded-xl p-4 border-t-2
+                    {% if net_profit >= 0 %}border-t-green{% else %}border-t-red-500{% endif %}">
+            <p class="text-xs text-muted mb-1">📊 Net Profit</p>
+            <p class="text-2xl font-bold {% if net_profit >= 0 %}text-green{% else %}text-red-400{% endif %}">
+                ₱{{ net_profit|default:"0"|floatformat:0 }}
+            </p>
+        </div>
+    </div>
+
+    <!-- charts row 1 -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+        <div class="bg-sidebar border border-border rounded-xl p-5">
+            <h2 class="text-sm font-bold text-white mb-4">🥚 Egg Production — Last 7 Days</h2>
+            <canvas id="eggChart" height="120"></canvas>
+        </div>
+        <div class="bg-sidebar border border-border rounded-xl p-5">
+            <h2 class="text-sm font-bold text-white mb-4">🏠 RTL1 vs RTL2 — Eggs Collected</h2>
+            <canvas id="rtlChart" height="120"></canvas>
+        </div>
+    </div>
+
+    <!-- charts row 2 -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div class="bg-sidebar border border-border rounded-xl p-5">
+            <h2 class="text-sm font-bold text-white mb-4">💰 Revenue vs Expenses</h2>
+            <canvas id="profitChart" height="120"></canvas>
+        </div>
+        <div class="bg-sidebar border border-border rounded-xl p-5">
+            <h2 class="text-sm font-bold text-white mb-4">📊 Summary</h2>
+            <div class="space-y-4">
+                <div class="flex justify-between items-center">
+                    <span class="text-muted text-sm">Total Hens</span>
+                    <span class="text-white font-bold">{{ laying_hens }}</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-muted text-sm">Total Good Eggs</span>
+                    <span class="text-green font-bold">{{ total_good_eggs }}</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-muted text-sm">Total Revenue</span>
+                    <span class="text-teal font-bold">₱{{ total_revenue|floatformat:2 }}</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-muted text-sm">Total Expenses</span>
+                    <span class="text-red-400 font-bold">₱{{ laying_expenses|floatformat:2 }}</span>
+                </div>
+                <div class="border-t border-border pt-3 flex justify-between items-center">
+                    <span class="text-white font-bold text-sm">Net Profit</span>
+                    <span class="font-bold text-lg {% if net_profit >= 0 %}text-green{% else %}text-red-400{% endif %}">
+                        ₱{{ net_profit|floatformat:2 }}
+                    </span>
+                </div>
+            </div>
+        </div>
     </div>
 
 </div>
@@ -110,16 +193,13 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
     const chartDefaults = {
-        color: '#6A8FAD',
-        plugins: {
-            legend: { labels: { color: '#6A8FAD', font: { size: 11 } } }
-        },
         scales: {
             x: { ticks: { color: '#6A8FAD' }, grid: { color: '#1E3A50' } },
             y: { ticks: { color: '#6A8FAD' }, grid: { color: '#1E3A50' } }
         }
     }
 
+    // ── GROWING charts ────────────────────────────────────────
     new Chart(document.getElementById('mortChart'), {
         type: 'line',
         data: {
@@ -127,19 +207,14 @@
             datasets: [{
                 label: 'Deaths',
                 data:  {{ mort_data|safe }},
-                borderColor:     '#E74C3C',
+                borderColor: '#E74C3C',
                 backgroundColor: 'rgba(231,76,60,0.1)',
                 borderWidth: 2,
-                pointBackgroundColor: '#E74C3C',
                 fill: true,
                 tension: 0.4
             }]
         },
-        options: {
-            ...chartDefaults,
-            plugins: { legend: { display: false } },
-            scales: chartDefaults.scales
-        }
+        options: { ...chartDefaults, plugins: { legend: { display: false } } }
     })
 
     new Chart(document.getElementById('expChart'), {
@@ -147,20 +222,12 @@
         data: {
             labels: {{ exp_labels|safe }},
             datasets: [{
-                label: 'Amount (₱)',
-                data:  {{ exp_values|safe }},
-                backgroundColor: [
-                    '#1A8FD1', '#17A98A', '#D4880A',
-                    '#9B59B6', '#2ECC71', '#E74C3C'
-                ],
+                data: {{ exp_values|safe }},
+                backgroundColor: ['#1A8FD1','#17A98A','#D4880A','#9B59B6','#2ECC71','#E74C3C'],
                 borderRadius: 6,
             }]
         },
-        options: {
-            ...chartDefaults,
-            plugins: { legend: { display: false } },
-            scales: chartDefaults.scales
-        }
+        options: { ...chartDefaults, plugins: { legend: { display: false } } }
     })
 
     new Chart(document.getElementById('ghChart'), {
@@ -168,25 +235,71 @@
         data: {
             labels: ['Deaths', 'Expenses (₱)'],
             datasets: [
-                {
-                    label: 'Growing House 1',
-                    data:  [{{ gh1_deaths }}, {{ gh1_exp }}],
-                    backgroundColor: '#1A8FD1',
-                    borderRadius: 6,
-                },
-                {
-                    label: 'Growing House 2',
-                    data:  [{{ gh2_deaths }}, {{ gh2_exp }}],
-                    backgroundColor: '#17A98A',
-                    borderRadius: 6,
-                }
+                { label: 'GH1', data: [{{ gh1_deaths }}, {{ gh1_exp }}], backgroundColor: '#1A8FD1', borderRadius: 6 },
+                { label: 'GH2', data: [{{ gh2_deaths }}, {{ gh2_exp }}], backgroundColor: '#17A98A', borderRadius: 6 }
             ]
         },
-        options: {
-            ...chartDefaults,
-            scales: chartDefaults.scales
-        }
+        options: { ...chartDefaults, plugins: { legend: { labels: { color: '#6A8FAD' } } } }
     })
+
+    // ── LAYING charts ─────────────────────────────────────────
+    new Chart(document.getElementById('eggChart'), {
+        type: 'line',
+        data: {
+            labels: {{ egg_labels|safe }},
+            datasets: [{
+                label: 'Good Eggs',
+                data:  {{ egg_data|safe }},
+                borderColor: '#D4880A',
+                backgroundColor: 'rgba(212,136,10,0.1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: { ...chartDefaults, plugins: { legend: { display: false } } }
+    })
+
+    new Chart(document.getElementById('rtlChart'), {
+        type: 'bar',
+        data: {
+            labels: ['Good Eggs', 'Expenses (₱)'],
+            datasets: [
+                { label: 'RTL Building 1', data: [{{ rtl1_eggs }}, {{ rtl1_exp }}], backgroundColor: '#D4880A', borderRadius: 6 },
+                { label: 'RTL Building 2', data: [{{ rtl2_eggs }}, {{ rtl2_exp }}], backgroundColor: '#9B59B6', borderRadius: 6 }
+            ]
+        },
+        options: { ...chartDefaults, plugins: { legend: { labels: { color: '#6A8FAD' } } } }
+    })
+
+    new Chart(document.getElementById('profitChart'), {
+        type: 'bar',
+        data: {
+            labels: ['Revenue', 'Expenses', 'Net Profit'],
+            datasets: [{
+                data: [{{ total_revenue }}, {{ laying_expenses }}, {{ net_profit }}],
+                backgroundColor: ['#2ECC71', '#E74C3C', {% if net_profit >= 0 %}'#1A8FD1'{% else %}'#E74C3C'{% endif %}],
+                borderRadius: 6,
+            }]
+        },
+        options: { ...chartDefaults, plugins: { legend: { display: false } } }
+    })
+
+    // ── toggle ────────────────────────────────────────────────
+    function showTab(tab) {
+        document.getElementById('tab-growing').classList.add('hidden')
+        document.getElementById('tab-laying').classList.add('hidden')
+        document.getElementById('tab-' + tab).classList.remove('hidden')
+
+        document.getElementById('btn-growing').className = 'px-6 py-2 rounded-lg text-sm font-bold transition-all bg-sidebar border border-border text-muted'
+        document.getElementById('btn-laying').className  = 'px-6 py-2 rounded-lg text-sm font-bold transition-all bg-sidebar border border-border text-muted'
+
+        if (tab === 'growing') {
+            document.getElementById('btn-growing').className = 'px-6 py-2 rounded-lg text-sm font-bold transition-all bg-teal text-white'
+        } else {
+            document.getElementById('btn-laying').className = 'px-6 py-2 rounded-lg text-sm font-bold transition-all bg-amber text-white'
+        }
+    }
 </script>
 
 {% endblock %}

@@ -1,0 +1,293 @@
+{% extends 'base.html' %}
+{% load auth_extras %}
+
+{% block page_title %}Egg Production{% endblock %}
+
+{% block content %}
+
+<!-- messages -->
+{% if messages %}
+{% for message in messages %}
+<div class="mb-4 px-4 py-3 rounded-lg text-sm font-semibold
+    {% if message.tags == 'error' %}bg-red-900/40 text-red-400 border border-red-800
+    {% else %}bg-green-900/40 text-green-400 border border-green-800{% endif %}">
+    {{ message }}
+</div>
+{% endfor %}
+{% endif %}
+
+<!-- header -->
+<div class="flex items-center justify-between mb-6">
+    <div>
+        <h1 class="text-2xl font-bold text-white">🥚 Egg Production</h1>
+        <p class="text-muted text-sm mt-1">Daily egg collection log</p>
+    </div>
+    <div class="flex gap-3">
+        <a href="{% url 'export_eggs' %}"
+           class="bg-[#196E78] hover:bg-[#145960] text-white text-sm font-bold px-4 py-2 rounded-lg transition-all">
+            📥 Export XLSX
+        </a>
+        <button onclick="toggleForm()"
+                class="bg-amber hover:bg-[#B5720A] text-white text-sm font-bold px-4 py-2 rounded-lg transition-all">
+            + Log Production
+        </button>
+    </div>
+</div>
+
+<!-- current price info -->
+{% if current_price %}
+<div class="bg-sidebar border border-border rounded-xl px-4 py-3 mb-6 flex items-center justify-between">
+    <span class="text-muted text-sm">Current egg price:</span>
+    <span class="text-green font-bold text-lg">₱{{ current_price.price_per_egg }} / egg</span>
+</div>
+{% else %}
+<div class="bg-red-900/30 border border-red-800 rounded-xl px-4 py-3 mb-6">
+    <p class="text-red-400 text-sm">⚠️ No egg price set! <a href="{% url 'config' %}" class="underline">Set price in Config</a> before logging production.</p>
+</div>
+{% endif %}
+
+<!-- add form -->
+<div id="addForm" class="hidden bg-sidebar border border-border rounded-xl p-6 mb-6">
+    <h2 class="text-sm font-bold text-muted uppercase tracking-wider mb-4">Log Egg Production</h2>
+    <form method="POST" action="{% url 'egg_production_save' %}">
+        {% csrf_token %}
+        <div class="grid grid-cols-2 gap-4 mb-4">
+
+            <div>
+                <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Batch</label>
+                <select name="flock_id" required
+                        class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber">
+                    <option value="">Select batch</option>
+                    {% for flock in flocks %}
+                    <option value="{{ flock.pk }}">{{ flock.batch_name }} - {{ flock.building }} ({{ flock.current_count }} hens)</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div>
+                <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Building</label>
+                <select name="building" required
+                        class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber">
+                    <option value="">Select building</option>
+                    <option value="RTL Building 1">RTL Building 1</option>
+                    <option value="RTL Building 2">RTL Building 2</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Collection Date</label>
+                <input type="date" name="collection_date" required
+                       class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber">
+            </div>
+
+            <div>
+                <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Total Eggs</label>
+                <input type="number" name="total_eggs" id="total_eggs" required placeholder="0"
+                       oninput="calcCracked()"
+                       class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber">
+            </div>
+
+            <div>
+                <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Good Eggs</label>
+                <input type="number" name="good_eggs" id="good_eggs" required placeholder="0"
+                       oninput="calcCracked()"
+                       class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber">
+            </div>
+
+            <div>
+                <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Cracked Eggs</label>
+                <input type="number" id="cracked_display" disabled placeholder="Auto-calculated"
+                       class="w-full bg-content/50 border border-border rounded-lg px-3 py-2 text-muted text-sm">
+            </div>
+
+            <div>
+                <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Recorded By</label>
+                <input type="text" name="recorded_by" required placeholder="Your name"
+                       class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber">
+            </div>
+
+            <div>
+                <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Remarks</label>
+                <input type="text" name="remarks" placeholder="Optional"
+                       class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber">
+            </div>
+
+        </div>
+
+        <!-- auto calc preview -->
+        <div class="bg-content rounded-xl p-4 mb-4 grid grid-cols-3 gap-4 text-center">
+            <div>
+                <p class="text-xs text-muted mb-1">Production Rate</p>
+                <p class="text-lg font-bold text-blue" id="rate_preview">—</p>
+            </div>
+            <div>
+                <p class="text-xs text-muted mb-1">Price per Egg</p>
+                <p class="text-lg font-bold text-green">₱{{ current_price.price_per_egg|default:"—" }}</p>
+            </div>
+            <div>
+                <p class="text-xs text-muted mb-1">Est. Revenue</p>
+                <p class="text-lg font-bold text-amber" id="revenue_preview">—</p>
+            </div>
+        </div>
+
+        <div class="flex gap-3">
+            <button type="submit"
+                    class="bg-amber hover:bg-[#B5720A] text-white text-sm font-bold px-6 py-2 rounded-lg transition-all">
+                Save
+            </button>
+            <button type="button" onclick="toggleForm()"
+                    class="bg-content hover:bg-border text-muted text-sm font-bold px-6 py-2 rounded-lg transition-all border border-border">
+                Cancel
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- search -->
+<div class="mb-4">
+    <input type="text" id="searchInput" onkeyup="filterTable()"
+           placeholder="🔍  Search by batch, building, date..."
+           class="w-full bg-sidebar border border-border rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-amber">
+</div>
+
+<!-- table -->
+<div class="bg-sidebar border border-border rounded-xl">
+    <div class="overflow-x-auto">
+    <table class="w-full text-sm whitespace-nowrap" id="eggTable">
+        <thead>
+            <tr class="border-b border-border text-muted text-xs uppercase tracking-wider">
+                <th class="px-4 py-3 text-left">Date</th>
+                <th class="px-4 py-3 text-left">Building</th>
+                <th class="px-4 py-3 text-left">Total</th>
+                <th class="px-4 py-3 text-left">Good</th>
+                <th class="px-4 py-3 text-left">Cracked</th>
+                <th class="px-4 py-3 text-left">Hens</th>
+                <th class="px-4 py-3 text-left">Rate %</th>
+                <th class="px-4 py-3 text-left">Price</th>
+                <th class="px-4 py-3 text-left">Revenue</th>
+                <th class="px-4 py-3 text-left">Recorded By</th>
+                <th class="px-4 py-3 text-left">Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in productions %}
+            <tr class="border-b border-border hover:bg-content transition-all">
+                <td class="px-4 py-3 text-muted text-xs">{{ p.collection_date }}</td>
+                <td class="px-4 py-3 text-white">{{ p.building }}</td>
+                <td class="px-4 py-3 text-muted">{{ p.total_eggs }}</td>
+                <td class="px-4 py-3 text-green font-bold">{{ p.good_eggs }}</td>
+                <td class="px-4 py-3 text-red-400">{{ p.cracked_eggs }}</td>
+                <td class="px-4 py-3 text-muted">{{ p.hen_count }}</td>
+                <td class="px-4 py-3">
+                    <span class="px-2 py-1 rounded text-xs font-bold
+                        {% if p.production_rate >= 80 %}bg-green-900/40 text-green-400
+                        {% elif p.production_rate >= 60 %}bg-yellow-900/40 text-yellow-400
+                        {% else %}bg-red-900/40 text-red-400{% endif %}">
+                        {{ p.production_rate }}%
+                    </span>
+                </td>
+                <td class="px-4 py-3 text-muted">₱{{ p.price_per_egg }}</td>
+                <td class="px-4 py-3 text-amber font-bold">₱{{ p.total_revenue }}</td>
+                <td class="px-4 py-3 text-muted">{{ p.recorded_by }}</td>
+                <td class="px-4 py-3">
+                    <div class="flex items-center gap-3">
+                        {% if request.user|has_group:'admin' %}
+                        <a href="{% url 'egg_production_update' p.pk %}"
+                           class="text-blue hover:text-blue-300 text-xs font-bold transition-all leading-none">
+                            Edit
+                        </a>
+                        <span class="text-border">|</span>
+                        <form method="POST" action="{% url 'egg_production_delete' p.pk %}"
+                              onsubmit="return confirm('Delete this record?')"
+                              style="margin:0;padding:0;display:inline;line-height:1">
+                            {% csrf_token %}
+                            <button type="submit"
+                                    style="margin:0;padding:0;line-height:1"
+                                    class="text-red-400 hover:text-red-300 text-xs font-bold transition-all">
+                                Delete
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="11" class="px-4 py-8 text-center text-muted">
+                    No egg production records yet. Click "+ Log Production" to get started.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</div>
+
+<!-- pagination -->
+{% if productions.has_other_pages %}
+<div class="flex items-center justify-between mt-4">
+    <p class="text-xs text-muted">
+        Page {{ productions.number }} of {{ productions.paginator.num_pages }}
+        — {{ productions.paginator.count }} total records
+    </p>
+    <div class="flex gap-2">
+        {% if productions.has_previous %}
+        <a href="?page={{ productions.previous_page_number }}"
+           class="px-3 py-1.5 rounded-lg text-xs font-bold bg-sidebar border border-border text-muted hover:border-amber hover:text-white transition-all">
+            ← Prev
+        </a>
+        {% endif %}
+        {% for num in productions.paginator.page_range %}
+            {% if productions.number == num %}
+            <span class="px-3 py-1.5 rounded-lg text-xs font-bold bg-amber text-white">{{ num }}</span>
+            {% elif num > productions.number|add:'-3' and num < productions.number|add:'3' %}
+            <a href="?page={{ num }}"
+               class="px-3 py-1.5 rounded-lg text-xs font-bold bg-sidebar border border-border text-muted hover:border-amber hover:text-white transition-all">
+                {{ num }}
+            </a>
+            {% endif %}
+        {% endfor %}
+        {% if productions.has_next %}
+        <a href="?page={{ productions.next_page_number }}"
+           class="px-3 py-1.5 rounded-lg text-xs font-bold bg-sidebar border border-border text-muted hover:border-amber hover:text-white transition-all">
+            Next →
+        </a>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+<script>
+    const pricePerEgg = {{ current_price.price_per_egg|default:"0" }}
+
+    function toggleForm() {
+        document.getElementById('addForm').classList.toggle('hidden')
+    }
+
+    function calcCracked() {
+        const total  = parseInt(document.getElementById('total_eggs').value) || 0
+        const good   = parseInt(document.getElementById('good_eggs').value) || 0
+        const cracked = total - good
+        document.getElementById('cracked_display').value = cracked >= 0 ? cracked : 0
+
+        // preview production rate and revenue
+        const revenue = good * pricePerEgg
+        document.getElementById('revenue_preview').textContent = '₱' + revenue.toFixed(2)
+    }
+
+    function filterTable() {
+        const input = document.getElementById('searchInput').value.toLowerCase()
+        const rows  = document.querySelectorAll('#eggTable tbody tr')
+        rows.forEach(row => {
+            row.style.display = row.textContent.toLowerCase().includes(input) ? '' : 'none'
+        })
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const today = new Date().toISOString().split('T')[0]
+        const dateInput = document.querySelector('input[name="collection_date"]')
+        if (dateInput) dateInput.value = today
+    })
+</script>
+
+{% endblock %}

@@ -6,15 +6,18 @@
 {% block content %}
 
 <!-- welcome -->
-<div class="mb-8">
+<div class="mb-6">
     <h1 class="text-2xl font-bold text-white">
         👋 Welcome back, {{ request.user.username }}!
     </h1>
     <p class="text-muted text-sm mt-1">Here's what's happening at 3C's Farm today.</p>
 </div>
 
-<!-- KPI cards -->
-<div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
+<!-- Growing KPIs -->
+<div class="mb-2">
+    <p class="text-xs font-bold text-teal uppercase tracking-widest mb-3">🌱 Growing</p>
+</div>
+<div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
 
     <div class="bg-sidebar border border-border rounded-xl p-5 border-t-2 border-t-blue">
         <p class="text-xs text-muted mb-2">🐔 Total Alive</p>
@@ -47,6 +50,47 @@
             {{ low_stock|default:"0" }}
         </p>
         <p class="text-xs text-muted mt-1">items running low</p>
+    </div>
+
+</div>
+
+<!-- Laying KPIs -->
+<div class="mb-2">
+    <p class="text-xs font-bold text-amber uppercase tracking-widest mb-3">🥚 Laying</p>
+</div>
+<div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
+
+    <div class="bg-sidebar border border-border rounded-xl p-5 border-t-2 border-t-amber">
+        <p class="text-xs text-muted mb-2">🐔 Total Hens</p>
+        <p class="text-3xl font-bold text-amber">{{ laying_hens|default:"0" }}</p>
+        <p class="text-xs text-muted mt-1">across RTL buildings</p>
+    </div>
+
+    <div class="bg-sidebar border border-border rounded-xl p-5 border-t-2 border-t-green">
+        <p class="text-xs text-muted mb-2">🥚 Eggs Today</p>
+        <p class="text-3xl font-bold text-green">{{ eggs_today|default:"0" }}</p>
+        <p class="text-xs text-muted mt-1">good eggs collected</p>
+    </div>
+
+    <div class="bg-sidebar border border-border rounded-xl p-5 border-t-2 border-t-blue">
+        <p class="text-xs text-muted mb-2">📈 Avg Rate</p>
+        <p class="text-3xl font-bold text-blue">{{ avg_rate|default:"0" }}%</p>
+        <p class="text-xs text-muted mt-1">production rate</p>
+    </div>
+
+    <div class="bg-sidebar border border-border rounded-xl p-5 border-t-2 border-t-teal">
+        <p class="text-xs text-muted mb-2">💰 Total Revenue</p>
+        <p class="text-3xl font-bold text-teal">₱{{ total_revenue|default:"0"|floatformat:0 }}</p>
+        <p class="text-xs text-muted mt-1">from egg sales</p>
+    </div>
+
+    <div class="bg-sidebar border border-border rounded-xl p-5 border-t-2
+                {% if net_profit >= 0 %}border-t-green{% else %}border-t-red-500{% endif %}">
+        <p class="text-xs text-muted mb-2">📊 Net Profit</p>
+        <p class="text-3xl font-bold {% if net_profit >= 0 %}text-green{% else %}text-red-400{% endif %}">
+            ₱{{ net_profit|default:"0"|floatformat:0 }}
+        </p>
+        <p class="text-xs text-muted mt-1">revenue - expenses</p>
     </div>
 
 </div>
@@ -88,6 +132,33 @@
         <div class="text-2xl mb-2">💰</div>
         <p class="text-sm font-bold text-white group-hover:text-amber transition-all">Finance</p>
         <p class="text-xs text-muted mt-1">Track expenses</p>
+    </a>
+    {% endif %}
+
+    {% if request.user|has_group:'admin' or request.user|has_group:'viewer' %}
+    <a href="{% url 'laying_flock_list' %}"
+       class="bg-sidebar border border-border hover:border-amber rounded-xl p-5 transition-all group">
+        <div class="text-2xl mb-2">🐔</div>
+        <p class="text-sm font-bold text-white group-hover:text-amber transition-all">Flock (RTL)</p>
+        <p class="text-xs text-muted mt-1">Laying hen batches</p>
+    </a>
+    {% endif %}
+
+    {% if request.user|has_group:'admin' or request.user|has_group:'viewer' %}
+    <a href="{% url 'egg_production_list' %}"
+       class="bg-sidebar border border-border hover:border-amber rounded-xl p-5 transition-all group">
+        <div class="text-2xl mb-2">🥚</div>
+        <p class="text-sm font-bold text-white group-hover:text-amber transition-all">Egg Production</p>
+        <p class="text-xs text-muted mt-1">Log daily eggs</p>
+    </a>
+    {% endif %}
+
+    {% if request.user|has_group:'admin' or request.user|has_group:'viewer' %}
+    <a href="{% url 'laying_finance_list' %}"
+       class="bg-sidebar border border-border hover:border-amber rounded-xl p-5 transition-all group">
+        <div class="text-2xl mb-2">💰</div>
+        <p class="text-sm font-bold text-white group-hover:text-amber transition-all">Laying Finance</p>
+        <p class="text-xs text-muted mt-1">Track laying expenses</p>
     </a>
     {% endif %}
 

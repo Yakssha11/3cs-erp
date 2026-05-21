@@ -35,7 +35,6 @@
         .group-children { display: none; }
         .group-children.open { display: block; }
 
-        /* overlay when sidebar is open on mobile */
         #sidebar-overlay {
             display: none;
             position: fixed;
@@ -45,7 +44,6 @@
         }
         #sidebar-overlay.open { display: block; }
 
-        /* sidebar mobile */
         #main-sidebar {
             position: fixed;
             top: 0; left: 0; bottom: 0;
@@ -58,7 +56,6 @@
             transform: translateX(0);
         }
 
-        /* desktop — sidebar always visible */
         @media (min-width: 1024px) {
             #main-sidebar {
                 position: relative;
@@ -72,10 +69,8 @@
 </head>
 <body class="bg-primary text-white font-sans lg:flex lg:h-screen lg:overflow-hidden">
 
-    <!-- ── OVERLAY (mobile only) ─────────────────────────── -->
     <div id="sidebar-overlay" onclick="closeSidebar()"></div>
 
-    <!-- ── SIDEBAR ──────────────────────────────────────────── -->
     <aside id="main-sidebar" class="bg-sidebar flex flex-col overflow-y-auto h-full">
 
         <!-- logo + title -->
@@ -100,6 +95,26 @@
                 <span class="text-xl w-6 text-center">🏠</span>
                 Home
             </a>
+
+            <!-- Analytics — admin and viewer only -->
+            {% if request.user|has_group:'admin' or request.user|has_group:'viewer' %}
+            <a href="{% url 'analytics' %}" onclick="closeSidebar()"
+               class="nav-item flex items-center gap-3 px-5 py-3 text-sm font-semibold cursor-pointer transition-all
+                      {% if request.resolver_match.url_name == 'analytics' %}active text-green{% else %}text-white{% endif %}">
+                <span class="text-xl w-6 text-center">📊</span>
+                Analytics
+            </a>
+            {% endif %}
+
+            <!-- Config — admin only -->
+            {% if request.user|has_group:'admin' %}
+            <a href="{% url 'config' %}" onclick="closeSidebar()"
+               class="nav-item flex items-center gap-3 px-5 py-3 text-sm font-semibold cursor-pointer transition-all
+                      {% if request.resolver_match.url_name == 'config' %}active text-green{% else %}text-white{% endif %}">
+                <span class="text-xl w-6 text-center">⚙️</span>
+                Config
+            </a>
+            {% endif %}
 
             <!-- Growing Group -->
             <div class="mt-2">
@@ -135,7 +150,7 @@
                     {% if request.user|has_group:'admin' or request.user|has_group:'viewer' or request.user|has_group:'flock' %}
                     <a href="{% url 'flock_list' %}" onclick="closeSidebar()"
                        class="nav-item flex items-center gap-3 pl-10 pr-5 py-2.5 text-sm font-semibold cursor-pointer transition-all
-                              {% if 'flock' in request.resolver_match.url_name %}active text-green{% else %}text-white{% endif %}">
+                              {% if request.resolver_match.url_name == 'flock_list' or request.resolver_match.url_name == 'flock_update' or request.resolver_match.url_name == 'mortality_update' %}active text-green{% else %}text-white{% endif %}">
                         <span class="text-base w-5 text-center">🐔</span>
                         Flock
                     </a>
@@ -144,18 +159,9 @@
                     {% if request.user|has_group:'admin' or request.user|has_group:'viewer' or request.user|has_group:'finance' %}
                     <a href="{% url 'finance_list' %}" onclick="closeSidebar()"
                        class="nav-item flex items-center gap-3 pl-10 pr-5 py-2.5 text-sm font-semibold cursor-pointer transition-all
-                              {% if 'finance' in request.resolver_match.url_name %}active text-amber{% else %}text-white{% endif %}">
+                              {% if request.resolver_match.url_name == 'finance_list' or request.resolver_match.url_name == 'finance_update' %}active text-amber{% else %}text-white{% endif %}">
                         <span class="text-base w-5 text-center">💰</span>
                         Finance
-                    </a>
-                    {% endif %}
-
-                    {% if request.user|has_group:'admin' or request.user|has_group:'viewer' %}
-                    <a href="{% url 'analytics' %}" onclick="closeSidebar()"
-                       class="nav-item flex items-center gap-3 pl-10 pr-5 py-2.5 text-sm font-semibold cursor-pointer transition-all
-                              {% if request.resolver_match.url_name == 'analytics' %}active text-green{% else %}text-white{% endif %}">
-                        <span class="text-base w-5 text-center">📊</span>
-                        Analytics
                     </a>
                     {% endif %}
 
@@ -173,7 +179,24 @@
                     <span id="laying-arrow" class="text-xs text-muted">▶</span>
                 </button>
                 <div id="laying-children" class="group-children bg-primary/30">
-                    <p class="pl-10 py-3 text-xs text-muted italic">Coming soon...</p>
+                    <a href="{% url 'laying_flock_list' %}" onclick="closeSidebar()"
+                       class="nav-item flex items-center gap-3 pl-10 pr-5 py-2.5 text-sm font-semibold cursor-pointer transition-all
+                              {% if 'laying_flock' in request.resolver_match.url_name %}active text-green{% else %}text-white{% endif %}">
+                        <span class="text-base w-5 text-center">🐔</span>
+                        Flock (RTL)
+                    </a>
+                    <a href="{% url 'egg_production_list' %}" onclick="closeSidebar()"
+                       class="nav-item flex items-center gap-3 pl-10 pr-5 py-2.5 text-sm font-semibold cursor-pointer transition-all
+                              {% if 'egg_production' in request.resolver_match.url_name %}active text-amber{% else %}text-white{% endif %}">
+                        <span class="text-base w-5 text-center">🥚</span>
+                        Egg Production
+                    </a>
+                    <a href="{% url 'laying_finance_list' %}" onclick="closeSidebar()"
+                       class="nav-item flex items-center gap-3 pl-10 pr-5 py-2.5 text-sm font-semibold cursor-pointer transition-all
+                              {% if 'laying_finance' in request.resolver_match.url_name %}active text-amber{% else %}text-white{% endif %}">
+                        <span class="text-base w-5 text-center">💰</span>
+                        Finance
+                    </a>
                 </div>
             </div>
         </nav>
@@ -184,13 +207,11 @@
         </div>
     </aside>
 
-    <!-- ── MAIN CONTENT ──────────────────────────────────────── -->
     <div class="flex-1 flex flex-col overflow-hidden min-w-0">
 
         <!-- topbar -->
         <header class="bg-sidebar border-b border-border px-4 py-3 flex items-center justify-between flex-shrink-0">
             <div class="flex items-center gap-3">
-                <!-- hamburger — mobile only -->
                 <button id="hamburger" onclick="openSidebar()"
                         class="text-muted hover:text-white transition-all lg:hidden">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -254,9 +275,14 @@
         document.addEventListener('DOMContentLoaded', function() {
             const path = window.location.pathname
             if (path.includes('stock') || path.includes('consumption') ||
-                path.includes('flock') || path.includes('finance')) {
+                (path.includes('finance') && !path.includes('laying')) ||
+                (path.includes('flock') && !path.includes('laying'))) {
                 document.getElementById('growing-children').classList.add('open')
                 document.getElementById('growing-arrow').textContent = '▼'
+            }
+            if (path.includes('laying') || path.includes('eggs')) {
+                document.getElementById('laying-children').classList.add('open')
+                document.getElementById('laying-arrow').textContent = '▼'
             }
         })
     </script>
