@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+
+{% block page_title %}Edit Expense Record{% endblock %}
+
+{% block content %}
+
+<div class="max-w-2xl mx-auto">
+
+    <!-- header -->
+    <div class="flex items-center gap-4 mb-6">
+        <a href="{% url 'finance_list' %}"
+           class="text-muted hover:text-white transition-all text-sm">
+            ← Back to Finance
+        </a>
+    </div>
+
+    <div class="bg-sidebar border border-border rounded-xl p-6">
+        <h1 class="text-xl font-bold text-white mb-1">✏️ Edit Expense Record</h1>
+        <p class="text-muted text-sm mb-6">Update the details for this expense</p>
+
+        <form method="POST">
+            {% csrf_token %}
+            <div class="grid grid-cols-2 gap-4 mb-6">
+
+                <!-- date -->
+                <div>
+                    <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Date</label>
+                    <input type="date" name="expense_date" value="{{ finance.expense_date }}" required
+                           class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber">
+                </div>
+
+                <!-- nature -->
+                <div>
+                    <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Nature</label>
+                    <select name="nature" required
+                            class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber">
+                        <option value="Feed"          {% if finance.nature == 'Feed' %}selected{% endif %}>Feed</option>
+                        <option value="Medicine"      {% if finance.nature == 'Medicine' %}selected{% endif %}>Medicine</option>
+                        <option value="Meals"         {% if finance.nature == 'Meals' %}selected{% endif %}>Meals</option>
+                        <option value="Salary"        {% if finance.nature == 'Salary' %}selected{% endif %}>Salary</option>
+                        <option value="Miscellaneous" {% if finance.nature == 'Miscellaneous' %}selected{% endif %}>Miscellaneous</option>
+                    </select>
+                </div>
+
+                <!-- building -->
+                <div>
+                    <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Building</label>
+                    <select name="building" required
+                            class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber">
+                        <option value="Growing House 1" {% if finance.building == 'Growing House 1' %}selected{% endif %}>Growing House 1</option>
+                        <option value="Growing House 2" {% if finance.building == 'Growing House 2' %}selected{% endif %}>Growing House 2</option>
+                        <option value="General"         {% if finance.building == 'General' %}selected{% endif %}>General</option>
+                    </select>
+                </div>
+
+                <!-- amount -->
+                <div>
+                    <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Amount (₱)</label>
+                    <input type="number" name="amount" value="{{ finance.amount }}" step="0.01" required
+                           class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber">
+                </div>
+
+                <!-- person -->
+                <div>
+                    <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Person</label>
+                    <input type="text" name="person" value="{{ finance.person }}" required
+                           class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber">
+                </div>
+
+                <!-- remarks -->
+                <div>
+                    <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Remarks</label>
+                    <input type="text" name="remarks" value="{{ finance.remarks }}"
+                           class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber">
+                </div>
+
+            </div>
+
+            <div class="flex gap-3">
+                <button type="submit"
+                        class="bg-[#D4880A] hover:bg-[#B5720A] text-white text-sm font-bold px-6 py-2 rounded-lg transition-all">
+                    Update
+                </button>
+                <a href="{% url 'finance_list' %}"
+                   class="bg-content hover:bg-border text-muted text-sm font-bold px-6 py-2 rounded-lg transition-all border border-border">
+                    Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+
+</div>
+
+{% endblock %}

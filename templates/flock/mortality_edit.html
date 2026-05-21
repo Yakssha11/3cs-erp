@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+
+{% block page_title %}Edit Mortality Record{% endblock %}
+
+{% block content %}
+
+<div class="max-w-2xl mx-auto">
+
+    <!-- header -->
+    <div class="flex items-center gap-4 mb-6">
+        <a href="{% url 'flock_list' %}"
+           class="text-muted hover:text-white transition-all text-sm">
+            ← Back to Flock
+        </a>
+    </div>
+
+    <div class="bg-sidebar border border-border rounded-xl p-6">
+        <h1 class="text-xl font-bold text-white mb-1">✏️ Edit Mortality Record</h1>
+        <p class="text-muted text-sm mb-6">Update this mortality entry</p>
+
+        <form method="POST">
+            {% csrf_token %}
+            <div class="grid grid-cols-2 gap-4 mb-6">
+
+                <!-- growing house -->
+                <div>
+                    <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Growing House</label>
+                    <select name="growing_house" required
+                            class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500">
+                        <option value="Growing House 1" {% if mortality.growing_house == 'Growing House 1' %}selected{% endif %}>Growing House 1</option>
+                        <option value="Growing House 2" {% if mortality.growing_house == 'Growing House 2' %}selected{% endif %}>Growing House 2</option>
+                    </select>
+                </div>
+
+                <!-- date -->
+                <div>
+                    <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Date</label>
+                    <input type="date" name="death_date" value="{{ mortality.death_date }}" required
+                           class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500">
+                </div>
+
+                <!-- count -->
+                <div>
+                    <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Deaths</label>
+                    <input type="number" name="count" value="{{ mortality.count }}" required
+                           class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500">
+                </div>
+
+                <!-- cause -->
+                <div>
+                    <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Cause</label>
+                    <select name="cause"
+                            class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500">
+                        <option value="">Select cause</option>
+                        <option value="Disease"      {% if mortality.cause == 'Disease' %}selected{% endif %}>Disease</option>
+                        <option value="Injury"       {% if mortality.cause == 'Injury' %}selected{% endif %}>Injury</option>
+                        <option value="Suffocation"  {% if mortality.cause == 'Suffocation' %}selected{% endif %}>Suffocation</option>
+                        <option value="Starvation"   {% if mortality.cause == 'Starvation' %}selected{% endif %}>Starvation</option>
+                        <option value="Unknown"      {% if mortality.cause == 'Unknown' %}selected{% endif %}>Unknown</option>
+                    </select>
+                </div>
+
+                <!-- recorded by -->
+                <div>
+                    <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Recorded By</label>
+                    <input type="text" name="recorded_by" value="{{ mortality.recorded_by }}" required
+                           class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500">
+                </div>
+
+                <!-- remarks -->
+                <div>
+                    <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Remarks</label>
+                    <input type="text" name="remarks" value="{{ mortality.remarks }}"
+                           class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500">
+                </div>
+
+            </div>
+
+            <div class="flex gap-3">
+                <button type="submit"
+                        class="bg-red-700 hover:bg-red-800 text-white text-sm font-bold px-6 py-2 rounded-lg transition-all">
+                    Update
+                </button>
+                <a href="{% url 'flock_list' %}"
+                   class="bg-content hover:bg-border text-muted text-sm font-bold px-6 py-2 rounded-lg transition-all border border-border">
+                    Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+
+</div>
+
+{% endblock %}

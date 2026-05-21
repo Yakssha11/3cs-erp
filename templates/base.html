@@ -1,0 +1,264 @@
+{% load auth_extras %}
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3C's ERP System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary:   '#081C2C',
+                        sidebar:   '#0B1E2D',
+                        content:   '#0D2538',
+                        border:    '#1E3A50',
+                        blue:      '#1A8FD1',
+                        teal:      '#17A98A',
+                        amber:     '#D4880A',
+                        green:     '#2ECC71',
+                        muted:     '#6A8FAD',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #081C2C; }
+        ::-webkit-scrollbar-thumb { background: #1E3A50; border-radius: 3px; }
+        .nav-item.active { background: #13293D; border-left: 3px solid currentColor; }
+        .nav-item:hover  { background: #163247; }
+        .group-children { display: none; }
+        .group-children.open { display: block; }
+
+        /* overlay when sidebar is open on mobile */
+        #sidebar-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.6);
+            z-index: 40;
+        }
+        #sidebar-overlay.open { display: block; }
+
+        /* sidebar mobile */
+        #main-sidebar {
+            position: fixed;
+            top: 0; left: 0; bottom: 0;
+            width: 260px;
+            z-index: 50;
+            transform: translateX(-100%);
+            transition: transform 0.25s ease;
+        }
+        #main-sidebar.open {
+            transform: translateX(0);
+        }
+
+        /* desktop — sidebar always visible */
+        @media (min-width: 1024px) {
+            #main-sidebar {
+                position: relative;
+                transform: translateX(0) !important;
+                flex-shrink: 0;
+            }
+            #sidebar-overlay { display: none !important; }
+            #hamburger { display: none !important; }
+        }
+    </style>
+</head>
+<body class="bg-primary text-white font-sans lg:flex lg:h-screen lg:overflow-hidden">
+
+    <!-- ── OVERLAY (mobile only) ─────────────────────────── -->
+    <div id="sidebar-overlay" onclick="closeSidebar()"></div>
+
+    <!-- ── SIDEBAR ──────────────────────────────────────────── -->
+    <aside id="main-sidebar" class="bg-sidebar flex flex-col overflow-y-auto h-full">
+
+        <!-- logo + title -->
+        <div class="flex flex-col items-center py-6 px-4 border-b border-border">
+            <img src="{% static 'logo.jpg' %}"
+                 alt="3C's Farm Logo"
+                 class="w-16 h-16 rounded-full object-cover mb-2"
+                 onerror="this.style.display='none';document.getElementById('logo-emoji').style.display='block'">
+            <span id="logo-emoji" style="display:none" class="text-4xl mb-2">🐔</span>
+            <h1 class="text-lg font-bold text-white">3C's ERP</h1>
+            <p class="text-xs text-muted">Stock Management System</p>
+        </div>
+
+        <!-- navigation -->
+        <nav class="flex-1 py-4">
+            <p class="text-xs font-bold text-muted px-5 mb-2 tracking-widest">NAVIGATION</p>
+
+            <!-- Home -->
+            <a href="{% url 'home' %}" onclick="closeSidebar()"
+               class="nav-item flex items-center gap-3 px-5 py-3 text-sm font-semibold cursor-pointer transition-all
+                      {% if request.resolver_match.url_name == 'home' %}active text-purple-400{% else %}text-white{% endif %}">
+                <span class="text-xl w-6 text-center">🏠</span>
+                Home
+            </a>
+
+            <!-- Growing Group -->
+            <div class="mt-2">
+                <button onclick="toggleGroup('growing')"
+                        class="w-full flex items-center justify-between px-5 py-3 text-sm font-bold text-teal hover:bg-content transition-all">
+                    <div class="flex items-center gap-3">
+                        <span class="text-xl w-6 text-center">🌱</span>
+                        Growing
+                    </div>
+                    <span id="growing-arrow" class="text-xs text-muted">▶</span>
+                </button>
+
+                <div id="growing-children" class="group-children bg-primary/30">
+
+                    {% if request.user|has_group:'admin' or request.user|has_group:'viewer' or request.user|has_group:'stock' %}
+                    <a href="{% url 'stock_list' %}" onclick="closeSidebar()"
+                       class="nav-item flex items-center gap-3 pl-10 pr-5 py-2.5 text-sm font-semibold cursor-pointer transition-all
+                              {% if 'stock' in request.resolver_match.url_name %}active text-blue{% else %}text-white{% endif %}">
+                        <span class="text-base w-5 text-center">📦</span>
+                        Stock
+                    </a>
+                    {% endif %}
+
+                    {% if request.user|has_group:'admin' or request.user|has_group:'viewer' or request.user|has_group:'consumption' %}
+                    <a href="{% url 'consumption_list' %}" onclick="closeSidebar()"
+                       class="nav-item flex items-center gap-3 pl-10 pr-5 py-2.5 text-sm font-semibold cursor-pointer transition-all
+                              {% if 'consumption' in request.resolver_match.url_name %}active text-teal{% else %}text-white{% endif %}">
+                        <span class="text-base w-5 text-center">📉</span>
+                        Consumption
+                    </a>
+                    {% endif %}
+
+                    {% if request.user|has_group:'admin' or request.user|has_group:'viewer' or request.user|has_group:'flock' %}
+                    <a href="{% url 'flock_list' %}" onclick="closeSidebar()"
+                       class="nav-item flex items-center gap-3 pl-10 pr-5 py-2.5 text-sm font-semibold cursor-pointer transition-all
+                              {% if 'flock' in request.resolver_match.url_name %}active text-green{% else %}text-white{% endif %}">
+                        <span class="text-base w-5 text-center">🐔</span>
+                        Flock
+                    </a>
+                    {% endif %}
+
+                    {% if request.user|has_group:'admin' or request.user|has_group:'viewer' or request.user|has_group:'finance' %}
+                    <a href="{% url 'finance_list' %}" onclick="closeSidebar()"
+                       class="nav-item flex items-center gap-3 pl-10 pr-5 py-2.5 text-sm font-semibold cursor-pointer transition-all
+                              {% if 'finance' in request.resolver_match.url_name %}active text-amber{% else %}text-white{% endif %}">
+                        <span class="text-base w-5 text-center">💰</span>
+                        Finance
+                    </a>
+                    {% endif %}
+
+                    {% if request.user|has_group:'admin' or request.user|has_group:'viewer' %}
+                    <a href="{% url 'analytics' %}" onclick="closeSidebar()"
+                       class="nav-item flex items-center gap-3 pl-10 pr-5 py-2.5 text-sm font-semibold cursor-pointer transition-all
+                              {% if request.resolver_match.url_name == 'analytics' %}active text-green{% else %}text-white{% endif %}">
+                        <span class="text-base w-5 text-center">📊</span>
+                        Analytics
+                    </a>
+                    {% endif %}
+
+                </div>
+            </div>
+
+            <!-- Laying Group -->
+            <div class="mt-2">
+                <button onclick="toggleGroup('laying')"
+                        class="w-full flex items-center justify-between px-5 py-3 text-sm font-bold text-amber hover:bg-content transition-all">
+                    <div class="flex items-center gap-3">
+                        <span class="text-xl w-6 text-center">🥚</span>
+                        Laying
+                    </div>
+                    <span id="laying-arrow" class="text-xs text-muted">▶</span>
+                </button>
+                <div id="laying-children" class="group-children bg-primary/30">
+                    <p class="pl-10 py-3 text-xs text-muted italic">Coming soon...</p>
+                </div>
+            </div>
+        </nav>
+
+        <!-- footer -->
+        <div class="py-4 text-center border-t border-border">
+            <p class="text-xs text-border">v1.0  ·  3C's ERP</p>
+        </div>
+    </aside>
+
+    <!-- ── MAIN CONTENT ──────────────────────────────────────── -->
+    <div class="flex-1 flex flex-col overflow-hidden min-w-0">
+
+        <!-- topbar -->
+        <header class="bg-sidebar border-b border-border px-4 py-3 flex items-center justify-between flex-shrink-0">
+            <div class="flex items-center gap-3">
+                <!-- hamburger — mobile only -->
+                <button id="hamburger" onclick="openSidebar()"
+                        class="text-muted hover:text-white transition-all lg:hidden">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M4 6h16M4 12h16M4 18h16"/>
+                    </svg>
+                </button>
+                <h2 class="text-sm font-bold text-white">
+                    {% block page_title %}Dashboard{% endblock %}
+                </h2>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="text-xs text-muted hidden sm:inline">
+                    👤 {{ request.user.username }}
+                </span>
+                {% if request.user|has_group:'admin' %}
+                <span class="px-1.5 py-0.5 rounded text-xs bg-blue/20 text-blue">Admin</span>
+                {% elif request.user|has_group:'viewer' %}
+                <span class="px-1.5 py-0.5 rounded text-xs bg-teal/20 text-teal">Viewer</span>
+                {% else %}
+                <span class="px-1.5 py-0.5 rounded text-xs bg-amber/20 text-amber">Staff</span>
+                {% endif %}
+                <a href="{% url 'logout' %}"
+                   class="text-xs text-muted hover:text-white transition-all bg-content px-3 py-1.5 rounded border border-border">
+                    Logout
+                </a>
+            </div>
+        </header>
+
+        <!-- page content -->
+        <main class="flex-1 overflow-y-auto p-4 bg-content">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <script>
+        function openSidebar() {
+            document.getElementById('main-sidebar').classList.add('open')
+            document.getElementById('sidebar-overlay').classList.add('open')
+        }
+
+        function closeSidebar() {
+            document.getElementById('main-sidebar').classList.remove('open')
+            document.getElementById('sidebar-overlay').classList.remove('open')
+        }
+
+        function toggleGroup(name) {
+            const children = document.getElementById(name + '-children')
+            const arrow    = document.getElementById(name + '-arrow')
+            const allGroups = ['growing', 'laying']
+            allGroups.forEach(g => {
+                if (g !== name) {
+                    document.getElementById(g + '-children').classList.remove('open')
+                    document.getElementById(g + '-arrow').textContent = '▶'
+                }
+            })
+            children.classList.toggle('open')
+            arrow.textContent = children.classList.contains('open') ? '▼' : '▶'
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const path = window.location.pathname
+            if (path.includes('stock') || path.includes('consumption') ||
+                path.includes('flock') || path.includes('finance')) {
+                document.getElementById('growing-children').classList.add('open')
+                document.getElementById('growing-arrow').textContent = '▼'
+            }
+        })
+    </script>
+</body>
+</html>

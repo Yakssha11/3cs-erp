@@ -1,0 +1,192 @@
+{% extends 'base.html' %}
+
+{% block page_title %}Analytics Dashboard{% endblock %}
+
+{% block content %}
+
+<!-- header -->
+<div class="flex items-center justify-between mb-6">
+    <div>
+        <h1 class="text-2xl font-bold text-white">📊 Analytics Dashboard</h1>
+        <p class="text-muted text-sm mt-1">Live data from your database</p>
+    </div>
+    <a href="{% url 'analytics' %}"
+       class="bg-[#1A8FD1] hover:bg-[#157AB0] text-white text-sm font-bold px-4 py-2 rounded-lg transition-all">
+        🔄 Refresh
+    </a>
+</div>
+
+<!-- KPI cards -->
+<div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+
+    <div class="bg-sidebar border border-border rounded-xl p-4 border-t-2 border-t-blue">
+        <p class="text-xs text-muted mb-1">🐔 Total Chicks</p>
+        <p class="text-2xl font-bold text-blue">{{ total_chicks|default:"0" }}</p>
+    </div>
+
+    <div class="bg-sidebar border border-border rounded-xl p-4 border-t-2 border-t-green">
+        <p class="text-xs text-muted mb-1">✅ Alive</p>
+        <p class="text-2xl font-bold text-green">{{ alive|default:"0" }}</p>
+    </div>
+
+    <div class="bg-sidebar border border-border rounded-xl p-4 border-t-2 border-t-red-500">
+        <p class="text-xs text-muted mb-1">💀 Total Deaths</p>
+        <p class="text-2xl font-bold text-red-400">{{ total_deaths|default:"0" }}</p>
+    </div>
+
+    <div class="bg-sidebar border border-border rounded-xl p-4 border-t-2 border-t-yellow-500">
+        <p class="text-xs text-muted mb-1">📉 Death Rate</p>
+        <p class="text-2xl font-bold text-yellow-400">{{ death_rate|default:"0" }}%</p>
+    </div>
+
+    <div class="bg-sidebar border border-border rounded-xl p-4 border-t-2 border-t-teal">
+        <p class="text-xs text-muted mb-1">💰 Total Expenses</p>
+        <p class="text-2xl font-bold text-teal">₱{{ total_expense|default:"0"|floatformat:0 }}</p>
+    </div>
+
+    <div class="bg-sidebar border border-border rounded-xl p-4 border-t-2 border-t-purple-500">
+        <p class="text-xs text-muted mb-1">📦 Stock Items</p>
+        <p class="text-2xl font-bold text-purple-400">{{ stock_items|default:"0" }}</p>
+    </div>
+
+</div>
+
+<!-- row 2 — mortality trend + expense breakdown -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+
+    <!-- mortality trend -->
+    <div class="bg-sidebar border border-border rounded-xl p-5">
+        <h2 class="text-sm font-bold text-white mb-4">📈 Mortality Trend — Last 7 Days</h2>
+        <canvas id="mortChart" height="120"></canvas>
+    </div>
+
+    <!-- expense breakdown -->
+    <div class="bg-sidebar border border-border rounded-xl p-5">
+        <h2 class="text-sm font-bold text-white mb-4">💰 Expenses by Nature</h2>
+        <canvas id="expChart" height="120"></canvas>
+    </div>
+
+</div>
+
+<!-- row 3 — GH comparison + stock levels -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+    <!-- GH1 vs GH2 -->
+    <div class="bg-sidebar border border-border rounded-xl p-5">
+        <h2 class="text-sm font-bold text-white mb-4">🏠 GH1 vs GH2 Comparison</h2>
+        <canvas id="ghChart" height="120"></canvas>
+    </div>
+
+    <!-- stock levels -->
+    <div class="bg-sidebar border border-border rounded-xl p-5">
+        <h2 class="text-sm font-bold text-white mb-4">📦 Stock Levels</h2>
+        {% if stocks %}
+        <div class="space-y-3">
+            {% for stock in stocks %}
+            <div>
+                <div class="flex justify-between text-xs mb-1">
+                    <span class="text-white font-semibold">{{ stock.name }}</span>
+                    <span class="{% if stock.quantity <= 5 %}text-red-400{% elif stock.quantity <= 20 %}text-yellow-400{% else %}text-green{% endif %} font-bold">
+                        {{ stock.quantity }}
+                    </span>
+                </div>
+                <div class="w-full bg-content rounded-full h-2">
+                    <div class="h-2 rounded-full transition-all
+                        {% if stock.quantity <= 5 %}bg-red-500{% elif stock.quantity <= 20 %}bg-yellow-500{% else %}bg-green{% endif %}"
+                        style="width: {% if stock.quantity > 100 %}100{% else %}{{ stock.quantity }}{% endif %}%">
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-muted text-sm text-center py-8">No stock data available</p>
+        {% endif %}
+    </div>
+
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const chartDefaults = {
+        color: '#6A8FAD',
+        plugins: {
+            legend: { labels: { color: '#6A8FAD', font: { size: 11 } } }
+        },
+        scales: {
+            x: { ticks: { color: '#6A8FAD' }, grid: { color: '#1E3A50' } },
+            y: { ticks: { color: '#6A8FAD' }, grid: { color: '#1E3A50' } }
+        }
+    }
+
+    new Chart(document.getElementById('mortChart'), {
+        type: 'line',
+        data: {
+            labels: {{ mort_labels|safe }},
+            datasets: [{
+                label: 'Deaths',
+                data:  {{ mort_data|safe }},
+                borderColor:     '#E74C3C',
+                backgroundColor: 'rgba(231,76,60,0.1)',
+                borderWidth: 2,
+                pointBackgroundColor: '#E74C3C',
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            ...chartDefaults,
+            plugins: { legend: { display: false } },
+            scales: chartDefaults.scales
+        }
+    })
+
+    new Chart(document.getElementById('expChart'), {
+        type: 'bar',
+        data: {
+            labels: {{ exp_labels|safe }},
+            datasets: [{
+                label: 'Amount (₱)',
+                data:  {{ exp_values|safe }},
+                backgroundColor: [
+                    '#1A8FD1', '#17A98A', '#D4880A',
+                    '#9B59B6', '#2ECC71', '#E74C3C'
+                ],
+                borderRadius: 6,
+            }]
+        },
+        options: {
+            ...chartDefaults,
+            plugins: { legend: { display: false } },
+            scales: chartDefaults.scales
+        }
+    })
+
+    new Chart(document.getElementById('ghChart'), {
+        type: 'bar',
+        data: {
+            labels: ['Deaths', 'Expenses (₱)'],
+            datasets: [
+                {
+                    label: 'Growing House 1',
+                    data:  [{{ gh1_deaths }}, {{ gh1_exp }}],
+                    backgroundColor: '#1A8FD1',
+                    borderRadius: 6,
+                },
+                {
+                    label: 'Growing House 2',
+                    data:  [{{ gh2_deaths }}, {{ gh2_exp }}],
+                    backgroundColor: '#17A98A',
+                    borderRadius: 6,
+                }
+            ]
+        },
+        options: {
+            ...chartDefaults,
+            scales: chartDefaults.scales
+        }
+    })
+</script>
+
+{% endblock %}

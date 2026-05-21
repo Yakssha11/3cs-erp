@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+{% load auth_extras %}
+
+{% block page_title %}Home{% endblock %}
+
+{% block content %}
+
+<!-- welcome -->
+<div class="mb-8">
+    <h1 class="text-2xl font-bold text-white">
+        👋 Welcome back, {{ request.user.username }}!
+    </h1>
+    <p class="text-muted text-sm mt-1">Here's what's happening at 3C's Farm today.</p>
+</div>
+
+<!-- KPI cards -->
+<div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
+
+    <div class="bg-sidebar border border-border rounded-xl p-5 border-t-2 border-t-blue">
+        <p class="text-xs text-muted mb-2">🐔 Total Alive</p>
+        <p class="text-3xl font-bold text-blue">{{ total_chicks|default:"0" }}</p>
+        <p class="text-xs text-muted mt-1">across all flocks</p>
+    </div>
+
+    <div class="bg-sidebar border border-border rounded-xl p-5 border-t-2 border-t-red-500">
+        <p class="text-xs text-muted mb-2">💀 Deaths Today</p>
+        <p class="text-3xl font-bold text-red-400">{{ today_deaths|default:"0" }}</p>
+        <p class="text-xs text-muted mt-1">recorded today</p>
+    </div>
+
+    <div class="bg-sidebar border border-border rounded-xl p-5 border-t-2 border-t-teal">
+        <p class="text-xs text-muted mb-2">💰 This Month</p>
+        <p class="text-3xl font-bold text-teal">₱{{ total_expense|default:"0"|floatformat:0 }}</p>
+        <p class="text-xs text-muted mt-1">total expenses</p>
+    </div>
+
+    <div class="bg-sidebar border border-border rounded-xl p-5 border-t-2 border-t-purple-500">
+        <p class="text-xs text-muted mb-2">📦 Stock Items</p>
+        <p class="text-3xl font-bold text-purple-400">{{ stock_items|default:"0" }}</p>
+        <p class="text-xs text-muted mt-1">in inventory</p>
+    </div>
+
+    <div class="bg-sidebar border border-border rounded-xl p-5 border-t-2
+                {% if low_stock > 0 %}border-t-red-500{% else %}border-t-green{% endif %}">
+        <p class="text-xs text-muted mb-2">⚠️ Low Stock</p>
+        <p class="text-3xl font-bold {% if low_stock > 0 %}text-red-400{% else %}text-green{% endif %}">
+            {{ low_stock|default:"0" }}
+        </p>
+        <p class="text-xs text-muted mt-1">items running low</p>
+    </div>
+
+</div>
+
+<!-- quick actions -->
+<h2 class="text-xs font-bold text-muted uppercase tracking-wider mb-3">Quick Actions</h2>
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+
+    {% if request.user|has_group:'admin' or request.user|has_group:'viewer' or request.user|has_group:'stock' %}
+    <a href="{% url 'stock_list' %}"
+       class="bg-sidebar border border-border hover:border-blue rounded-xl p-5 transition-all group">
+        <div class="text-2xl mb-2">📦</div>
+        <p class="text-sm font-bold text-white group-hover:text-blue transition-all">Stock</p>
+        <p class="text-xs text-muted mt-1">Manage inventory</p>
+    </a>
+    {% endif %}
+
+    {% if request.user|has_group:'admin' or request.user|has_group:'viewer' or request.user|has_group:'consumption' %}
+    <a href="{% url 'consumption_list' %}"
+       class="bg-sidebar border border-border hover:border-teal rounded-xl p-5 transition-all group">
+        <div class="text-2xl mb-2">📉</div>
+        <p class="text-sm font-bold text-white group-hover:text-teal transition-all">Consumption</p>
+        <p class="text-xs text-muted mt-1">Log usage</p>
+    </a>
+    {% endif %}
+
+    {% if request.user|has_group:'admin' or request.user|has_group:'viewer' or request.user|has_group:'flock' %}
+    <a href="{% url 'flock_list' %}"
+       class="bg-sidebar border border-border hover:border-green rounded-xl p-5 transition-all group">
+        <div class="text-2xl mb-2">🐔</div>
+        <p class="text-sm font-bold text-white group-hover:text-green transition-all">Flock</p>
+        <p class="text-xs text-muted mt-1">Track batches</p>
+    </a>
+    {% endif %}
+
+    {% if request.user|has_group:'admin' or request.user|has_group:'viewer' or request.user|has_group:'finance' %}
+    <a href="{% url 'finance_list' %}"
+       class="bg-sidebar border border-border hover:border-amber rounded-xl p-5 transition-all group">
+        <div class="text-2xl mb-2">💰</div>
+        <p class="text-sm font-bold text-white group-hover:text-amber transition-all">Finance</p>
+        <p class="text-xs text-muted mt-1">Track expenses</p>
+    </a>
+    {% endif %}
+
+</div>
+
+{% endblock %}
