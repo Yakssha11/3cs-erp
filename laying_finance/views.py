@@ -12,6 +12,7 @@ from django.http import HttpResponse
 
 @login_required
 def laying_finance_list(request):
+    from erp_config.models import Building, Category
     period   = request.GET.get('period', 'all')
     finances = LayingFinance.objects.all().order_by('-expense_date')
     today    = date.today()
@@ -37,9 +38,11 @@ def laying_finance_list(request):
                         total=Sum('total_revenue'))['total'] or 0)
     net_profit     = egg_revenue - total_expenses
 
-    paginator = Paginator(finances, 10)
-    page      = request.GET.get('page')
-    finances  = paginator.get_page(page)
+    paginator  = Paginator(finances, 10)
+    page       = request.GET.get('page')
+    finances   = paginator.get_page(page)
+    buildings  = Building.objects.filter(type='Laying')
+    categories = Category.objects.all()
 
     return render(request, 'laying_finance/list.html', {
         'finances':       finances,
@@ -47,6 +50,8 @@ def laying_finance_list(request):
         'egg_revenue':    egg_revenue,
         'net_profit':     net_profit,
         'period':         period,
+        'buildings':      buildings,
+        'categories':     categories,
     })
 
 @login_required
@@ -72,6 +77,7 @@ def laying_finance_delete(request, pk):
 
 @login_required
 def laying_finance_update(request, pk):
+    from erp_config.models import Building, Category
     finance = get_object_or_404(LayingFinance, pk=pk)
     if request.method == 'POST':
         finance.expense_date = request.POST['expense_date']
@@ -83,7 +89,13 @@ def laying_finance_update(request, pk):
         finance.save()
         messages.success(request, 'Record updated!')
         return redirect('laying_finance_list')
-    return render(request, 'laying_finance/edit.html', {'finance': finance})
+    buildings  = Building.objects.filter(type='Laying')
+    categories = Category.objects.all()
+    return render(request, 'laying_finance/edit.html', {
+        'finance':    finance,
+        'buildings':  buildings,
+        'categories': categories,
+    })
 
 @login_required
 def export_laying_finance(request):

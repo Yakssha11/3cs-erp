@@ -1,0 +1,208 @@
+{% extends 'base.html' %}
+{% load auth_extras %}
+
+{% block page_title %}Growing Sales{% endblock %}
+
+{% block content %}
+
+{% if messages %}
+{% for message in messages %}
+<div class="mb-4 px-4 py-3 rounded-lg text-sm font-semibold
+    {% if message.tags == 'error' %}bg-red-900/40 text-red-400 border border-red-800
+    {% else %}bg-green-900/40 text-green-400 border border-green-800{% endif %}">
+    {{ message }}
+</div>
+{% endfor %}
+{% endif %}
+
+<!-- header -->
+<div class="flex items-center justify-between mb-6">
+    <div>
+        <h1 class="text-2xl font-bold text-white">🌱 Growing Sales</h1>
+        <p class="text-muted text-sm mt-1">Record chicken sales per flock batch</p>
+    </div>
+    <div class="flex gap-3">
+        <a href="{% url 'export_growing_sales' %}"
+           class="bg-[#196E78] hover:bg-[#145960] text-white text-sm font-bold px-4 py-2 rounded-lg transition-all">
+            📥 Export XLSX
+        </a>
+        <button onclick="toggleForm()"
+                class="bg-teal hover:bg-[#138A72] text-white text-sm font-bold px-4 py-2 rounded-lg transition-all">
+            + Record Sale
+        </button>
+    </div>
+</div>
+
+<!-- add form -->
+<div id="addForm" class="hidden bg-sidebar border border-border rounded-xl p-6 mb-6">
+    <h2 class="text-sm font-bold text-muted uppercase tracking-wider mb-4">New Growing Sale</h2>
+    <form method="POST" action="{% url 'growing_sale_save' %}">
+        {% csrf_token %}
+        <div class="grid grid-cols-2 gap-4 mb-4">
+
+            <div>
+                <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Flock Batch</label>
+                <select name="flock_id" required
+                        class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-teal">
+                    <option value="">Select batch</option>
+                    {% for flock in flocks %}
+                    <option value="{{ flock.pk }}">{{ flock.batch_name }} — {{ flock.growing_house }} ({{ flock.current_count }} available)</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div>
+                <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Customer</label>
+                <select name="customer_id"
+                        class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-teal">
+                    <option value="">Select customer (optional)</option>
+                    {% for customer in customers %}
+                    <option value="{{ customer.pk }}">{{ customer.name }} ({{ customer.type }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div>
+                <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Quantity Sold</label>
+                <input type="number" name="quantity" id="qty" required placeholder="0"
+                       oninput="calcRevenue()"
+                       class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-teal">
+            </div>
+
+            <div>
+                <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Price per Head (₱)</label>
+                <input type="number" name="price_per_head" id="price" required placeholder="0.00" step="0.01"
+                       oninput="calcRevenue()"
+                       class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-teal">
+            </div>
+
+            <div>
+                <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Sale Date</label>
+                <input type="date" name="sale_date" required
+                       class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-teal">
+            </div>
+
+            <div>
+                <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Recorded By</label>
+                <input type="text" name="recorded_by" required placeholder="Your name"
+                       class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-teal">
+            </div>
+
+            <div class="col-span-2">
+                <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Remarks</label>
+                <input type="text" name="remarks" placeholder="Optional"
+                       class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-teal">
+            </div>
+
+        </div>
+
+        <!-- revenue preview -->
+        <div class="bg-content rounded-xl p-4 mb-4 flex items-center justify-between">
+            <span class="text-muted text-sm">Estimated Revenue:</span>
+            <span class="text-2xl font-bold text-green" id="revenue_preview">₱0.00</span>
+        </div>
+
+        <div class="flex gap-3">
+            <button type="submit"
+                    class="bg-teal hover:bg-[#138A72] text-white text-sm font-bold px-6 py-2 rounded-lg transition-all">
+                Save Sale
+            </button>
+            <button type="button" onclick="toggleForm()"
+                    class="bg-content hover:bg-border text-muted text-sm font-bold px-6 py-2 rounded-lg transition-all border border-border">
+                Cancel
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- total -->
+<div class="bg-[#01415A] border border-border rounded-xl px-6 py-4 mb-4 flex items-center justify-between">
+    <span class="text-muted text-sm">Total Growing Revenue</span>
+    <span class="text-2xl font-bold text-green">₱{{ total|floatformat:2 }}</span>
+</div>
+
+<!-- search -->
+<div class="mb-4">
+    <input type="text" id="searchInput" onkeyup="filterTable()"
+           placeholder="🔍  Search by batch, customer, date..."
+           class="w-full bg-sidebar border border-border rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-teal">
+</div>
+
+<!-- table -->
+<div class="bg-sidebar border border-border rounded-xl">
+    <div class="overflow-x-auto">
+    <table class="w-full text-sm whitespace-nowrap" id="salesTable">
+        <thead>
+            <tr class="border-b border-border text-muted text-xs uppercase tracking-wider">
+                <th class="px-4 py-3 text-left">Date</th>
+                <th class="px-4 py-3 text-left">Batch</th>
+                <th class="px-4 py-3 text-left">Customer</th>
+                <th class="px-4 py-3 text-left">Quantity</th>
+                <th class="px-4 py-3 text-left">Price/Head</th>
+                <th class="px-4 py-3 text-left">Revenue</th>
+                <th class="px-4 py-3 text-left">Recorded By</th>
+                <th class="px-4 py-3 text-left">Remarks</th>
+                <th class="px-4 py-3 text-left">Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for sale in sales %}
+            <tr class="border-b border-border hover:bg-content transition-all">
+                <td class="px-4 py-3 text-muted text-xs">{{ sale.sale_date }}</td>
+                <td class="px-4 py-3 text-white font-semibold">{{ sale.flock.batch_name }}</td>
+                <td class="px-4 py-3 text-muted">{{ sale.customer.name|default:"—" }}</td>
+                <td class="px-4 py-3 text-white">{{ sale.quantity }}</td>
+                <td class="px-4 py-3 text-muted">₱{{ sale.price_per_head }}</td>
+                <td class="px-4 py-3 text-green font-bold">₱{{ sale.total_revenue }}</td>
+                <td class="px-4 py-3 text-muted">{{ sale.recorded_by }}</td>
+                <td class="px-4 py-3 text-muted text-xs">{{ sale.remarks }}</td>
+                <td class="px-4 py-3">
+                    {% if request.user|has_group:'admin' %}
+                    <form method="POST" action="{% url 'growing_sale_delete' sale.pk %}"
+                          onsubmit="return confirm('Delete this sale? Flock count will be restored.')"
+                          style="margin:0;padding:0;display:inline;">
+                        {% csrf_token %}
+                        <button type="submit"
+                                class="text-red-400 hover:text-red-300 text-xs font-bold transition-all">
+                            Delete
+                        </button>
+                    </form>
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="9" class="px-4 py-8 text-center text-muted">
+                    No sales recorded yet. Click "+ Record Sale" to get started.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</div>
+
+<script>
+    function toggleForm() {
+        document.getElementById('addForm').classList.toggle('hidden')
+    }
+    function calcRevenue() {
+        const qty   = parseFloat(document.getElementById('qty').value) || 0
+        const price = parseFloat(document.getElementById('price').value) || 0
+        document.getElementById('revenue_preview').textContent = '₱' + (qty * price).toFixed(2)
+    }
+    function filterTable() {
+        const input = document.getElementById('searchInput').value.toLowerCase()
+        const rows  = document.querySelectorAll('#salesTable tbody tr')
+        rows.forEach(row => {
+            row.style.display = row.textContent.toLowerCase().includes(input) ? '' : 'none'
+        })
+    }
+    document.addEventListener('DOMContentLoaded', function() {
+        const today = new Date().toISOString().split('T')[0]
+        const dateInput = document.querySelector('input[name="sale_date"]')
+        if (dateInput) dateInput.value = today
+    })
+</script>
+
+{% endblock %}

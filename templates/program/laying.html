@@ -1,0 +1,239 @@
+{% extends 'base.html' %}
+{% load auth_extras %}
+
+{% block page_title %}Program — Laying{% endblock %}
+
+{% block content %}
+
+{% if messages %}
+{% for message in messages %}
+<div class="mb-4 px-4 py-3 rounded-lg text-sm font-semibold
+    {% if message.tags == 'error' %}bg-red-900/40 text-red-400 border border-red-800
+    {% else %}bg-green-900/40 text-green-400 border border-green-800{% endif %}">
+    {{ message }}
+</div>
+{% endfor %}
+{% endif %}
+
+<!-- header -->
+<div class="flex items-center justify-between mb-6">
+    <div>
+        <h1 class="text-2xl font-bold text-white">💉 Program — Laying</h1>
+        <p class="text-muted text-sm mt-1">Medication and vaccination schedule for laying chicks</p>
+    </div>
+
+    <!-- toggle -->
+    <div class="flex gap-2">
+        <a href="{% url 'program_growing' %}"
+           class="px-4 py-2 rounded-lg text-xs font-bold border bg-sidebar text-muted border-border hover:border-green">
+            🌱 Growing
+        </a>
+        <a href="{% url 'program_laying' %}"
+           class="px-4 py-2 rounded-lg text-xs font-bold border bg-amber text-white border-amber">
+            🥚 Laying
+        </a>
+    </div>
+</div>
+
+<!-- add program form (admin only) -->
+{% if request.user|has_group:'admin' %}
+<div class="bg-sidebar border border-border rounded-xl p-6 mb-6">
+    <h2 class="text-sm font-bold text-muted uppercase tracking-wider mb-4">New Program</h2>
+    <form method="POST" action="{% url 'program_save' %}">
+        {% csrf_token %}
+        <input type="hidden" name="type" value="Laying">
+        <input type="hidden" name="next" value="program_laying">
+        <div class="grid grid-cols-2 gap-4 mb-4">
+            <div>
+                <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Program Name</label>
+                <input type="text" name="name" required placeholder="e.g. Layer Chick Program"
+                       class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber">
+            </div>
+            <div>
+                <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Description</label>
+                <input type="text" name="description" placeholder="Optional"
+                       class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber">
+            </div>
+        </div>
+        <button type="submit"
+                class="bg-amber hover:bg-[#B5720A] text-white text-sm font-bold px-6 py-2 rounded-lg transition-all">
+            Create Program
+        </button>
+    </form>
+</div>
+{% endif %}
+
+<!-- programs list -->
+{% for program in programs %}
+<div class="bg-sidebar border border-border rounded-xl mb-6">
+
+    <!-- program header -->
+    <div class="px-4 py-3 border-b border-border flex items-center justify-between">
+        <div>
+            <h2 class="text-sm font-bold text-white">🥚 {{ program.name }}</h2>
+            {% if program.description %}
+            <p class="text-xs text-muted mt-0.5">{{ program.description }}</p>
+            {% endif %}
+        </div>
+        {% if request.user|has_group:'admin' %}
+        <form method="POST" action="{% url 'program_delete' program.pk %}"
+              onsubmit="return confirm('Delete {{ program.name }} and all its steps?')"
+              style="margin:0;padding:0">
+            {% csrf_token %}
+            <button type="submit"
+                    class="text-red-400 hover:text-red-300 text-xs font-bold transition-all">
+                Delete Program
+            </button>
+        </form>
+        {% endif %}
+    </div>
+
+    <!-- steps table -->
+    <div class="overflow-x-auto">
+    <table class="w-full text-sm whitespace-nowrap">
+        <thead>
+            <tr class="border-b border-border text-muted text-xs uppercase tracking-wider">
+                <th class="px-4 py-3 text-left">Week</th>
+                <th class="px-4 py-3 text-left">Day</th>
+                <th class="px-4 py-3 text-left">Medicine / Vaccine</th>
+                <th class="px-4 py-3 text-left">Dose</th>
+                <th class="px-4 py-3 text-left">Unit</th>
+                <th class="px-4 py-3 text-left">Per</th>
+                <th class="px-4 py-3 text-left">Method</th>
+                <th class="px-4 py-3 text-left">Remarks</th>
+                {% if request.user|has_group:'admin' %}
+                <th class="px-4 py-3 text-left">Action</th>
+                {% endif %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for step in program.steps.all %}
+            <tr class="border-b border-border hover:bg-content transition-all">
+                <td class="px-4 py-3">
+                    <span class="px-2 py-1 rounded text-xs font-bold bg-amber/20 text-amber">
+                        Week {{ step.week }}
+                    </span>
+                </td>
+                <td class="px-4 py-3 text-white font-bold">Day {{ step.day }}</td>
+                <td class="px-4 py-3 text-white">{{ step.medicine }}</td>
+                <td class="px-4 py-3 text-muted">{{ step.dose_amount }}</td>
+                <td class="px-4 py-3 text-muted">{{ step.dose_unit }}</td>
+                <td class="px-4 py-3 text-muted">{{ step.dose_per }}</td>
+                <td class="px-4 py-3">
+                    <span class="px-2 py-1 rounded text-xs font-bold bg-blue-900/40 text-blue-400">
+                        {{ step.method }}
+                    </span>
+                </td>
+                <td class="px-4 py-3 text-muted text-xs">{{ step.remarks }}</td>
+                {% if request.user|has_group:'admin' %}
+                <td class="px-4 py-3">
+                    <form method="POST" action="{% url 'step_delete' step.pk %}"
+                          onsubmit="return confirm('Delete this step?')"
+                          style="margin:0;padding:0">
+                        {% csrf_token %}
+                        <button type="submit"
+                                class="text-red-400 hover:text-red-300 text-xs font-bold transition-all">
+                            Delete
+                        </button>
+                    </form>
+                </td>
+                {% endif %}
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="7" class="px-4 py-6 text-center text-muted text-xs">
+                    No steps yet. Add one below.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+
+    <!-- add step form (admin only) -->
+    {% if request.user|has_group:'admin' %}
+    <div class="px-4 py-4 border-t border-border">
+        <h3 class="text-xs font-bold text-muted uppercase tracking-wider mb-3">Add Step</h3>
+        <form method="POST" action="{% url 'step_save' program.pk %}">
+            {% csrf_token %}
+            <div class="grid grid-cols-3 gap-3 mb-3">
+                <div>
+                    <label class="text-xs text-muted block mb-1">Week</label>
+                    <input type="number" name="week" required placeholder="1" min="1"
+                           class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-green">
+                </div>
+                <div>
+                    <label class="text-xs text-muted block mb-1">Day</label>
+                    <input type="number" name="day" required placeholder="1" min="1"
+                           class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-green">
+                </div>
+                <div>
+                    <label class="text-xs text-muted block mb-1">Medicine / Vaccine</label>
+                    <select name="medicine" required
+                            class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-green">
+                        <option value="">Select from stock</option>
+                        {% for item in stock_items %}
+                        <option value="{{ item.name }}">{{ item.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="text-xs text-muted block mb-1">Dose Amount</label>
+                    <input type="number" name="dose_amount" required placeholder="e.g. 1" step="0.01" min="0"
+                           class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-green">
+                </div>
+                <div>
+                    <label class="text-xs text-muted block mb-1">Unit</label>
+                    <select name="dose_unit" required
+                            class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-green">
+                        <option value="">Select unit</option>
+                        <option value="ml">ml</option>
+                        <option value="g">g</option>
+                        <option value="L">L</option>
+                        <option value="tablet">tablet</option>
+                        <option value="drop">drop</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-xs text-muted block mb-1">Per</label>
+                    <select name="dose_per" required
+                            class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-green">
+                        <option value="">Select per</option>
+                        <option value="chick">chick</option>
+                        <option value="liter">liter</option>
+                        <option value="kg">kg</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-xs text-muted block mb-1">Method</label>
+                    <select name="method" required
+                            class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-green">
+                        <option value="">Select method</option>
+                        <option value="Drinking Water">Drinking Water</option>
+                        <option value="Eye Drop">Eye Drop</option>
+                        <option value="Injection">Injection</option>
+                        <option value="Spray">Spray</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-xs text-muted block mb-1">Remarks</label>
+                    <input type="text" name="remarks" placeholder="Optional"
+                           class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-green">
+                </div>
+            </div>
+            <button type="submit"
+                    class="bg-green hover:bg-[#27AE60] text-white text-xs font-bold px-4 py-2 rounded-lg transition-all">
+                + Add Step
+            </button>
+        </form>
+    </div>
+    {% endif %}
+
+</div>
+{% empty %}
+<div class="bg-sidebar border border-border rounded-xl px-4 py-8 text-center text-muted">
+    No Laying programs yet. Create one above.
+</div>
+{% endfor %}
+
+{% endblock %}

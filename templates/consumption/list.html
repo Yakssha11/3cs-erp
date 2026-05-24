@@ -47,8 +47,9 @@
                 <select name="growing_house" required
                         class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-teal">
                     <option value="">Select house</option>
-                    <option value="Growing House 1">Growing House 1</option>
-                    <option value="Growing House 2">Growing House 2</option>
+                    {% for building in buildings %}
+                    <option value="{{ building.name }}">{{ building.name }}</option>
+                    {% endfor %}
                 </select>
             </div>
 
@@ -58,9 +59,9 @@
                 <select name="category" id="categorySelect" required onchange="loadItems()"
                         class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-teal">
                     <option value="">Select category</option>
-                    <option value="Feed">Feed</option>
-                    <option value="Medicine">Medicine</option>
-                    <option value="Other Supplies">Other Supplies</option>
+                    {% for category in categories %}
+                    <option value="{{ category.name }}">{{ category.name }}</option>
+                    {% endfor %}
                 </select>
             </div>
 
@@ -87,12 +88,9 @@
                 <select name="unit" required
                         class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-teal">
                     <option value="">Select unit</option>
-                    <option value="kg">kg</option>
-                    <option value="sacks">sacks</option>
-                    <option value="bottles">bottles</option>
-                    <option value="pcs">pcs</option>
-                    <option value="liters">liters</option>
-                    <option value="grams">grams</option>
+                    {% for unit in units %}
+                    <option value="{{ unit.name }}">{{ unit.name }}</option>
+                    {% endfor %}
                 </select>
             </div>
 

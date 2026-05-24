@@ -31,8 +31,12 @@
                     <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Building</label>
                     <select name="building" required
                             class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-green">
-                        <option value="RTL Building 1" {% if flock.building == 'RTL Building 1' %}selected{% endif %}>RTL Building 1</option>
-                        <option value="RTL Building 2" {% if flock.building == 'RTL Building 2' %}selected{% endif %}>RTL Building 2</option>
+                        <option value="">Select building</option>
+                        {% for building in buildings %}
+                        <option value="{{ building.name }}" {% if flock.building == building.name %}selected{% endif %}>
+                            {{ building.name }}
+                        </option>
+                        {% endfor %}
                     </select>
                 </div>
 
@@ -67,8 +71,15 @@
 
                 <div>
                     <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Supplier</label>
-                    <input type="text" name="supplier" value="{{ flock.supplier }}"
-                           class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-green">
+                    <select name="supplier"
+                            class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-green">
+                        <option value="">Select supplier</option>
+                        {% for supplier in suppliers %}
+                        <option value="{{ supplier.name }}" {% if flock.supplier == supplier.name %}selected{% endif %}>
+                            {{ supplier.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
                 </div>
 
                 <div>

@@ -12,11 +12,20 @@ from datetime import date
 
 @login_required
 def consumption_list(request):
+    from erp_config.models import Category, Unit, Building
     consumption_all = Consumption.objects.all().order_by('-date_consumed')
     paginator       = Paginator(consumption_all, 10)
     page            = request.GET.get('page')
     consumptions    = paginator.get_page(page)
-    return render(request, 'consumption/list.html', {'consumptions': consumptions})
+    categories      = Category.objects.all()
+    units           = Unit.objects.all()
+    buildings       = Building.objects.filter(type='Growing')
+    return render(request, 'consumption/list.html', {
+        'consumptions': consumptions,
+        'categories':   categories,
+        'units':        units,
+        'buildings':    buildings,
+    })
 
 @login_required
 def consumption_save(request):
@@ -76,6 +85,7 @@ def get_items(request):
 
 @login_required
 def consumption_update(request, pk):
+    from erp_config.models import Category, Unit, Building
     consumption = get_object_or_404(Consumption, pk=pk)
     if request.method == 'POST':
         consumption.growing_house = request.POST['growing_house']
@@ -90,7 +100,15 @@ def consumption_update(request, pk):
         consumption.save()
         messages.success(request, 'Consumption record updated!')
         return redirect('consumption_list')
-    return render(request, 'consumption/edit.html', {'consumption': consumption})
+    categories = Category.objects.all()
+    units      = Unit.objects.all()
+    buildings  = Building.objects.filter(type='Growing')
+    return render(request, 'consumption/edit.html', {
+        'consumption': consumption,
+        'categories':  categories,
+        'units':       units,
+        'buildings':   buildings,
+    })
 
 @login_required
 def export_consumption(request):
@@ -129,3 +147,120 @@ def export_consumption(request):
     response['Content-Disposition'] = f'attachment; filename="consumption_{date.today()}.xlsx"'
     wb.save(response)
     return response
+
+# ── Laying Consumption ────────────────────────────────────
+
+@login_required
+def laying_consumption_list(request):
+    from erp_config.models import Category, Unit, Building
+    laying_buildings = Building.objects.filter(type='Laying').values_list('name', flat=True)
+    consumption_all  = Consumption.objects.filter(
+                        growing_house__in=laying_buildings
+                       ).order_by('-date_consumed')
+    paginator    = Paginator(consumption_all, 10)
+    page         = request.GET.get('page')
+    consumptions = paginator.get_page(page)
+    categories   = Category.objects.all()
+    units        = Unit.objects.all()
+    buildings    = Building.objects.filter(type='Laying')
+    return render(request, 'consumption/laying_list.html', {
+        'consumptions': consumptions,
+        'categories':   categories,
+        'units':        units,
+        'buildings':    buildings,
+    })
+
+@login_required
+def laying_consumption_save(request):
+    if request.method == 'POST':
+        item_id       = request.POST['item_id']
+        house         = request.POST['growing_house']
+        category      = request.POST['category']
+        quantity      = float(request.POST['quantity'])
+        unit          = request.POST['unit']
+        remarks       = request.POST.get('remarks', '')
+        recorded      = request.POST['recorded_by']
+        date_consumed = request.POST['date_consumed']
+
+        try:
+            stock = Stock.objects.get(item_id=item_id)
+        except Stock.DoesNotExist:
+            messages.error(request, 'Item not found in stock!')
+            return redirect('laying_consumption_list')
+
+        if quantity > stock.quantity:
+            messages.error(request, f'Not enough stock! Available: {stock.quantity}')
+            return redirect('laying_consumption_list')
+
+        Consumption.objects.create(
+            growing_house = house,
+            category      = category,
+            item_id       = item_id,
+            item_name     = stock.name,
+            quantity      = quantity,
+            unit          = unit,
+            remarks       = remarks,
+            recorded_by   = recorded,
+            date_consumed = date_consumed
+        )
+
+        stock.quantity -= quantity
+        stock.save()
+
+        messages.success(request, f'Consumption saved! Remaining {stock.name}: {stock.quantity}')
+    return redirect('laying_consumption_list')
+
+@login_required
+def export_laying_consumption(request):
+    from erp_config.models import Building
+    laying_buildings = Building.objects.filter(type='Laying').values_list('name', flat=True)
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = 'Laying Consumption'
+
+    header_font = Font(bold=True, color='FFFFFF')
+    header_fill = PatternFill(fill_type='solid', fgColor='D4880A')
+
+    headers = ['Date', 'Building', 'Category', 'Item ID',
+               'Item Name', 'Quantity', 'Unit', 'Recorded By', 'Remarks']
+    for col, header in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col, value=header)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = Alignment(horizontal='center')
+
+    for row, c in enumerate(Consumption.objects.filter(
+            growing_house__in=laying_buildings).order_by('-date_consumed'), 2):
+        ws.cell(row=row, column=1, value=str(c.date_consumed))
+        ws.cell(row=row, column=2, value=c.growing_house)
+        ws.cell(row=row, column=3, value=c.category)
+        ws.cell(row=row, column=4, value=c.item_id)
+        ws.cell(row=row, column=5, value=c.item_name)
+        ws.cell(row=row, column=6, value=float(c.quantity))
+        ws.cell(row=row, column=7, value=c.unit)
+        ws.cell(row=row, column=8, value=c.recorded_by)
+        ws.cell(row=row, column=9, value=c.remarks)
+
+    for col, width in enumerate([14, 18, 15, 12, 20, 10, 10, 16, 20], 1):
+        ws.column_dimensions[openpyxl.utils.get_column_letter(col)].width = width
+
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = f'attachment; filename="laying_consumption_{date.today()}.xlsx"'
+    wb.save(response)
+    return response
+
+@login_required
+def laying_consumption_delete(request, pk):
+    consumption = get_object_or_404(Consumption, pk=pk)
+    try:
+        stock = Stock.objects.get(item_id=consumption.item_id)
+        stock.quantity += consumption.quantity
+        stock.save()
+    except Stock.DoesNotExist:
+        pass
+    consumption.delete()
+    messages.success(request, 'Record deleted and stock restored!')
+    return redirect('laying_consumption_list')

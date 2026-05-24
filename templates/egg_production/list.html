@@ -69,8 +69,9 @@
                 <select name="building" required
                         class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber">
                     <option value="">Select building</option>
-                    <option value="RTL Building 1">RTL Building 1</option>
-                    <option value="RTL Building 2">RTL Building 2</option>
+                    {% for building in buildings %}
+                    <option value="{{ building.name }}">{{ building.name }}</option>
+                    {% endfor %}
                 </select>
             </div>
 

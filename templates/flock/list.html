@@ -34,6 +34,7 @@
         </button>
     </div>
 </div>
+
 <!-- add flock form -->
 <div id="flockForm" class="hidden bg-sidebar border border-border rounded-xl p-6 mb-6">
     <h2 class="text-sm font-bold text-muted uppercase tracking-wider mb-4">New Flock</h2>
@@ -52,8 +53,9 @@
                 <select name="growing_house" required
                         class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-green">
                     <option value="">Select house</option>
-                    <option value="Growing House 1">Growing House 1</option>
-                    <option value="Growing House 2">Growing House 2</option>
+                    {% for building in buildings %}
+                    <option value="{{ building.name }}">{{ building.name }}</option>
+                    {% endfor %}
                 </select>
             </div>
 
@@ -71,8 +73,13 @@
 
             <div>
                 <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Supplier</label>
-                <input type="text" name="supplier" placeholder="Optional"
-                       class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-green">
+                <select name="supplier"
+                        class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-green">
+                    <option value="">Select supplier</option>
+                    {% for supplier in suppliers %}
+                    <option value="{{ supplier.name }}">{{ supplier.name }}</option>
+                    {% endfor %}
+                </select>
             </div>
 
             <div>
@@ -207,12 +214,9 @@
             ← Prev
         </a>
         {% endif %}
-
         {% for num in flocks.paginator.page_range %}
             {% if flocks.number == num %}
-            <span class="px-3 py-1.5 rounded-lg text-xs font-bold bg-green text-white">
-                {{ num }}
-            </span>
+            <span class="px-3 py-1.5 rounded-lg text-xs font-bold bg-green text-white">{{ num }}</span>
             {% elif num > flocks.number|add:'-3' and num < flocks.number|add:'3' %}
             <a href="?flock_page={{ num }}"
                class="px-3 py-1.5 rounded-lg text-xs font-bold bg-sidebar border border-border text-muted hover:border-green hover:text-white transition-all">
@@ -220,7 +224,6 @@
             </a>
             {% endif %}
         {% endfor %}
-
         {% if flocks.has_next %}
         <a href="?flock_page={{ flocks.next_page_number }}"
            class="px-3 py-1.5 rounded-lg text-xs font-bold bg-sidebar border border-border text-muted hover:border-green hover:text-white transition-all">
@@ -246,7 +249,6 @@
             <p class="text-muted text-sm mt-1">Auto-generated every 7 days from date placed</p>
         </div>
     </div>
-
     <div class="bg-sidebar border border-border rounded-xl">
         <div class="overflow-x-auto">
         <table class="w-full text-sm whitespace-nowrap" id="snapshotTable">
@@ -337,8 +339,9 @@
                 <select name="growing_house" required
                         class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500">
                     <option value="">Select house</option>
-                    <option value="Growing House 1">Growing House 1</option>
-                    <option value="Growing House 2">Growing House 2</option>
+                    {% for building in buildings %}
+                    <option value="{{ building.name }}">{{ building.name }}</option>
+                    {% endfor %}
                 </select>
             </div>
 
@@ -359,11 +362,9 @@
                 <select name="cause"
                         class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500">
                     <option value="">Select cause</option>
-                    <option value="Disease">Disease</option>
-                    <option value="Injury">Injury</option>
-                    <option value="Suffocation">Suffocation</option>
-                    <option value="Starvation">Starvation</option>
-                    <option value="Unknown">Unknown</option>
+                    {% for cause in causes %}
+                    <option value="{{ cause.name }}">{{ cause.name }}</option>
+                    {% endfor %}
                 </select>
             </div>
 
@@ -475,12 +476,9 @@
             ← Prev
         </a>
         {% endif %}
-
         {% for num in mortalities.paginator.page_range %}
             {% if mortalities.number == num %}
-            <span class="px-3 py-1.5 rounded-lg text-xs font-bold bg-red-700 text-white">
-                {{ num }}
-            </span>
+            <span class="px-3 py-1.5 rounded-lg text-xs font-bold bg-red-700 text-white">{{ num }}</span>
             {% elif num > mortalities.number|add:'-3' and num < mortalities.number|add:'3' %}
             <a href="?mort_page={{ num }}"
                class="px-3 py-1.5 rounded-lg text-xs font-bold bg-sidebar border border-border text-muted hover:border-red-500 hover:text-white transition-all">
@@ -488,7 +486,6 @@
             </a>
             {% endif %}
         {% endfor %}
-
         {% if mortalities.has_next %}
         <a href="?mort_page={{ mortalities.next_page_number }}"
            class="px-3 py-1.5 rounded-lg text-xs font-bold bg-sidebar border border-border text-muted hover:border-red-500 hover:text-white transition-all">
@@ -507,7 +504,6 @@
             row.style.display = row.textContent.toLowerCase().includes(input) ? '' : 'none'
         })
     }
-
     function filterMort() {
         const input = document.getElementById('mortSearch').value.toLowerCase()
         const rows  = document.querySelectorAll('#mortTable tbody tr')
@@ -515,26 +511,22 @@
             row.style.display = row.textContent.toLowerCase().includes(input) ? '' : 'none'
         })
     }
-
     function toggleFlockForm() {
         document.getElementById('flockForm').classList.toggle('hidden')
     }
     function toggleMortForm() {
         document.getElementById('mortForm').classList.toggle('hidden')
     }
-
-    // set today's date by default
     document.addEventListener('DOMContentLoaded', function() {
         const today = new Date().toISOString().split('T')[0]
         document.querySelectorAll('input[type="date"]').forEach(i => i.value = today)
     })
-
     function filterSnap() {
-    const input = document.getElementById('snapSearch').value.toLowerCase()
-    const rows  = document.querySelectorAll('#snapshotTable tbody tr')
-    rows.forEach(row => {
-        row.style.display = row.textContent.toLowerCase().includes(input) ? '' : 'none'
-    })
+        const input = document.getElementById('snapSearch').value.toLowerCase()
+        const rows  = document.querySelectorAll('#snapshotTable tbody tr')
+        rows.forEach(row => {
+            row.style.display = row.textContent.toLowerCase().includes(input) ? '' : 'none'
+        })
     }
 </script>
 

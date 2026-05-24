@@ -7,6 +7,8 @@ from datetime import date, timedelta
 
 @login_required
 def laying_flock_list(request):
+    from erp_config.models import Building, Cause
+    from master_data.models import Supplier
     flocks      = LayingFlock.objects.all().order_by('-Date')
     mortalities = LayingMortality.objects.all().order_by('-death_date')
 
@@ -16,9 +18,16 @@ def laying_flock_list(request):
         else:
             flock.age_days = 0
 
+    buildings = Building.objects.filter(type='Laying')
+    causes    = Cause.objects.all()
+    suppliers = Supplier.objects.all()
+
     return render(request, 'laying_flock/list.html', {
         'flocks':      flocks,
         'mortalities': mortalities,
+        'buildings':   buildings,
+        'causes':      causes,
+        'suppliers':   suppliers,
     })
 
 @login_required
@@ -47,6 +56,8 @@ def laying_flock_delete(request, pk):
 
 @login_required
 def laying_flock_update(request, pk):
+    from erp_config.models import Building
+    from master_data.models import Supplier
     flock = get_object_or_404(LayingFlock, pk=pk)
     if request.method == 'POST':
         flock.batch_name    = request.POST['batch_name']
@@ -60,7 +71,13 @@ def laying_flock_update(request, pk):
         flock.save()
         messages.success(request, f'"{flock.batch_name}" updated!')
         return redirect('laying_flock_list')
-    return render(request, 'laying_flock/edit.html', {'flock': flock})
+    buildings = Building.objects.filter(type='Laying')
+    suppliers = Supplier.objects.all()
+    return render(request, 'laying_flock/edit.html', {
+        'flock':     flock,
+        'buildings': buildings,
+        'suppliers': suppliers,
+    })
 
 @login_required
 def laying_flock_transfer(request, pk):
@@ -77,8 +94,8 @@ def laying_flock_transfer(request, pk):
 @login_required
 def laying_mortality_save(request):
     if request.method == 'POST':
-        flock      = get_object_or_404(LayingFlock, pk=request.POST['flock_id'])
-        count      = int(request.POST['count'])
+        flock = get_object_or_404(LayingFlock, pk=request.POST['flock_id'])
+        count = int(request.POST['count'])
 
         if count > flock.current_count:
             messages.error(request, f'Death count exceeds current flock count ({flock.current_count})')
@@ -110,6 +127,7 @@ def laying_mortality_delete(request, pk):
 
 @login_required
 def laying_mortality_update(request, pk):
+    from erp_config.models import Building, Cause
     mortality = get_object_or_404(LayingMortality, pk=pk)
     if request.method == 'POST':
         mortality.building    = request.POST['building']
@@ -121,4 +139,10 @@ def laying_mortality_update(request, pk):
         mortality.save()
         messages.success(request, 'Mortality record updated!')
         return redirect('laying_flock_list')
-    return render(request, 'laying_flock/mortality_edit.html', {'mortality': mortality})
+    buildings = Building.objects.filter(type='Laying')
+    causes    = Cause.objects.all()
+    return render(request, 'laying_flock/mortality_edit.html', {
+        'mortality': mortality,
+        'buildings': buildings,
+        'causes':    causes,
+    })

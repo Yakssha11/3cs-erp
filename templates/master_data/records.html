@@ -1,0 +1,228 @@
+{% extends 'base.html' %}
+{% load auth_extras %}
+
+{% block page_title %}Master Data — Records{% endblock %}
+
+{% block content %}
+
+{% if messages %}
+{% for message in messages %}
+<div class="mb-4 px-4 py-3 rounded-lg text-sm font-semibold
+    {% if message.tags == 'error' %}bg-red-900/40 text-red-400 border border-red-800
+    {% else %}bg-green-900/40 text-green-400 border border-green-800{% endif %}">
+    {{ message }}
+</div>
+{% endfor %}
+{% endif %}
+
+<!-- header -->
+<div class="flex items-center justify-between mb-6">
+    <div>
+        <h1 class="text-2xl font-bold text-white">📋 Master Data — Records</h1>
+        <p class="text-muted text-sm mt-1">View and export customers and suppliers</p>
+    </div>
+    <a href="?tab={{ active_tab }}&search={{ search }}&export=1"
+       class="bg-[#196E78] hover:bg-[#145960] text-white text-sm font-bold px-4 py-2 rounded-lg transition-all">
+        📥 Export XLSX
+    </a>
+</div>
+
+<!-- tabs -->
+<div class="flex gap-2 mb-6">
+    <button onclick="showTab('customers')" id="btn-customers"
+            class="tab-btn px-4 py-2 rounded-lg text-xs font-bold transition-all border">
+        👥 Customers
+    </button>
+    <button onclick="showTab('suppliers')" id="btn-suppliers"
+            class="tab-btn px-4 py-2 rounded-lg text-xs font-bold transition-all border">
+        🏭 Suppliers
+    </button>
+</div>
+
+<!-- ── CUSTOMERS TAB ──────────────────────────────────── -->
+<div id="tab-customers" class="tab-content hidden">
+
+    <!-- search -->
+    <form method="GET" class="mb-4">
+        <input type="hidden" name="tab" value="customers">
+        <input type="text" name="search" value="{{ search }}"
+               placeholder="🔍  Search customers..."
+               onchange="this.form.submit()"
+               class="w-full bg-sidebar border border-border rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-blue">
+    </form>
+
+    <!-- table -->
+    <div class="bg-sidebar border border-border rounded-xl">
+        <div class="px-4 py-3 border-b border-border flex items-center justify-between">
+            <h2 class="text-sm font-bold text-white">👥 Customers</h2>
+            <span class="text-xs text-muted">{{ customers.paginator.count }} total</span>
+        </div>
+        <div class="overflow-x-auto">
+        <table class="w-full text-sm whitespace-nowrap">
+            <thead>
+                <tr class="border-b border-border text-muted text-xs uppercase tracking-wider">
+                    <th class="px-4 py-3 text-left">Name</th>
+                    <th class="px-4 py-3 text-left">Type</th>
+                    <th class="px-4 py-3 text-left">Contact</th>
+                    <th class="px-4 py-3 text-left">Address</th>
+                    <th class="px-4 py-3 text-left">Date Added</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for customer in customers %}
+                <tr class="border-b border-border hover:bg-content transition-all">
+                    <td class="px-4 py-3 text-white font-semibold">{{ customer.name }}</td>
+                    <td class="px-4 py-3">
+                        <span class="px-2 py-1 rounded text-xs font-bold
+                            {% if customer.type == 'Wholesaler' %}bg-blue/20 text-blue
+                            {% elif customer.type == 'Retailer' %}bg-teal/20 text-teal
+                            {% else %}bg-amber/20 text-amber{% endif %}">
+                            {{ customer.type }}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3 text-muted">{{ customer.contact|default:"—" }}</td>
+                    <td class="px-4 py-3 text-muted">{{ customer.address|default:"—" }}</td>
+                    <td class="px-4 py-3 text-muted text-xs">{{ customer.Date|date:"Y-m-d" }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="px-4 py-8 text-center text-muted">
+                        No customers found.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+
+    <!-- pagination -->
+    {% if customers.has_other_pages %}
+    <div class="flex items-center justify-between mt-4">
+        <p class="text-xs text-muted">
+            Page {{ customers.number }} of {{ customers.paginator.num_pages }}
+        </p>
+        <div class="flex gap-2">
+            {% if customers.has_previous %}
+            <a href="?tab=customers&search={{ search }}&cpage={{ customers.previous_page_number }}"
+               class="px-3 py-1.5 rounded-lg text-xs font-bold bg-sidebar border border-border text-muted hover:border-blue transition-all">
+                ← Prev
+            </a>
+            {% endif %}
+            {% if customers.has_next %}
+            <a href="?tab=customers&search={{ search }}&cpage={{ customers.next_page_number }}"
+               class="px-3 py-1.5 rounded-lg text-xs font-bold bg-sidebar border border-border text-muted hover:border-blue transition-all">
+                Next →
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+
+<!-- ── SUPPLIERS TAB ──────────────────────────────────── -->
+<div id="tab-suppliers" class="tab-content hidden">
+
+    <!-- search -->
+    <form method="GET" class="mb-4">
+        <input type="hidden" name="tab" value="suppliers">
+        <input type="text" name="search" value="{{ search }}"
+               placeholder="🔍  Search suppliers..."
+               onchange="this.form.submit()"
+               class="w-full bg-sidebar border border-border rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-teal">
+    </form>
+
+    <!-- table -->
+    <div class="bg-sidebar border border-border rounded-xl">
+        <div class="px-4 py-3 border-b border-border flex items-center justify-between">
+            <h2 class="text-sm font-bold text-white">🏭 Suppliers</h2>
+            <span class="text-xs text-muted">{{ suppliers.paginator.count }} total</span>
+        </div>
+        <div class="overflow-x-auto">
+        <table class="w-full text-sm whitespace-nowrap">
+            <thead>
+                <tr class="border-b border-border text-muted text-xs uppercase tracking-wider">
+                    <th class="px-4 py-3 text-left">Name</th>
+                    <th class="px-4 py-3 text-left">Type</th>
+                    <th class="px-4 py-3 text-left">Contact</th>
+                    <th class="px-4 py-3 text-left">Address</th>
+                    <th class="px-4 py-3 text-left">Date Added</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for supplier in suppliers %}
+                <tr class="border-b border-border hover:bg-content transition-all">
+                    <td class="px-4 py-3 text-white font-semibold">{{ supplier.name }}</td>
+                    <td class="px-4 py-3">
+                        <span class="px-2 py-1 rounded text-xs font-bold
+                            {% if supplier.type == 'Hatchery' %}bg-green/20 text-green
+                            {% elif supplier.type == 'Feed Supplier' %}bg-amber/20 text-amber
+                            {% elif supplier.type == 'Medicine Supplier' %}bg-blue/20 text-blue
+                            {% else %}bg-muted/20 text-muted{% endif %}">
+                            {{ supplier.type }}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3 text-muted">{{ supplier.contact|default:"—" }}</td>
+                    <td class="px-4 py-3 text-muted">{{ supplier.address|default:"—" }}</td>
+                    <td class="px-4 py-3 text-muted text-xs">{{ supplier.Date|date:"Y-m-d" }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="px-4 py-8 text-center text-muted">
+                        No suppliers found.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+
+    <!-- pagination -->
+    {% if suppliers.has_other_pages %}
+    <div class="flex items-center justify-between mt-4">
+        <p class="text-xs text-muted">
+            Page {{ suppliers.number }} of {{ suppliers.paginator.num_pages }}
+        </p>
+        <div class="flex gap-2">
+            {% if suppliers.has_previous %}
+            <a href="?tab=suppliers&search={{ search }}&spage={{ suppliers.previous_page_number }}"
+               class="px-3 py-1.5 rounded-lg text-xs font-bold bg-sidebar border border-border text-muted hover:border-teal transition-all">
+                ← Prev
+            </a>
+            {% endif %}
+            {% if suppliers.has_next %}
+            <a href="?tab=suppliers&search={{ search }}&spage={{ suppliers.next_page_number }}"
+               class="px-3 py-1.5 rounded-lg text-xs font-bold bg-sidebar border border-border text-muted hover:border-teal transition-all">
+                Next →
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+
+<script>
+    const tabs = ['customers', 'suppliers']
+
+    function showTab(name) {
+        tabs.forEach(t => {
+            document.getElementById('tab-' + t).classList.add('hidden')
+            const btn = document.getElementById('btn-' + t)
+            btn.className = 'tab-btn px-4 py-2 rounded-lg text-xs font-bold transition-all border bg-sidebar text-muted border-border hover:border-blue'
+        })
+        document.getElementById('tab-' + name).classList.remove('hidden')
+        const activeBtn = document.getElementById('btn-' + name)
+        activeBtn.className = 'tab-btn px-4 py-2 rounded-lg text-xs font-bold transition-all border bg-blue text-white border-blue'
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const params = new URLSearchParams(window.location.search)
+        const tab    = params.get('tab') || 'customers'
+        showTab(tab)
+    })
+</script>
+
+{% endblock %}

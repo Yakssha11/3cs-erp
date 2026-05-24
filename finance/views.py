@@ -10,6 +10,7 @@ from django.http import HttpResponse
 
 @login_required
 def finance_list(request):
+    from erp_config.models import Building, Category
     # period filter
     period   = request.GET.get('period', 'all')
     finances = Finance.objects.all().order_by('-expense_date')
@@ -33,15 +34,18 @@ def finance_list(request):
 
     total     = sum(f.amount for f in finances)
 
-    # pagination — must be BEFORE return
-    paginator = Paginator(finances, 10)
-    page      = request.GET.get('page')
-    finances  = paginator.get_page(page)
+    paginator  = Paginator(finances, 10)
+    page       = request.GET.get('page')
+    finances   = paginator.get_page(page)
+    buildings  = Building.objects.all()
+    categories = Category.objects.all()
 
     return render(request, 'finance/list.html', {
-        'finances': finances,
-        'total':    total,
-        'period':   period,
+        'finances':   finances,
+        'total':      total,
+        'period':     period,
+        'buildings':  buildings,
+        'categories': categories,
     })
 
 @login_required

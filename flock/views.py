@@ -52,39 +52,38 @@ def auto_snapshot(flock):
 
 @login_required
 def flock_list(request):
+    from erp_config.models import Building, Cause
+    from master_data.models import Supplier
     flocks_all  = Flock.objects.all().order_by('-Date')
     mort_all    = Mortality.objects.all().order_by('-death_date')
-
     pag_flock   = Paginator(flocks_all, 10)
     pag_mort    = Paginator(mort_all, 10)
-
     flock_page  = request.GET.get('flock_page')
     mort_page   = request.GET.get('mort_page')
-
     flocks      = pag_flock.get_page(flock_page)
     mortalities = pag_mort.get_page(mort_page)
-
-    # auto generate snapshots for each flock
     for flock in flocks_all:
         if flock.date_placed:
             flock.age_days = (date.today() - flock.date_placed).days
             auto_snapshot(flock)
         else:
             flock.age_days = 0
-
-    # also set age_days on paginated flocks
     for flock in flocks:
         if flock.date_placed:
             flock.age_days = (date.today() - flock.date_placed).days
         else:
             flock.age_days = 0
-
     snapshots = FlockSnapshot.objects.all().order_by('flock', 'week_number')
-
+    buildings  = Building.objects.filter(type='Growing')
+    causes     = Cause.objects.all()
+    suppliers  = Supplier.objects.all()
     return render(request, 'flock/list.html', {
         'flocks':      flocks,
         'mortalities': mortalities,
         'snapshots':   snapshots,
+        'buildings':   buildings,
+        'causes':      causes,
+        'suppliers':   suppliers,
     })
 
 @login_required
@@ -167,6 +166,8 @@ def mortality_delete(request, pk):
 
 @login_required
 def flock_update(request, pk):
+    from erp_config.models import Building
+    from master_data.models import Supplier
     flock = get_object_or_404(Flock, pk=pk)
     if request.method == 'POST':
         flock.batch_name    = request.POST['batch_name']
@@ -180,7 +181,13 @@ def flock_update(request, pk):
         flock.save()
         messages.success(request, f'"{flock.batch_name}" updated successfully!')
         return redirect('flock_list')
-    return render(request, 'flock/edit.html', {'flock': flock})
+    buildings = Building.objects.filter(type='Growing')
+    suppliers = Supplier.objects.all()
+    return render(request, 'flock/edit.html', {
+        'flock':     flock,
+        'buildings': buildings,
+        'suppliers': suppliers,
+    })
 
 @login_required
 def mortality_update(request, pk):

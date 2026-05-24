@@ -1,0 +1,236 @@
+{% extends 'base.html' %}
+{% load auth_extras %}
+
+{% block page_title %}Sales Analytics{% endblock %}
+
+{% block content %}
+
+<style>
+    @keyframes fadeInUp {
+        from { opacity:0; transform:translateY(16px); }
+        to   { opacity:1; transform:translateY(0); }
+    }
+    .analytics-card {
+        opacity:0;
+        animation:fadeInUp 0.5s ease forwards;
+    }
+    .progress-bar {
+        width: 0%;
+        transition: width 1.2s ease;
+    }
+</style>
+
+<!-- header -->
+<div class="flex items-center justify-between mb-6">
+    <div>
+        <h1 class="text-2xl font-bold text-white">📈 Sales Analytics</h1>
+        <p class="text-muted text-sm mt-1">Revenue vs targets and net profit per batch/building</p>
+    </div>
+    <span class="text-xs text-muted" id="last-updated"></span>
+</div>
+
+<!-- toggle -->
+<div class="flex gap-3 mb-6">
+    <button onclick="showTab('growing')" id="btn-growing"
+            class="px-6 py-2 rounded-lg text-sm font-bold transition-all bg-teal text-white">
+        🌱 Growing
+    </button>
+    <button onclick="showTab('laying')" id="btn-laying"
+            class="px-6 py-2 rounded-lg text-sm font-bold transition-all bg-sidebar border border-border text-muted">
+        🥚 Laying
+    </button>
+</div>
+
+<!-- ── GROWING TAB ─────────────────────────────────────── -->
+<div id="tab-growing">
+    {% if growing_data %}
+        {% for item in growing_data %}
+        <div class="analytics-card bg-sidebar border border-border rounded-xl p-6 mb-4"
+             style="animation-delay: {{ forloop.counter0 }}00ms">
+
+            <!-- header -->
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h2 class="text-white font-bold">🐔 {{ item.name }}</h2>
+                    {% if item.period_start %}
+                    <p class="text-muted text-xs mt-0.5">📅 {{ item.period_start }} → {{ item.period_end }}</p>
+                    {% else %}
+                    <p class="text-muted text-xs mt-0.5">No active target period</p>
+                    {% endif %}
+                </div>
+                <span class="px-3 py-1 rounded-lg text-sm font-bold
+                    {% if item.pct >= 100 %}bg-green-900/40 text-green
+                    {% elif item.pct >= 70 %}bg-yellow-900/40 text-yellow-400
+                    {% else %}bg-red-900/40 text-red-400{% endif %}">
+                    {{ item.pct }}%
+                </span>
+            </div>
+
+            <!-- progress bar -->
+            <div class="w-full bg-content rounded-full h-3 mb-4">
+                <div class="progress-bar h-3 rounded-full
+                    {% if item.pct >= 100 %}bg-green
+                    {% elif item.pct >= 70 %}bg-yellow-500
+                    {% else %}bg-red-500{% endif %}"
+                     data-width="{{ item.pct }}">
+                </div>
+            </div>
+
+            <!-- KPIs -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="bg-content rounded-xl p-4 text-center">
+                    <p class="text-xs text-muted mb-1">Revenue</p>
+                    <p class="text-lg font-bold text-green">₱{{ item.revenue|floatformat:2 }}</p>
+                </div>
+                <div class="bg-content rounded-xl p-4 text-center">
+                    <p class="text-xs text-muted mb-1">Target</p>
+                    <p class="text-lg font-bold text-blue">
+                        {% if item.target > 0 %}₱{{ item.target|floatformat:2 }}{% else %}—{% endif %}
+                    </p>
+                </div>
+                <div class="bg-content rounded-xl p-4 text-center">
+                    <p class="text-xs text-muted mb-1">Expenses</p>
+                    <p class="text-lg font-bold text-red-400">₱{{ item.expenses|floatformat:2 }}</p>
+                </div>
+                <div class="bg-content rounded-xl p-4 text-center">
+                    <p class="text-xs text-muted mb-1">Net Profit</p>
+                    <p class="text-lg font-bold {% if item.net >= 0 %}text-green{% else %}text-red-400{% endif %}">
+                        ₱{{ item.net|floatformat:2 }}
+                    </p>
+                </div>
+            </div>
+
+            {% if item.target > 0 and item.gap > 0 %}
+            <div class="mt-3 px-4 py-2 bg-red-900/20 border border-red-900/40 rounded-lg">
+                <p class="text-red-400 text-xs font-semibold">
+                    ⚠️ Behind target by ₱{{ item.gap|floatformat:2 }}
+                </p>
+            </div>
+            {% elif item.target > 0 and item.pct >= 100 %}
+            <div class="mt-3 px-4 py-2 bg-green-900/20 border border-green-900/40 rounded-lg">
+                <p class="text-green text-xs font-semibold">
+                    ✅ Target achieved!
+                </p>
+            </div>
+            {% endif %}
+
+        </div>
+        {% endfor %}
+    {% else %}
+    <div class="bg-sidebar border border-border rounded-xl px-4 py-8 text-center text-muted">
+        No growing sales data yet. <a href="{% url 'growing_sales' %}" class="text-teal underline">Record a sale</a> or
+        <a href="{% url 'config' %}?tab=targets" class="text-teal underline">set a target in Config</a>.
+    </div>
+    {% endif %}
+</div>
+
+<!-- ── LAYING TAB ──────────────────────────────────────── -->
+<div id="tab-laying" class="hidden">
+    {% if laying_data %}
+        {% for item in laying_data %}
+        <div class="analytics-card bg-sidebar border border-border rounded-xl p-6 mb-4"
+             style="animation-delay: {{ forloop.counter0 }}00ms">
+
+            <!-- header -->
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h2 class="text-white font-bold">🥚 {{ item.name }}</h2>
+                    {% if item.period_start %}
+                    <p class="text-muted text-xs mt-0.5">📅 {{ item.period_start }} → {{ item.period_end }}</p>
+                    {% else %}
+                    <p class="text-muted text-xs mt-0.5">No active target period</p>
+                    {% endif %}
+                </div>
+                <span class="px-3 py-1 rounded-lg text-sm font-bold
+                    {% if item.pct >= 100 %}bg-green-900/40 text-green
+                    {% elif item.pct >= 70 %}bg-yellow-900/40 text-yellow-400
+                    {% else %}bg-red-900/40 text-red-400{% endif %}">
+                    {{ item.pct }}%
+                </span>
+            </div>
+
+            <!-- progress bar -->
+            <div class="w-full bg-content rounded-full h-3 mb-4">
+                <div class="progress-bar h-3 rounded-full
+                    {% if item.pct >= 100 %}bg-green
+                    {% elif item.pct >= 70 %}bg-yellow-500
+                    {% else %}bg-red-500{% endif %}"
+                     data-width="{{ item.pct }}">
+                </div>
+            </div>
+
+            <!-- KPIs -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="bg-content rounded-xl p-4 text-center">
+                    <p class="text-xs text-muted mb-1">Revenue</p>
+                    <p class="text-lg font-bold text-amber">₱{{ item.revenue|floatformat:2 }}</p>
+                </div>
+                <div class="bg-content rounded-xl p-4 text-center">
+                    <p class="text-xs text-muted mb-1">Target</p>
+                    <p class="text-lg font-bold text-blue">
+                        {% if item.target > 0 %}₱{{ item.target|floatformat:2 }}{% else %}—{% endif %}
+                    </p>
+                </div>
+                <div class="bg-content rounded-xl p-4 text-center">
+                    <p class="text-xs text-muted mb-1">Expenses</p>
+                    <p class="text-lg font-bold text-red-400">₱{{ item.expenses|floatformat:2 }}</p>
+                </div>
+                <div class="bg-content rounded-xl p-4 text-center">
+                    <p class="text-xs text-muted mb-1">Net Profit</p>
+                    <p class="text-lg font-bold {% if item.net >= 0 %}text-green{% else %}text-red-400{% endif %}">
+                        ₱{{ item.net|floatformat:2 }}
+                    </p>
+                </div>
+            </div>
+
+            {% if item.target > 0 and item.gap > 0 %}
+            <div class="mt-3 px-4 py-2 bg-red-900/20 border border-red-900/40 rounded-lg">
+                <p class="text-red-400 text-xs font-semibold">
+                    ⚠️ Behind target by ₱{{ item.gap|floatformat:2 }}
+                </p>
+            </div>
+            {% elif item.target > 0 and item.pct >= 100 %}
+            <div class="mt-3 px-4 py-2 bg-green-900/20 border border-green-900/40 rounded-lg">
+                <p class="text-green text-xs font-semibold">
+                    ✅ Target achieved!
+                </p>
+            </div>
+            {% endif %}
+
+        </div>
+        {% endfor %}
+    {% else %}
+    <div class="bg-sidebar border border-border rounded-xl px-4 py-8 text-center text-muted">
+        No laying sales data yet. <a href="{% url 'laying_sales' %}" class="text-amber underline">Record a sale</a> or
+        <a href="{% url 'config' %}?tab=targets" class="text-amber underline">set a target in Config</a>.
+    </div>
+    {% endif %}
+</div>
+
+<script>
+    document.getElementById('last-updated').textContent =
+        'Updated: ' + new Date().toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' })
+
+    setTimeout(() => {
+        document.querySelectorAll('.progress-bar').forEach(bar => {
+            bar.style.width = bar.getAttribute('data-width') + '%'
+        })
+    }, 300)
+
+    function showTab(tab) {
+        document.getElementById('tab-growing').classList.add('hidden')
+        document.getElementById('tab-laying').classList.add('hidden')
+        document.getElementById('tab-' + tab).classList.remove('hidden')
+
+        document.getElementById('btn-growing').className = 'px-6 py-2 rounded-lg text-sm font-bold transition-all bg-sidebar border border-border text-muted'
+        document.getElementById('btn-laying').className  = 'px-6 py-2 rounded-lg text-sm font-bold transition-all bg-sidebar border border-border text-muted'
+
+        if (tab === 'growing') {
+            document.getElementById('btn-growing').className = 'px-6 py-2 rounded-lg text-sm font-bold transition-all bg-teal text-white'
+        } else {
+            document.getElementById('btn-laying').className = 'px-6 py-2 rounded-lg text-sm font-bold transition-all bg-amber text-white'
+        }
+    }
+</script>
+
+{% endblock %}

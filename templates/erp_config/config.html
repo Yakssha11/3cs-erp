@@ -5,7 +5,6 @@
 
 {% block content %}
 
-<!-- messages -->
 {% if messages %}
 {% for message in messages %}
 <div class="mb-4 px-4 py-3 rounded-lg text-sm font-semibold
@@ -22,109 +21,597 @@
     <p class="text-muted text-sm mt-1">Manage system settings — Admin only</p>
 </div>
 
-<!-- current price card -->
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+<!-- tabs -->
+<div class="flex gap-2 mb-6 flex-wrap">
+    <button onclick="showTab('price')" id="btn-price"
+            class="tab-btn px-4 py-2 rounded-lg text-xs font-bold transition-all border">
+        🥚 Egg Price
+    </button>
+    <button onclick="showTab('buildings')" id="btn-buildings"
+            class="tab-btn px-4 py-2 rounded-lg text-xs font-bold transition-all border">
+        🏗️ Buildings
+    </button>
+    <button onclick="showTab('categories')" id="btn-categories"
+            class="tab-btn px-4 py-2 rounded-lg text-xs font-bold transition-all border">
+        📦 Categories
+    </button>
+    <button onclick="showTab('units')" id="btn-units"
+            class="tab-btn px-4 py-2 rounded-lg text-xs font-bold transition-all border">
+        ⚖️ Units
+    </button>
+    <button onclick="showTab('causes')" id="btn-causes"
+            class="tab-btn px-4 py-2 rounded-lg text-xs font-bold transition-all border">
+        ☠️ Causes
+    </button>
+    <button onclick="showTab('targets')" id="btn-targets"
+            class="tab-btn px-4 py-2 rounded-lg text-xs font-bold transition-all border">
+        🎯 Sales Targets
+    </button>
+    <button onclick="showTab('chicken_price')" id="btn-chicken_price"
+            class="tab-btn px-4 py-2 rounded-lg text-xs font-bold transition-all border">
+        🐔 Chicken Price
+    </button>
+</div>
 
-    <!-- current price -->
-    <div class="bg-sidebar border border-border rounded-xl p-6">
-        <h2 class="text-sm font-bold text-muted uppercase tracking-wider mb-4">
-            🥚 Current Egg Price
-        </h2>
-        {% if current_price %}
-        <div class="flex items-end gap-3 mb-2">
-            <p class="text-5xl font-bold text-green">₱{{ current_price.price_per_egg }}</p>
-            <p class="text-muted text-sm mb-2">per egg</p>
-        </div>
-        <p class="text-muted text-xs">
-            Effective since: {{ current_price.effective_date }}
-        </p>
-        <p class="text-muted text-xs">
-            Set by: {{ current_price.set_by }}
-        </p>
-        {% else %}
-        <p class="text-muted text-sm">No price set yet. Set one below.</p>
-        {% endif %}
-    </div>
-
-    <!-- set new price form -->
-    <div class="bg-sidebar border border-border rounded-xl p-6">
-        <h2 class="text-sm font-bold text-muted uppercase tracking-wider mb-4">
-            Set New Price
-        </h2>
-        <form method="POST" action="{% url 'config_save' %}">
-            {% csrf_token %}
-            <div class="mb-4">
-                <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">
-                    Price per Egg (₱)
-                </label>
-                <input type="number" name="price_per_egg" step="0.01" required
-                       placeholder="e.g. 8.00"
-                       class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-green">
+<!-- ── EGG PRICE TAB ──────────────────────────────────── -->
+<div id="tab-price" class="tab-content hidden">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <div class="bg-sidebar border border-border rounded-xl p-6">
+            <h2 class="text-sm font-bold text-muted uppercase tracking-wider mb-4">🥚 Current Egg Price</h2>
+            {% if current_price %}
+            <div class="flex items-end gap-3 mb-2">
+                <p class="text-5xl font-bold text-green">₱{{ current_price.price_per_egg }}</p>
+                <p class="text-muted text-sm mb-2">per egg</p>
             </div>
-            <div class="mb-4">
-                <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">
-                    Effective Date
-                </label>
-                <input type="date" name="effective_date" required
-                       class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-green">
+            <p class="text-muted text-xs">Effective since: {{ current_price.effective_date }}</p>
+            <p class="text-muted text-xs">Set by: {{ current_price.set_by }}</p>
+            {% else %}
+            <p class="text-muted text-sm">No price set yet. Set one below.</p>
+            {% endif %}
+        </div>
+        <div class="bg-sidebar border border-border rounded-xl p-6">
+            <h2 class="text-sm font-bold text-muted uppercase tracking-wider mb-4">Set New Price</h2>
+            <form method="POST" action="{% url 'config_save' %}">
+                {% csrf_token %}
+                <div class="mb-4">
+                    <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Price per Egg (₱)</label>
+                    <input type="number" name="price_per_egg" step="0.01" required placeholder="e.g. 8.00"
+                           class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-green">
+                </div>
+                <div class="mb-4">
+                    <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Effective Date</label>
+                    <input type="date" name="effective_date" required
+                           class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-green">
+                </div>
+                <button type="submit"
+                        class="w-full bg-green hover:bg-[#27AE60] text-white text-sm font-bold py-2 rounded-lg transition-all">
+                    Save New Price
+                </button>
+            </form>
+        </div>
+    </div>
+    <div class="bg-sidebar border border-border rounded-xl">
+        <div class="px-4 py-3 border-b border-border">
+            <h2 class="text-sm font-bold text-white">📋 Price History</h2>
+        </div>
+        <div class="overflow-x-auto">
+        <table class="w-full text-sm whitespace-nowrap">
+            <thead>
+                <tr class="border-b border-border text-muted text-xs uppercase tracking-wider">
+                    <th class="px-4 py-3 text-left">Effective Date</th>
+                    <th class="px-4 py-3 text-left">Price per Egg</th>
+                    <th class="px-4 py-3 text-left">Set By</th>
+                    <th class="px-4 py-3 text-left">Date Added</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for price in price_history %}
+                <tr class="border-b border-border hover:bg-content transition-all
+                           {% if forloop.first %}bg-green-900/10{% endif %}">
+                    <td class="px-4 py-3 text-white font-semibold">
+                        {{ price.effective_date }}
+                        {% if forloop.first %}
+                        <span class="ml-2 px-2 py-0.5 rounded text-xs bg-green-900/40 text-green">Current</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-4 py-3 text-green font-bold">₱{{ price.price_per_egg }}</td>
+                    <td class="px-4 py-3 text-muted">{{ price.set_by }}</td>
+                    <td class="px-4 py-3 text-muted text-xs">{{ price.Date|date:"Y-m-d H:i" }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" class="px-4 py-8 text-center text-muted">No price history yet.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+</div>
+
+<!-- ── BUILDINGS TAB ──────────────────────────────────── -->
+<div id="tab-buildings" class="tab-content hidden">
+    <div class="bg-sidebar border border-border rounded-xl p-6 mb-6">
+        <h2 class="text-sm font-bold text-muted uppercase tracking-wider mb-4">Add Building</h2>
+        <form method="POST" action="{% url 'building_save' %}">
+            {% csrf_token %}
+            <div class="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                    <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Building Name</label>
+                    <input type="text" name="name" required placeholder="e.g. Growing House 3"
+                           class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-green">
+                </div>
+                <div>
+                    <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Type</label>
+                    <select name="type" required
+                            class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-green">
+                        <option value="">Select type</option>
+                        <option value="Growing">Growing</option>
+                        <option value="Laying">Laying</option>
+                        <option value="General">General</option>
+                    </select>
+                </div>
             </div>
             <button type="submit"
-                    class="w-full bg-[#2ECC71] hover:bg-[#27AE60] text-white text-sm font-bold py-2 rounded-lg transition-all">
-                Save New Price
+                    class="bg-green hover:bg-[#27AE60] text-white text-sm font-bold px-6 py-2 rounded-lg transition-all">
+                + Add Building
+            </button>
+        </form>
+    </div>
+    <div class="bg-sidebar border border-border rounded-xl">
+        <div class="px-4 py-3 border-b border-border">
+            <h2 class="text-sm font-bold text-white">🏗️ Buildings</h2>
+        </div>
+        <div class="overflow-x-auto">
+        <table class="w-full text-sm whitespace-nowrap">
+            <thead>
+                <tr class="border-b border-border text-muted text-xs uppercase tracking-wider">
+                    <th class="px-4 py-3 text-left">Name</th>
+                    <th class="px-4 py-3 text-left">Type</th>
+                    <th class="px-4 py-3 text-left">Status</th>
+                    <th class="px-4 py-3 text-left">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for building in buildings %}
+                <tr class="border-b border-border hover:bg-content transition-all">
+                    <td class="px-4 py-3 text-white font-semibold">{{ building.name }}</td>
+                    <td class="px-4 py-3">
+                        <span class="px-2 py-1 rounded text-xs font-bold
+                            {% if building.type == 'Growing' %}bg-teal/20 text-teal
+                            {% elif building.type == 'Laying' %}bg-amber/20 text-amber
+                            {% else %}bg-blue/20 text-blue{% endif %}">
+                            {{ building.type }}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3">
+                        <span class="px-2 py-1 rounded text-xs font-bold
+                            {% if building.is_active %}bg-green-900/40 text-green{% else %}bg-red-900/40 text-red-400{% endif %}">
+                            {% if building.is_active %}Active{% else %}Inactive{% endif %}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3">
+                        <form method="POST" action="{% url 'building_delete' building.pk %}"
+                              onsubmit="return confirm('Delete {{ building.name }}?')"
+                              style="margin:0;padding:0;display:inline;">
+                            {% csrf_token %}
+                            <button type="submit"
+                                    class="text-red-400 hover:text-red-300 text-xs font-bold transition-all">
+                                Delete
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" class="px-4 py-8 text-center text-muted">No buildings yet. Add one above.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+</div>
+
+<!-- ── CATEGORIES TAB ─────────────────────────────────── -->
+<div id="tab-categories" class="tab-content hidden">
+    <div class="bg-sidebar border border-border rounded-xl p-6 mb-6">
+        <h2 class="text-sm font-bold text-muted uppercase tracking-wider mb-4">Add Category</h2>
+        <form method="POST" action="{% url 'category_save' %}">
+            {% csrf_token %}
+            <div class="flex gap-4">
+                <input type="text" name="name" required placeholder="e.g. Medicine"
+                       class="flex-1 bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-green">
+                <button type="submit"
+                        class="bg-green hover:bg-[#27AE60] text-white text-sm font-bold px-6 py-2 rounded-lg transition-all">
+                    + Add
+                </button>
+            </div>
+        </form>
+    </div>
+    <div class="bg-sidebar border border-border rounded-xl">
+        <div class="px-4 py-3 border-b border-border">
+            <h2 class="text-sm font-bold text-white">📦 Categories</h2>
+        </div>
+        <div class="overflow-x-auto">
+        <table class="w-full text-sm whitespace-nowrap">
+            <thead>
+                <tr class="border-b border-border text-muted text-xs uppercase tracking-wider">
+                    <th class="px-4 py-3 text-left">Name</th>
+                    <th class="px-4 py-3 text-left">Date Added</th>
+                    <th class="px-4 py-3 text-left">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for category in categories %}
+                <tr class="border-b border-border hover:bg-content transition-all">
+                    <td class="px-4 py-3 text-white font-semibold">{{ category.name }}</td>
+                    <td class="px-4 py-3 text-muted text-xs">{{ category.Date|date:"Y-m-d" }}</td>
+                    <td class="px-4 py-3">
+                        <form method="POST" action="{% url 'category_delete' category.pk %}"
+                              onsubmit="return confirm('Delete {{ category.name }}?')"
+                              style="margin:0;padding:0;display:inline;">
+                            {% csrf_token %}
+                            <button type="submit"
+                                    class="text-red-400 hover:text-red-300 text-xs font-bold transition-all">
+                                Delete
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="3" class="px-4 py-8 text-center text-muted">No categories yet. Add one above.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+</div>
+
+<!-- ── UNITS TAB ──────────────────────────────────────── -->
+<div id="tab-units" class="tab-content hidden">
+    <div class="bg-sidebar border border-border rounded-xl p-6 mb-6">
+        <h2 class="text-sm font-bold text-muted uppercase tracking-wider mb-4">Add Unit</h2>
+        <form method="POST" action="{% url 'unit_save' %}">
+            {% csrf_token %}
+            <div class="flex gap-4">
+                <input type="text" name="name" required placeholder="e.g. kg"
+                       class="flex-1 bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-green">
+                <button type="submit"
+                        class="bg-green hover:bg-[#27AE60] text-white text-sm font-bold px-6 py-2 rounded-lg transition-all">
+                    + Add
+                </button>
+            </div>
+        </form>
+    </div>
+    <div class="bg-sidebar border border-border rounded-xl">
+        <div class="px-4 py-3 border-b border-border">
+            <h2 class="text-sm font-bold text-white">⚖️ Units</h2>
+        </div>
+        <div class="overflow-x-auto">
+        <table class="w-full text-sm whitespace-nowrap">
+            <thead>
+                <tr class="border-b border-border text-muted text-xs uppercase tracking-wider">
+                    <th class="px-4 py-3 text-left">Name</th>
+                    <th class="px-4 py-3 text-left">Date Added</th>
+                    <th class="px-4 py-3 text-left">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for unit in units %}
+                <tr class="border-b border-border hover:bg-content transition-all">
+                    <td class="px-4 py-3 text-white font-semibold">{{ unit.name }}</td>
+                    <td class="px-4 py-3 text-muted text-xs">{{ unit.Date|date:"Y-m-d" }}</td>
+                    <td class="px-4 py-3">
+                        <form method="POST" action="{% url 'unit_delete' unit.pk %}"
+                              onsubmit="return confirm('Delete {{ unit.name }}?')"
+                              style="margin:0;padding:0;display:inline;">
+                            {% csrf_token %}
+                            <button type="submit"
+                                    class="text-red-400 hover:text-red-300 text-xs font-bold transition-all">
+                                Delete
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="3" class="px-4 py-8 text-center text-muted">No units yet. Add one above.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+</div>
+
+<!-- ── CAUSES TAB ─────────────────────────────────────── -->
+<div id="tab-causes" class="tab-content hidden">
+    <div class="bg-sidebar border border-border rounded-xl p-6 mb-6">
+        <h2 class="text-sm font-bold text-muted uppercase tracking-wider mb-4">Add Cause of Death</h2>
+        <form method="POST" action="{% url 'cause_save' %}">
+            {% csrf_token %}
+            <div class="flex gap-4">
+                <input type="text" name="name" required placeholder="e.g. Disease"
+                       class="flex-1 bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-green">
+                <button type="submit"
+                        class="bg-green hover:bg-[#27AE60] text-white text-sm font-bold px-6 py-2 rounded-lg transition-all">
+                    + Add
+                </button>
+            </div>
+        </form>
+    </div>
+    <div class="bg-sidebar border border-border rounded-xl">
+        <div class="px-4 py-3 border-b border-border">
+            <h2 class="text-sm font-bold text-white">☠️ Causes of Death</h2>
+        </div>
+        <div class="overflow-x-auto">
+        <table class="w-full text-sm whitespace-nowrap">
+            <thead>
+                <tr class="border-b border-border text-muted text-xs uppercase tracking-wider">
+                    <th class="px-4 py-3 text-left">Name</th>
+                    <th class="px-4 py-3 text-left">Date Added</th>
+                    <th class="px-4 py-3 text-left">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for cause in causes %}
+                <tr class="border-b border-border hover:bg-content transition-all">
+                    <td class="px-4 py-3 text-white font-semibold">{{ cause.name }}</td>
+                    <td class="px-4 py-3 text-muted text-xs">{{ cause.Date|date:"Y-m-d" }}</td>
+                    <td class="px-4 py-3">
+                        <form method="POST" action="{% url 'cause_delete' cause.pk %}"
+                              onsubmit="return confirm('Delete {{ cause.name }}?')"
+                              style="margin:0;padding:0;display:inline;">
+                            {% csrf_token %}
+                            <button type="submit"
+                                    class="text-red-400 hover:text-red-300 text-xs font-bold transition-all">
+                                Delete
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="3" class="px-4 py-8 text-center text-muted">No causes yet. Add one above.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+</div>
+
+<!-- ── SALES TARGETS TAB ──────────────────────────────── -->
+<div id="tab-targets" class="tab-content hidden">
+    <div class="bg-sidebar border border-border rounded-xl p-6 mb-6">
+        <h2 class="text-sm font-bold text-muted uppercase tracking-wider mb-4">Set Sales Target</h2>
+        <form method="POST" action="{% url 'target_save' %}">
+            {% csrf_token %}
+            <div class="grid grid-cols-2 gap-4 mb-4">
+
+                <div>
+                    <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Type</label>
+                    <select name="type" id="targetType" required onchange="toggleBuildingSelect()"
+                            class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-green">
+                        <option value="">Select type</option>
+                        <option value="Growing">Growing (All Houses Combined)</option>
+                        <option value="Laying">Laying (Per Building)</option>
+                    </select>
+                </div>
+
+                <div id="buildingSelectDiv">
+                    <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Building <span class="text-muted">(Laying only)</span></label>
+                    <select name="building"
+                            class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-green">
+                        <option value="">All Growing Houses</option>
+                        {% for building in buildings %}
+                        {% if building.type == 'Laying' %}
+                        <option value="{{ building.name }}">{{ building.name }}</option>
+                        {% endif %}
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Period Start</label>
+                    <input type="date" name="period_start" required
+                           class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-green">
+                </div>
+
+                <div>
+                    <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Period End</label>
+                    <input type="date" name="period_end" required
+                           class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-green">
+                </div>
+
+                <div class="col-span-2">
+                    <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Target Revenue (₱)</label>
+                    <input type="number" name="target_revenue" step="0.01" required placeholder="e.g. 500000"
+                           class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-green">
+                </div>
+
+            </div>
+            <button type="submit"
+                    class="bg-green hover:bg-[#27AE60] text-white text-sm font-bold px-6 py-2 rounded-lg transition-all">
+                Set Target
             </button>
         </form>
     </div>
 
+    <div class="bg-sidebar border border-border rounded-xl">
+        <div class="px-4 py-3 border-b border-border">
+            <h2 class="text-sm font-bold text-white">🎯 Sales Targets</h2>
+        </div>
+        <div class="overflow-x-auto">
+        <table class="w-full text-sm whitespace-nowrap">
+            <thead>
+                <tr class="border-b border-border text-muted text-xs uppercase tracking-wider">
+                    <th class="px-4 py-3 text-left">Type</th>
+                    <th class="px-4 py-3 text-left">Building</th>
+                    <th class="px-4 py-3 text-left">Period</th>
+                    <th class="px-4 py-3 text-left">Target Revenue</th>
+                    <th class="px-4 py-3 text-left">Set By</th>
+                    <th class="px-4 py-3 text-left">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for target in targets %}
+                <tr class="border-b border-border hover:bg-content transition-all">
+                    <td class="px-4 py-3">
+                        <span class="px-2 py-1 rounded text-xs font-bold
+                            {% if target.type == 'Growing' %}bg-teal/20 text-teal
+                            {% else %}bg-amber/20 text-amber{% endif %}">
+                            {{ target.type }}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3 text-white font-semibold">
+                        {% if target.type == 'Growing' %}All Growing Houses{% else %}{{ target.building }}{% endif %}
+                    </td>
+                    <td class="px-4 py-3 text-muted text-xs">{{ target.period_start }} → {{ target.period_end }}</td>
+                    <td class="px-4 py-3 text-green font-bold">₱{{ target.target_revenue|floatformat:2 }}</td>
+                    <td class="px-4 py-3 text-muted">{{ target.set_by }}</td>
+                    <td class="px-4 py-3">
+                        <form method="POST" action="{% url 'target_delete' target.pk %}"
+                              onsubmit="return confirm('Delete this target?')"
+                              style="margin:0;padding:0;display:inline;">
+                            {% csrf_token %}
+                            <button type="submit"
+                                    class="text-red-400 hover:text-red-300 text-xs font-bold transition-all">
+                                Delete
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="px-4 py-8 text-center text-muted">
+                        No targets set yet. Add one above.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
 </div>
 
-<!-- price history -->
-<div class="bg-sidebar border border-border rounded-xl">
-    <div class="px-4 py-3 border-b border-border">
-        <h2 class="text-sm font-bold text-white">📋 Price History</h2>
+<!-- ── CHICKEN PRICE TAB ──────────────────────────────── -->
+<div id="tab-chicken_price" class="tab-content hidden">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <div class="bg-sidebar border border-border rounded-xl p-6">
+            <h2 class="text-sm font-bold text-muted uppercase tracking-wider mb-4">🐔 Current Chicken Price</h2>
+            {% if current_chicken_price %}
+            <div class="flex items-end gap-3 mb-2">
+                <p class="text-5xl font-bold text-teal">₱{{ current_chicken_price.price_chicken }}</p>
+                <p class="text-muted text-sm mb-2">per chicken</p>
+            </div>
+            <p class="text-muted text-xs">Effective since: {{ current_chicken_price.effective_date }}</p>
+            <p class="text-muted text-xs">Set by: {{ current_chicken_price.set_by }}</p>
+            {% else %}
+            <p class="text-muted text-sm">No price set yet. Set one below.</p>
+            {% endif %}
+        </div>
+        <div class="bg-sidebar border border-border rounded-xl p-6">
+            <h2 class="text-sm font-bold text-muted uppercase tracking-wider mb-4">Set New Price</h2>
+            <form method="POST" action="{% url 'chicken_price_save' %}">
+                {% csrf_token %}
+                <div class="mb-4">
+                    <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Price per Chicken (₱)</label>
+                    <input type="number" name="price_chicken" step="0.01" required placeholder="e.g. 150.00"
+                           class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-teal">
+                </div>
+                <div class="mb-4">
+                    <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Effective Date</label>
+                    <input type="date" name="effective_date" required
+                           class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-teal">
+                </div>
+                <button type="submit"
+                        class="w-full bg-teal hover:bg-[#138A72] text-white text-sm font-bold py-2 rounded-lg transition-all">
+                    Save New Price
+                </button>
+            </form>
+        </div>
     </div>
-    <div class="overflow-x-auto">
-    <table class="w-full text-sm whitespace-nowrap">
-        <thead>
-            <tr class="border-b border-border text-muted text-xs uppercase tracking-wider">
-                <th class="px-4 py-3 text-left">Effective Date</th>
-                <th class="px-4 py-3 text-left">Price per Egg</th>
-                <th class="px-4 py-3 text-left">Set By</th>
-                <th class="px-4 py-3 text-left">Date Added</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for price in price_history %}
-            <tr class="border-b border-border hover:bg-content transition-all
-                       {% if forloop.first %}bg-green-900/10{% endif %}">
-                <td class="px-4 py-3 text-white font-semibold">
-                    {{ price.effective_date }}
-                    {% if forloop.first %}
-                    <span class="ml-2 px-2 py-0.5 rounded text-xs bg-green-900/40 text-green">Current</span>
-                    {% endif %}
-                </td>
-                <td class="px-4 py-3 text-green font-bold">₱{{ price.price_per_egg }}</td>
-                <td class="px-4 py-3 text-muted">{{ price.set_by }}</td>
-                <td class="px-4 py-3 text-muted text-xs">{{ price.Date|date:"Y-m-d H:i" }}</td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="4" class="px-4 py-8 text-center text-muted">
-                    No price history yet.
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+
+    <div class="bg-sidebar border border-border rounded-xl">
+        <div class="px-4 py-3 border-b border-border">
+            <h2 class="text-sm font-bold text-white">📋 Chicken Price History</h2>
+        </div>
+        <div class="overflow-x-auto">
+        <table class="w-full text-sm whitespace-nowrap">
+            <thead>
+                <tr class="border-b border-border text-muted text-xs uppercase tracking-wider">
+                    <th class="px-4 py-3 text-left">Effective Date</th>
+                    <th class="px-4 py-3 text-left">Price per Chicken</th>
+                    <th class="px-4 py-3 text-left">Set By</th>
+                    <th class="px-4 py-3 text-left">Date Added</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for price in chicken_price_history %}
+                <tr class="border-b border-border hover:bg-content transition-all
+                           {% if forloop.first %}bg-teal/10{% endif %}">
+                    <td class="px-4 py-3 text-white font-semibold">
+                        {{ price.effective_date }}
+                        {% if forloop.first %}
+                        <span class="ml-2 px-2 py-0.5 rounded text-xs bg-teal/20 text-teal">Current</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-4 py-3 text-teal font-bold">₱{{ price.price_chicken }}</td>
+                    <td class="px-4 py-3 text-muted">{{ price.set_by }}</td>
+                    <td class="px-4 py-3 text-muted text-xs">{{ price.Date|date:"Y-m-d H:i" }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" class="px-4 py-8 text-center text-muted">No price history yet.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
     </div>
 </div>
 
 <script>
-    // set today's date by default
+    const tabs = ['price', 'buildings', 'categories', 'units', 'causes', 'targets', 'chicken_price']
+
+    function showTab(name) {
+        tabs.forEach(t => {
+            document.getElementById('tab-' + t).classList.add('hidden')
+            const btn = document.getElementById('btn-' + t)
+            btn.className = 'tab-btn px-4 py-2 rounded-lg text-xs font-bold transition-all border bg-sidebar text-muted border-border hover:border-green'
+        })
+        document.getElementById('tab-' + name).classList.remove('hidden')
+        const activeBtn = document.getElementById('btn-' + name)
+        activeBtn.className = 'tab-btn px-4 py-2 rounded-lg text-xs font-bold transition-all border bg-green text-white border-green'
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
         const today = new Date().toISOString().split('T')[0]
         const dateInput = document.querySelector('input[name="effective_date"]')
         if (dateInput) dateInput.value = today
+
+        const params = new URLSearchParams(window.location.search)
+        const tab    = params.get('tab') || 'price'
+        showTab(tab)
     })
+
+    function toggleBuildingSelect() {
+        const type = document.getElementById('targetType').value
+        const div  = document.getElementById('buildingSelectDiv')
+        const select = div.querySelector('select')
+        if (type === 'Growing') {
+            select.value    = ''
+            select.disabled = true
+            div.style.opacity = '0.4'
+        } else {
+            select.disabled   = false
+            div.style.opacity = '1'
+        }
+    }
 </script>
 
 {% endblock %}

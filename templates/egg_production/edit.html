@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+{% load auth_extras %}
+
+{% block page_title %}Edit Egg Production{% endblock %}
+
+{% block content %}
+
+<div class="max-w-2xl mx-auto">
+    <div class="flex items-center gap-4 mb-6">
+        <a href="{% url 'egg_production_list' %}"
+           class="text-muted hover:text-white transition-all text-sm">
+            ← Back to Egg Production
+        </a>
+    </div>
+
+    <div class="bg-sidebar border border-border rounded-xl p-6">
+        <h1 class="text-xl font-bold text-white mb-1">✏️ Edit Egg Production</h1>
+        <p class="text-muted text-sm mb-6">Update this production record</p>
+
+        <form method="POST">
+            {% csrf_token %}
+            <div class="grid grid-cols-2 gap-4 mb-6">
+
+                <div>
+                    <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Building</label>
+                    <select name="building" required
+                            class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber">
+                        <option value="">Select building</option>
+                        {% for building in buildings %}
+                        <option value="{{ building.name }}" {% if production.building == building.name %}selected{% endif %}>
+                            {{ building.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Collection Date</label>
+                    <input type="date" name="collection_date" value="{{ production.collection_date }}" required
+                           class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber">
+                </div>
+
+                <div>
+                    <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Total Eggs</label>
+                    <input type="number" name="total_eggs" value="{{ production.total_eggs }}" required
+                           class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber">
+                </div>
+
+                <div>
+                    <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Good Eggs</label>
+                    <input type="number" name="good_eggs" value="{{ production.good_eggs }}" required
+                           class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber">
+                </div>
+
+                <div>
+                    <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Recorded By</label>
+                    <input type="text" name="recorded_by" value="{{ production.recorded_by }}" required
+                           class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber">
+                </div>
+
+                <div>
+                    <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Remarks</label>
+                    <input type="text" name="remarks" value="{{ production.remarks }}"
+                           class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber">
+                </div>
+
+            </div>
+
+            <!-- read only info -->
+            <div class="bg-content rounded-xl p-4 mb-4 grid grid-cols-3 gap-4 text-center">
+                <div>
+                    <p class="text-xs text-muted mb-1">Hen Count</p>
+                    <p class="text-lg font-bold text-blue">{{ production.hen_count }}</p>
+                </div>
+                <div>
+                    <p class="text-xs text-muted mb-1">Price per Egg</p>
+                    <p class="text-lg font-bold text-green">₱{{ production.price_per_egg }}</p>
+                </div>
+                <div>
+                    <p class="text-xs text-muted mb-1">Production Rate</p>
+                    <p class="text-lg font-bold text-amber">{{ production.production_rate }}%</p>
+                </div>
+            </div>
+
+            <div class="flex gap-3">
+                <button type="submit"
+                        class="bg-amber hover:bg-[#B5720A] text-white text-sm font-bold px-6 py-2 rounded-lg transition-all">
+                    Update
+                </button>
+                <a href="{% url 'egg_production_list' %}"
+                   class="bg-content hover:bg-border text-muted text-sm font-bold px-6 py-2 rounded-lg transition-all border border-border">
+                    Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}

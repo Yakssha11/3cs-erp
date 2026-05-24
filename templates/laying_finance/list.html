@@ -52,11 +52,9 @@
                 <select name="nature" required
                         class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber">
                     <option value="">Select nature</option>
-                    <option value="Layer Feed">Layer Feed</option>
-                    <option value="Medicine">Medicine</option>
-                    <option value="Meals">Meals</option>
-                    <option value="Salary">Salary</option>
-                    <option value="Miscellaneous">Miscellaneous</option>
+                    {% for category in categories %}
+                    <option value="{{ category.name }}">{{ category.name }}</option>
+                    {% endfor %}
                 </select>
             </div>
 
@@ -65,9 +63,9 @@
                 <select name="building" required
                         class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber">
                     <option value="">Select building</option>
-                    <option value="RTL Building 1">RTL Building 1</option>
-                    <option value="RTL Building 2">RTL Building 2</option>
-                    <option value="General">General</option>
+                    {% for building in buildings %}
+                    <option value="{{ building.name }}">{{ building.name }}</option>
+                    {% endfor %}
                 </select>
             </div>
 

@@ -1,0 +1,257 @@
+{% extends 'base.html' %}
+{% load auth_extras %}
+
+{% block page_title %}Master Data{% endblock %}
+
+{% block content %}
+
+{% if messages %}
+{% for message in messages %}
+<div class="mb-4 px-4 py-3 rounded-lg text-sm font-semibold
+    {% if message.tags == 'error' %}bg-red-900/40 text-red-400 border border-red-800
+    {% else %}bg-green-900/40 text-green-400 border border-green-800{% endif %}">
+    {{ message }}
+</div>
+{% endfor %}
+{% endif %}
+
+<!-- header -->
+<div class="mb-6">
+    <h1 class="text-2xl font-bold text-white">🗂️ Master Data</h1>
+    <p class="text-muted text-sm mt-1">Manage customers and suppliers</p>
+</div>
+
+<!-- tabs -->
+<div class="flex gap-2 mb-6">
+    <button onclick="showTab('customers')" id="btn-customers"
+            class="tab-btn px-4 py-2 rounded-lg text-xs font-bold transition-all border">
+        👥 Customers
+    </button>
+    <button onclick="showTab('suppliers')" id="btn-suppliers"
+            class="tab-btn px-4 py-2 rounded-lg text-xs font-bold transition-all border">
+        🏭 Suppliers
+    </button>
+</div>
+
+<!-- ── CUSTOMERS TAB ──────────────────────────────────── -->
+<div id="tab-customers" class="tab-content hidden">
+
+    <!-- add form -->
+    <div class="bg-sidebar border border-border rounded-xl p-6 mb-6">
+        <h2 class="text-sm font-bold text-muted uppercase tracking-wider mb-4">Add Customer</h2>
+        <form method="POST" action="{% url 'customer_save' %}">
+            {% csrf_token %}
+            <div class="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                    <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Name</label>
+                    <input type="text" name="name" required placeholder="e.g. Juan dela Cruz"
+                           class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue">
+                </div>
+                <div>
+                    <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Type</label>
+                    <select name="type" required
+                            class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue">
+                        <option value="">Select type</option>
+                        <option value="Wholesaler">Wholesaler</option>
+                        <option value="Retailer">Retailer</option>
+                        <option value="Walk-in">Walk-in</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Contact</label>
+                    <input type="text" name="contact" placeholder="e.g. 09171234567"
+                           class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue">
+                </div>
+                <div>
+                    <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Address</label>
+                    <input type="text" name="address" placeholder="e.g. Brgy. Sta. Cruz, Batangas"
+                           class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue">
+                </div>
+            </div>
+            <button type="submit"
+                    class="bg-blue hover:bg-[#157AB0] text-white text-sm font-bold px-6 py-2 rounded-lg transition-all">
+                + Add Customer
+            </button>
+        </form>
+    </div>
+
+    <!-- table -->
+    <div class="bg-sidebar border border-border rounded-xl">
+        <div class="px-4 py-3 border-b border-border">
+            <h2 class="text-sm font-bold text-white">👥 Customers</h2>
+        </div>
+        <div class="overflow-x-auto">
+        <table class="w-full text-sm whitespace-nowrap">
+            <thead>
+                <tr class="border-b border-border text-muted text-xs uppercase tracking-wider">
+                    <th class="px-4 py-3 text-left">Name</th>
+                    <th class="px-4 py-3 text-left">Type</th>
+                    <th class="px-4 py-3 text-left">Contact</th>
+                    <th class="px-4 py-3 text-left">Address</th>
+                    <th class="px-4 py-3 text-left">Date Added</th>
+                    <th class="px-4 py-3 text-left">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for customer in customers %}
+                <tr class="border-b border-border hover:bg-content transition-all">
+                    <td class="px-4 py-3 text-white font-semibold">{{ customer.name }}</td>
+                    <td class="px-4 py-3">
+                        <span class="px-2 py-1 rounded text-xs font-bold
+                            {% if customer.type == 'Wholesaler' %}bg-blue/20 text-blue
+                            {% elif customer.type == 'Retailer' %}bg-teal/20 text-teal
+                            {% else %}bg-amber/20 text-amber{% endif %}">
+                            {{ customer.type }}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3 text-muted">{{ customer.contact|default:"—" }}</td>
+                    <td class="px-4 py-3 text-muted">{{ customer.address|default:"—" }}</td>
+                    <td class="px-4 py-3 text-muted text-xs">{{ customer.Date|date:"Y-m-d" }}</td>
+                    <td class="px-4 py-3">
+                        <form method="POST" action="{% url 'customer_delete' customer.pk %}"
+                              onsubmit="return confirm('Delete {{ customer.name }}?')"
+                              style="margin:0;padding:0;display:inline;">
+                            {% csrf_token %}
+                            <button type="submit"
+                                    class="text-red-400 hover:text-red-300 text-xs font-bold transition-all">
+                                Delete
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="px-4 py-8 text-center text-muted">
+                        No customers yet. Add one above.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+</div>
+
+<!-- ── SUPPLIERS TAB ──────────────────────────────────── -->
+<div id="tab-suppliers" class="tab-content hidden">
+
+    <!-- add form -->
+    <div class="bg-sidebar border border-border rounded-xl p-6 mb-6">
+        <h2 class="text-sm font-bold text-muted uppercase tracking-wider mb-4">Add Supplier</h2>
+        <form method="POST" action="{% url 'supplier_save' %}">
+            {% csrf_token %}
+            <div class="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                    <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Name</label>
+                    <input type="text" name="name" required placeholder="e.g. ABC Hatchery"
+                           class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-teal">
+                </div>
+                <div>
+                    <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Type</label>
+                    <select name="type" required
+                            class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-teal">
+                        <option value="">Select type</option>
+                        <option value="Hatchery">Hatchery</option>
+                        <option value="Feed Supplier">Feed Supplier</option>
+                        <option value="Medicine Supplier">Medicine Supplier</option>
+                        <option value="General">General</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Contact</label>
+                    <input type="text" name="contact" placeholder="e.g. 09181234567"
+                           class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-teal">
+                </div>
+                <div>
+                    <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Address</label>
+                    <input type="text" name="address" placeholder="e.g. Brgy. San Jose, Batangas"
+                           class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-teal">
+                </div>
+            </div>
+            <button type="submit"
+                    class="bg-teal hover:bg-[#138A72] text-white text-sm font-bold px-6 py-2 rounded-lg transition-all">
+                + Add Supplier
+            </button>
+        </form>
+    </div>
+
+    <!-- table -->
+    <div class="bg-sidebar border border-border rounded-xl">
+        <div class="px-4 py-3 border-b border-border">
+            <h2 class="text-sm font-bold text-white">🏭 Suppliers</h2>
+        </div>
+        <div class="overflow-x-auto">
+        <table class="w-full text-sm whitespace-nowrap">
+            <thead>
+                <tr class="border-b border-border text-muted text-xs uppercase tracking-wider">
+                    <th class="px-4 py-3 text-left">Name</th>
+                    <th class="px-4 py-3 text-left">Type</th>
+                    <th class="px-4 py-3 text-left">Contact</th>
+                    <th class="px-4 py-3 text-left">Address</th>
+                    <th class="px-4 py-3 text-left">Date Added</th>
+                    <th class="px-4 py-3 text-left">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for supplier in suppliers %}
+                <tr class="border-b border-border hover:bg-content transition-all">
+                    <td class="px-4 py-3 text-white font-semibold">{{ supplier.name }}</td>
+                    <td class="px-4 py-3">
+                        <span class="px-2 py-1 rounded text-xs font-bold
+                            {% if supplier.type == 'Hatchery' %}bg-green/20 text-green
+                            {% elif supplier.type == 'Feed Supplier' %}bg-amber/20 text-amber
+                            {% elif supplier.type == 'Medicine Supplier' %}bg-blue/20 text-blue
+                            {% else %}bg-muted/20 text-muted{% endif %}">
+                            {{ supplier.type }}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3 text-muted">{{ supplier.contact|default:"—" }}</td>
+                    <td class="px-4 py-3 text-muted">{{ supplier.address|default:"—" }}</td>
+                    <td class="px-4 py-3 text-muted text-xs">{{ supplier.Date|date:"Y-m-d" }}</td>
+                    <td class="px-4 py-3">
+                        <form method="POST" action="{% url 'supplier_delete' supplier.pk %}"
+                              onsubmit="return confirm('Delete {{ supplier.name }}?')"
+                              style="margin:0;padding:0;display:inline;">
+                            {% csrf_token %}
+                            <button type="submit"
+                                    class="text-red-400 hover:text-red-300 text-xs font-bold transition-all">
+                                Delete
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="px-4 py-8 text-center text-muted">
+                        No suppliers yet. Add one above.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    const tabs = ['customers', 'suppliers']
+
+    function showTab(name) {
+        tabs.forEach(t => {
+            document.getElementById('tab-' + t).classList.add('hidden')
+            const btn = document.getElementById('btn-' + t)
+            btn.className = 'tab-btn px-4 py-2 rounded-lg text-xs font-bold transition-all border bg-sidebar text-muted border-border hover:border-blue'
+        })
+        document.getElementById('tab-' + name).classList.remove('hidden')
+        const activeBtn = document.getElementById('btn-' + name)
+        activeBtn.className = 'tab-btn px-4 py-2 rounded-lg text-xs font-bold transition-all border bg-blue text-white border-blue'
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const params = new URLSearchParams(window.location.search)
+        const tab    = params.get('tab') || 'customers'
+        showTab(tab)
+    })
+</script>
+
+{% endblock %}

@@ -55,9 +55,12 @@
                     <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Category</label>
                     <select name="category" required
                             class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue">
-                        <option value="Feed"           {% if stock.category == 'Feed' %}selected{% endif %}>Feed</option>
-                        <option value="Medicine"       {% if stock.category == 'Medicine' %}selected{% endif %}>Medicine</option>
-                        <option value="Other Supplies" {% if stock.category == 'Other Supplies' %}selected{% endif %}>Other Supplies</option>
+                        <option value="">Select category</option>
+                        {% for category in categories %}
+                        <option value="{{ category.name }}" {% if stock.category == category.name %}selected{% endif %}>
+                            {{ category.name }}
+                        </option>
+                        {% endfor %}
                     </select>
                 </div>
 
@@ -67,9 +70,11 @@
                     <select name="growing_house"
                             class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue">
                         <option value="">Select house</option>
-                        <option value="Growing House 1" {% if stock.growing_house == 'Growing House 1' %}selected{% endif %}>Growing House 1</option>
-                        <option value="Growing House 2" {% if stock.growing_house == 'Growing House 2' %}selected{% endif %}>Growing House 2</option>
-                        <option value="General"         {% if stock.growing_house == 'General' %}selected{% endif %}>General</option>
+                        {% for building in buildings %}
+                        <option value="{{ building.name }}" {% if stock.growing_house == building.name %}selected{% endif %}>
+                            {{ building.name }}
+                        </option>
+                        {% endfor %}
                     </select>
                 </div>
 
@@ -79,15 +84,13 @@
                     <select name="unit"
                             class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue">
                         <option value="">Select unit</option>
-                        <option value="kg"      {% if stock.unit == 'kg' %}selected{% endif %}>kg</option>
-                        <option value="sacks"   {% if stock.unit == 'sacks' %}selected{% endif %}>sacks</option>
-                        <option value="bottles" {% if stock.unit == 'bottles' %}selected{% endif %}>bottles</option>
-                        <option value="pcs"     {% if stock.unit == 'pcs' %}selected{% endif %}>pcs</option>
-                        <option value="liters"  {% if stock.unit == 'liters' %}selected{% endif %}>liters</option>
-                        <option value="grams"   {% if stock.unit == 'grams' %}selected{% endif %}>grams</option>
+                        {% for unit in units %}
+                        <option value="{{ unit.name }}" {% if stock.unit == unit.name %}selected{% endif %}>
+                            {{ unit.name }}
+                        </option>
+                        {% endfor %}
                     </select>
                 </div>
-
             </div>
 
             <div class="flex gap-3">

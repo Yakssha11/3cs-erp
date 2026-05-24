@@ -4,14 +4,47 @@
 
 {% block content %}
 
+<style>
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes countUp {
+        from { opacity: 0; }
+        to   { opacity: 1; }
+    }
+    .kpi-card {
+        animation: fadeInUp 0.5s ease forwards;
+        opacity: 0;
+    }
+    .kpi-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+        transition: all 0.2s ease;
+    }
+    .chart-card {
+        animation: fadeInUp 0.6s ease forwards;
+        opacity: 0;
+    }
+    .tab-content {
+        animation: fadeInUp 0.4s ease forwards;
+    }
+    .progress-bar {
+        width: 0%;
+        transition: width 1s ease;
+    }
+</style>
+
 <!-- header -->
 <div class="flex items-center justify-between mb-6">
     <div>
         <h1 class="text-2xl font-bold text-white">📊 Analytics Dashboard</h1>
-        <p class="text-muted text-sm mt-1">Live data from your database</p>
+        <p class="text-muted text-sm mt-1">Live data from your database
+            <span class="ml-2 text-xs text-border" id="last-updated"></span>
+        </p>
     </div>
     <a href="{% url 'analytics' %}"
-       class="bg-[#1A8FD1] hover:bg-[#157AB0] text-white text-sm font-bold px-4 py-2 rounded-lg transition-all">
+       class="bg-[#1A8FD1] hover:bg-[#157AB0] text-white text-sm font-bold px-4 py-2 rounded-lg transition-all hover:scale-105 active:scale-95">
         🔄 Refresh
     </a>
 </div>
@@ -33,51 +66,51 @@
 
     <!-- KPI cards -->
     <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
-        <div class="bg-sidebar border border-border rounded-xl p-4 border-t-2 border-t-blue">
+        <div class="kpi-card bg-sidebar border border-border rounded-xl p-4 border-t-2 border-t-blue cursor-default" style="animation-delay:0.05s">
             <p class="text-xs text-muted mb-1">🐔 Total Chicks</p>
-            <p class="text-2xl font-bold text-blue">{{ total_chicks|default:"0" }}</p>
+            <p class="text-2xl font-bold text-blue" data-target="{{ total_chicks|default:'0' }}">0</p>
         </div>
-        <div class="bg-sidebar border border-border rounded-xl p-4 border-t-2 border-t-green">
+        <div class="kpi-card bg-sidebar border border-border rounded-xl p-4 border-t-2 border-t-green cursor-default" style="animation-delay:0.1s">
             <p class="text-xs text-muted mb-1">✅ Alive</p>
-            <p class="text-2xl font-bold text-green">{{ alive|default:"0" }}</p>
+            <p class="text-2xl font-bold text-green" data-target="{{ alive|default:'0' }}">0</p>
         </div>
-        <div class="bg-sidebar border border-border rounded-xl p-4 border-t-2 border-t-red-500">
+        <div class="kpi-card bg-sidebar border border-border rounded-xl p-4 border-t-2 border-t-red-500 cursor-default" style="animation-delay:0.15s">
             <p class="text-xs text-muted mb-1">💀 Total Deaths</p>
-            <p class="text-2xl font-bold text-red-400">{{ total_deaths|default:"0" }}</p>
+            <p class="text-2xl font-bold text-red-400" data-target="{{ total_deaths|default:'0' }}">0</p>
         </div>
-        <div class="bg-sidebar border border-border rounded-xl p-4 border-t-2 border-t-yellow-500">
+        <div class="kpi-card bg-sidebar border border-border rounded-xl p-4 border-t-2 border-t-yellow-500 cursor-default" style="animation-delay:0.2s">
             <p class="text-xs text-muted mb-1">📉 Death Rate</p>
-            <p class="text-2xl font-bold text-yellow-400">{{ death_rate|default:"0" }}%</p>
+            <p class="text-2xl font-bold text-yellow-400" data-target="{{ death_rate|default:'0' }}" data-suffix="%">0%</p>
         </div>
-        <div class="bg-sidebar border border-border rounded-xl p-4 border-t-2 border-t-teal">
+        <div class="kpi-card bg-sidebar border border-border rounded-xl p-4 border-t-2 border-t-teal cursor-default" style="animation-delay:0.25s">
             <p class="text-xs text-muted mb-1">💰 Total Expenses</p>
-            <p class="text-2xl font-bold text-teal">₱{{ total_expense|default:"0"|floatformat:0 }}</p>
+            <p class="text-2xl font-bold text-teal" data-target="{{ total_expense|default:'0'|floatformat:0 }}" data-prefix="₱">₱0</p>
         </div>
-        <div class="bg-sidebar border border-border rounded-xl p-4 border-t-2 border-t-purple-500">
+        <div class="kpi-card bg-sidebar border border-border rounded-xl p-4 border-t-2 border-t-purple-500 cursor-default" style="animation-delay:0.3s">
             <p class="text-xs text-muted mb-1">📦 Stock Items</p>
-            <p class="text-2xl font-bold text-purple-400">{{ stock_items|default:"0" }}</p>
+            <p class="text-2xl font-bold text-purple-400" data-target="{{ stock_items|default:'0' }}">0</p>
         </div>
     </div>
 
     <!-- charts row 1 -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-        <div class="bg-sidebar border border-border rounded-xl p-5">
+        <div class="chart-card bg-sidebar border border-border rounded-xl p-5" style="animation-delay:0.35s">
             <h2 class="text-sm font-bold text-white mb-4">📈 Mortality Trend — Last 7 Days</h2>
             <canvas id="mortChart" height="120"></canvas>
         </div>
-        <div class="bg-sidebar border border-border rounded-xl p-5">
+        <div class="chart-card bg-sidebar border border-border rounded-xl p-5" style="animation-delay:0.4s">
             <h2 class="text-sm font-bold text-white mb-4">💰 Expenses by Nature</h2>
             <canvas id="expChart" height="120"></canvas>
         </div>
     </div>
 
     <!-- charts row 2 -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div class="bg-sidebar border border-border rounded-xl p-5">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+        <div class="chart-card bg-sidebar border border-border rounded-xl p-5" style="animation-delay:0.45s">
             <h2 class="text-sm font-bold text-white mb-4">🏠 GH1 vs GH2 Comparison</h2>
             <canvas id="ghChart" height="120"></canvas>
         </div>
-        <div class="bg-sidebar border border-border rounded-xl p-5">
+        <div class="chart-card bg-sidebar border border-border rounded-xl p-5" style="animation-delay:0.5s">
             <h2 class="text-sm font-bold text-white mb-4">📦 Stock Levels</h2>
             {% if stocks %}
             <div class="space-y-3">
@@ -90,9 +123,9 @@
                         </span>
                     </div>
                     <div class="w-full bg-content rounded-full h-2">
-                        <div class="h-2 rounded-full transition-all
+                        <div class="progress-bar h-2 rounded-full
                             {% if stock.quantity <= 5 %}bg-red-500{% elif stock.quantity <= 20 %}bg-yellow-500{% else %}bg-green{% endif %}"
-                            style="width: {% if stock.quantity > 100 %}100{% else %}{{ stock.quantity }}{% endif %}%">
+                            data-width="{% if stock.quantity > 100 %}100{% else %}{{ stock.quantity }}{% endif %}">
                         </div>
                     </div>
                 </div>
@@ -104,6 +137,14 @@
         </div>
     </div>
 
+    <!-- Sales Target Progress -->
+    <div class="chart-card bg-sidebar border border-border rounded-xl p-5" style="animation-delay:0.55s">
+        <h2 class="text-sm font-bold text-white mb-4">🎯 Sales Target Progress</h2>
+        <div id="growingTargetProgress" class="space-y-3">
+            <p class="text-muted text-xs">Loading...</p>
+        </div>
+    </div>
+
 </div>
 
 <!-- ── LAYING TAB ──────────────────────────────────────────── -->
@@ -111,54 +152,53 @@
 
     <!-- KPI cards -->
     <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
-        <div class="bg-sidebar border border-border rounded-xl p-4 border-t-2 border-t-amber">
+        <div class="kpi-card bg-sidebar border border-border rounded-xl p-4 border-t-2 border-t-amber cursor-default" style="animation-delay:0.05s">
             <p class="text-xs text-muted mb-1">🐔 Total Hens</p>
-            <p class="text-2xl font-bold text-amber">{{ laying_hens|default:"0" }}</p>
+            <p class="text-2xl font-bold text-amber" data-target="{{ laying_hens|default:'0' }}">0</p>
         </div>
-        <div class="bg-sidebar border border-border rounded-xl p-4 border-t-2 border-t-green">
+        <div class="kpi-card bg-sidebar border border-border rounded-xl p-4 border-t-2 border-t-green cursor-default" style="animation-delay:0.1s">
             <p class="text-xs text-muted mb-1">🥚 Total Good Eggs</p>
-            <p class="text-2xl font-bold text-green">{{ total_good_eggs|default:"0" }}</p>
+            <p class="text-2xl font-bold text-green" data-target="{{ total_good_eggs|default:'0' }}">0</p>
         </div>
-        <div class="bg-sidebar border border-border rounded-xl p-4 border-t-2 border-t-blue">
+        <div class="kpi-card bg-sidebar border border-border rounded-xl p-4 border-t-2 border-t-blue cursor-default" style="animation-delay:0.15s">
             <p class="text-xs text-muted mb-1">📈 Avg Production Rate</p>
-            <p class="text-2xl font-bold text-blue">{{ avg_rate|default:"0" }}%</p>
+            <p class="text-2xl font-bold text-blue" data-target="{{ avg_rate|default:'0' }}" data-suffix="%">0%</p>
         </div>
-        <div class="bg-sidebar border border-border rounded-xl p-4 border-t-2 border-t-red-500">
+        <div class="kpi-card bg-sidebar border border-border rounded-xl p-4 border-t-2 border-t-red-500 cursor-default" style="animation-delay:0.2s">
             <p class="text-xs text-muted mb-1">💀 Total Deaths</p>
-            <p class="text-2xl font-bold text-red-400">{{ laying_deaths|default:"0" }}</p>
+            <p class="text-2xl font-bold text-red-400" data-target="{{ laying_deaths|default:'0' }}">0</p>
         </div>
-        <div class="bg-sidebar border border-border rounded-xl p-4 border-t-2 border-t-teal">
+        <div class="kpi-card bg-sidebar border border-border rounded-xl p-4 border-t-2 border-t-teal cursor-default" style="animation-delay:0.25s">
             <p class="text-xs text-muted mb-1">💰 Total Revenue</p>
-            <p class="text-2xl font-bold text-teal">₱{{ total_revenue|default:"0"|floatformat:0 }}</p>
+            <p class="text-2xl font-bold text-teal" data-target="{{ total_revenue|default:'0'|floatformat:0 }}" data-prefix="₱">₱0</p>
         </div>
-        <div class="bg-sidebar border border-border rounded-xl p-4 border-t-2
-                    {% if net_profit >= 0 %}border-t-green{% else %}border-t-red-500{% endif %}">
+        <div class="kpi-card bg-sidebar border border-border rounded-xl p-4 border-t-2
+                    {% if net_profit >= 0 %}border-t-green{% else %}border-t-red-500{% endif %} cursor-default" style="animation-delay:0.3s">
             <p class="text-xs text-muted mb-1">📊 Net Profit</p>
-            <p class="text-2xl font-bold {% if net_profit >= 0 %}text-green{% else %}text-red-400{% endif %}">
-                ₱{{ net_profit|default:"0"|floatformat:0 }}
-            </p>
+            <p class="text-2xl font-bold {% if net_profit >= 0 %}text-green{% else %}text-red-400{% endif %}"
+               data-target="{{ net_profit|default:'0'|floatformat:0 }}" data-prefix="₱">₱0</p>
         </div>
     </div>
 
     <!-- charts row 1 -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-        <div class="bg-sidebar border border-border rounded-xl p-5">
+        <div class="chart-card bg-sidebar border border-border rounded-xl p-5" style="animation-delay:0.35s">
             <h2 class="text-sm font-bold text-white mb-4">🥚 Egg Production — Last 7 Days</h2>
             <canvas id="eggChart" height="120"></canvas>
         </div>
-        <div class="bg-sidebar border border-border rounded-xl p-5">
+        <div class="chart-card bg-sidebar border border-border rounded-xl p-5" style="animation-delay:0.4s">
             <h2 class="text-sm font-bold text-white mb-4">🏠 RTL1 vs RTL2 — Eggs Collected</h2>
             <canvas id="rtlChart" height="120"></canvas>
         </div>
     </div>
 
     <!-- charts row 2 -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div class="bg-sidebar border border-border rounded-xl p-5">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+        <div class="chart-card bg-sidebar border border-border rounded-xl p-5" style="animation-delay:0.45s">
             <h2 class="text-sm font-bold text-white mb-4">💰 Revenue vs Expenses</h2>
             <canvas id="profitChart" height="120"></canvas>
         </div>
-        <div class="bg-sidebar border border-border rounded-xl p-5">
+        <div class="chart-card bg-sidebar border border-border rounded-xl p-5" style="animation-delay:0.5s">
             <h2 class="text-sm font-bold text-white mb-4">📊 Summary</h2>
             <div class="space-y-4">
                 <div class="flex justify-between items-center">
@@ -187,34 +227,112 @@
         </div>
     </div>
 
+    <!-- Sales Target Progress -->
+    <div class="chart-card bg-sidebar border border-border rounded-xl p-5" style="animation-delay:0.55s">
+        <h2 class="text-sm font-bold text-white mb-4">🎯 Sales Target Progress</h2>
+        <div id="layingTargetProgress" class="space-y-3">
+            <p class="text-muted text-xs">Loading...</p>
+        </div>
+    </div>
+
 </div>
 
-<!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
+    // ── last updated ──────────────────────────────────────────
+    const now = new Date()
+    document.getElementById('last-updated').textContent =
+        'Last updated: ' + now.toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' })
+
+    // ── count up animation ────────────────────────────────────
+    function animateCount(el) {
+        const target = parseFloat(el.getAttribute('data-target')) || 0
+        const prefix = el.getAttribute('data-prefix') || ''
+        const suffix = el.getAttribute('data-suffix') || ''
+        const duration = 1200
+        const start = performance.now()
+
+        function update(time) {
+            const elapsed  = time - start
+            const progress = Math.min(elapsed / duration, 1)
+            const ease     = 1 - Math.pow(1 - progress, 3)
+            const value    = Math.floor(ease * target)
+            el.textContent = prefix + value.toLocaleString() + suffix
+            if (progress < 1) requestAnimationFrame(update)
+        }
+        requestAnimationFrame(update)
+    }
+
+    document.querySelectorAll('[data-target]').forEach(el => animateCount(el))
+
+    // ── progress bars ─────────────────────────────────────────
+    setTimeout(() => {
+        document.querySelectorAll('.progress-bar').forEach(bar => {
+            bar.style.width = bar.getAttribute('data-width') + '%'
+        })
+    }, 300)
+
+    // ── chart defaults ────────────────────────────────────────
     const chartDefaults = {
+        animation: { duration: 1000, easing: 'easeInOutQuart' },
         scales: {
-            x: { ticks: { color: '#6A8FAD' }, grid: { color: '#1E3A50' } },
-            y: { ticks: { color: '#6A8FAD' }, grid: { color: '#1E3A50' } }
+            x: {
+                ticks: { color: '#6A8FAD' },
+                grid:  { color: '#1E3A50' }
+            },
+            y: {
+                ticks: { color: '#6A8FAD' },
+                grid:  { color: '#1E3A50' },
+                beginAtZero: true
+            }
+        },
+        plugins: {
+            tooltip: {
+                backgroundColor: '#0B1E2D',
+                borderColor:     '#1E3A50',
+                borderWidth:     1,
+                titleColor:      '#ffffff',
+                bodyColor:       '#6A8FAD',
+                padding:         10,
+                callbacks: {
+                    label: function(ctx) {
+                        let val = ctx.parsed.y
+                        if (ctx.dataset.label && ctx.dataset.label.includes('₱')) {
+                            return ' ₱' + val.toLocaleString()
+                        }
+                        return ' ' + val.toLocaleString()
+                    }
+                }
+            }
         }
     }
 
     // ── GROWING charts ────────────────────────────────────────
-    new Chart(document.getElementById('mortChart'), {
+    const mortCtx = document.getElementById('mortChart').getContext('2d')
+    new Chart(mortCtx, {
         type: 'line',
         data: {
             labels: {{ mort_labels|safe }},
             datasets: [{
                 label: 'Deaths',
                 data:  {{ mort_data|safe }},
-                borderColor: '#E74C3C',
-                backgroundColor: 'rgba(231,76,60,0.1)',
-                borderWidth: 2,
+                borderColor:     '#E74C3C',
+                backgroundColor: 'rgba(231,76,60,0.15)',
+                borderWidth: 2.5,
                 fill: true,
-                tension: 0.4
+                tension: 0.4,
+                pointBackgroundColor: '#E74C3C',
+                pointRadius: 4,
+                pointHoverRadius: 7,
             }]
         },
-        options: { ...chartDefaults, plugins: { legend: { display: false } } }
+        options: {
+            ...chartDefaults,
+            plugins: {
+                ...chartDefaults.plugins,
+                legend: { display: false }
+            }
+        }
     })
 
     new Chart(document.getElementById('expChart'), {
@@ -224,10 +342,23 @@
             datasets: [{
                 data: {{ exp_values|safe }},
                 backgroundColor: ['#1A8FD1','#17A98A','#D4880A','#9B59B6','#2ECC71','#E74C3C'],
-                borderRadius: 6,
+                borderRadius: 8,
+                borderSkipped: false,
             }]
         },
-        options: { ...chartDefaults, plugins: { legend: { display: false } } }
+        options: {
+            ...chartDefaults,
+            plugins: {
+                ...chartDefaults.plugins,
+                legend: { display: false },
+                tooltip: {
+                    ...chartDefaults.plugins.tooltip,
+                    callbacks: {
+                        label: ctx => ' ₱' + ctx.parsed.y.toLocaleString()
+                    }
+                }
+            }
+        }
     })
 
     new Chart(document.getElementById('ghChart'), {
@@ -235,29 +366,57 @@
         data: {
             labels: ['Deaths', 'Expenses (₱)'],
             datasets: [
-                { label: 'GH1', data: [{{ gh1_deaths }}, {{ gh1_exp }}], backgroundColor: '#1A8FD1', borderRadius: 6 },
-                { label: 'GH2', data: [{{ gh2_deaths }}, {{ gh2_exp }}], backgroundColor: '#17A98A', borderRadius: 6 }
+                {
+                    label: 'GH1',
+                    data: [{{ gh1_deaths }}, {{ gh1_exp }}],
+                    backgroundColor: '#1A8FD1',
+                    borderRadius: 8,
+                    borderSkipped: false,
+                },
+                {
+                    label: 'GH2',
+                    data: [{{ gh2_deaths }}, {{ gh2_exp }}],
+                    backgroundColor: '#17A98A',
+                    borderRadius: 8,
+                    borderSkipped: false,
+                }
             ]
         },
-        options: { ...chartDefaults, plugins: { legend: { labels: { color: '#6A8FAD' } } } }
+        options: {
+            ...chartDefaults,
+            plugins: {
+                ...chartDefaults.plugins,
+                legend: { labels: { color: '#6A8FAD' } }
+            }
+        }
     })
 
     // ── LAYING charts ─────────────────────────────────────────
-    new Chart(document.getElementById('eggChart'), {
+    const eggCtx = document.getElementById('eggChart').getContext('2d')
+    new Chart(eggCtx, {
         type: 'line',
         data: {
             labels: {{ egg_labels|safe }},
             datasets: [{
                 label: 'Good Eggs',
                 data:  {{ egg_data|safe }},
-                borderColor: '#D4880A',
-                backgroundColor: 'rgba(212,136,10,0.1)',
-                borderWidth: 2,
+                borderColor:     '#D4880A',
+                backgroundColor: 'rgba(212,136,10,0.15)',
+                borderWidth: 2.5,
                 fill: true,
-                tension: 0.4
+                tension: 0.4,
+                pointBackgroundColor: '#D4880A',
+                pointRadius: 4,
+                pointHoverRadius: 7,
             }]
         },
-        options: { ...chartDefaults, plugins: { legend: { display: false } } }
+        options: {
+            ...chartDefaults,
+            plugins: {
+                ...chartDefaults.plugins,
+                legend: { display: false }
+            }
+        }
     })
 
     new Chart(document.getElementById('rtlChart'), {
@@ -265,11 +424,29 @@
         data: {
             labels: ['Good Eggs', 'Expenses (₱)'],
             datasets: [
-                { label: 'RTL Building 1', data: [{{ rtl1_eggs }}, {{ rtl1_exp }}], backgroundColor: '#D4880A', borderRadius: 6 },
-                { label: 'RTL Building 2', data: [{{ rtl2_eggs }}, {{ rtl2_exp }}], backgroundColor: '#9B59B6', borderRadius: 6 }
+                {
+                    label: 'RTL Building 1',
+                    data: [{{ rtl1_eggs }}, {{ rtl1_exp }}],
+                    backgroundColor: '#D4880A',
+                    borderRadius: 8,
+                    borderSkipped: false,
+                },
+                {
+                    label: 'RTL Building 2',
+                    data: [{{ rtl2_eggs }}, {{ rtl2_exp }}],
+                    backgroundColor: '#9B59B6',
+                    borderRadius: 8,
+                    borderSkipped: false,
+                }
             ]
         },
-        options: { ...chartDefaults, plugins: { legend: { labels: { color: '#6A8FAD' } } } }
+        options: {
+            ...chartDefaults,
+            plugins: {
+                ...chartDefaults.plugins,
+                legend: { labels: { color: '#6A8FAD' } }
+            }
+        }
     })
 
     new Chart(document.getElementById('profitChart'), {
@@ -278,18 +455,101 @@
             labels: ['Revenue', 'Expenses', 'Net Profit'],
             datasets: [{
                 data: [{{ total_revenue }}, {{ laying_expenses }}, {{ net_profit }}],
-                backgroundColor: ['#2ECC71', '#E74C3C', {% if net_profit >= 0 %}'#1A8FD1'{% else %}'#E74C3C'{% endif %}],
-                borderRadius: 6,
+                backgroundColor: [
+                    '#2ECC71',
+                    '#E74C3C',
+                    {% if net_profit >= 0 %}'#1A8FD1'{% else %}'#E74C3C'{% endif %}
+                ],
+                borderRadius: 8,
+                borderSkipped: false,
             }]
         },
-        options: { ...chartDefaults, plugins: { legend: { display: false } } }
+        options: {
+            ...chartDefaults,
+            plugins: {
+                ...chartDefaults.plugins,
+                legend: { display: false },
+                tooltip: {
+                    ...chartDefaults.plugins.tooltip,
+                    callbacks: {
+                        label: ctx => ' ₱' + ctx.parsed.y.toLocaleString()
+                    }
+                }
+            }
+        }
     })
 
-    // ── toggle ────────────────────────────────────────────────
+    // ── Sales Target Progress ─────────────────────────────────
+    fetch('/sales/analytics/data/')
+        .then(r => r.json())
+        .then(data => {
+            // Growing
+            const gDiv = document.getElementById('growingTargetProgress')
+            if (data.growing && data.growing.length > 0) {
+                gDiv.innerHTML = data.growing.map(item => `
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <span class="text-white font-semibold">${item.name}</span>
+                            <span class="font-bold ${item.pct >= 100 ? 'text-green' : item.pct >= 70 ? 'text-yellow-400' : 'text-red-400'}">${item.pct}%</span>
+                        </div>
+                        <div class="w-full bg-content rounded-full h-2">
+                            <div class="h-2 rounded-full ${item.pct >= 100 ? 'bg-green' : item.pct >= 70 ? 'bg-yellow-500' : 'bg-red-500'}"
+                                 style="width: 0%; transition: width 1.2s ease"
+                                 data-width="${item.pct}"></div>
+                        </div>
+                        ${item.period_start ? `<p class="text-muted text-xs mt-1">📅 ${item.period_start} → ${item.period_end}</p>` : ''}
+                    </div>
+                `).join('')
+            } else {
+                gDiv.innerHTML = '<p class="text-muted text-xs">No active target. <a href="/config/?tab=targets" class="text-teal underline">Set one in Config</a></p>'
+            }
+
+            // Laying
+            const lDiv = document.getElementById('layingTargetProgress')
+            if (data.laying && data.laying.length > 0) {
+                lDiv.innerHTML = data.laying.map(item => `
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <span class="text-white font-semibold">${item.name}</span>
+                            <span class="font-bold ${item.pct >= 100 ? 'text-green' : item.pct >= 70 ? 'text-yellow-400' : 'text-red-400'}">${item.pct}%</span>
+                        </div>
+                        <div class="w-full bg-content rounded-full h-2">
+                            <div class="h-2 rounded-full ${item.pct >= 100 ? 'bg-green' : item.pct >= 70 ? 'bg-yellow-500' : 'bg-red-500'}"
+                                 style="width: 0%; transition: width 1.2s ease"
+                                 data-width="${item.pct}"></div>
+                        </div>
+                        ${item.period_start ? `<p class="text-muted text-xs mt-1">📅 ${item.period_start} → ${item.period_end}</p>` : ''}
+                    </div>
+                `).join('')
+            } else {
+                lDiv.innerHTML = '<p class="text-muted text-xs">No active target. <a href="/config/?tab=targets" class="text-amber underline">Set one in Config</a></p>'
+            }
+
+            // animate bars
+            setTimeout(() => {
+                document.querySelectorAll('#growingTargetProgress [data-width], #layingTargetProgress [data-width]').forEach(bar => {
+                    bar.style.width = bar.getAttribute('data-width') + '%'
+                })
+            }, 300)
+        })
+        .catch(() => {
+            document.getElementById('growingTargetProgress').innerHTML = '<p class="text-muted text-xs">Could not load target data.</p>'
+            document.getElementById('layingTargetProgress').innerHTML  = '<p class="text-muted text-xs">Could not load target data.</p>'
+        })
+
+    // ── tab toggle with fade ──────────────────────────────────
     function showTab(tab) {
-        document.getElementById('tab-growing').classList.add('hidden')
-        document.getElementById('tab-laying').classList.add('hidden')
-        document.getElementById('tab-' + tab).classList.remove('hidden')
+        const growing = document.getElementById('tab-growing')
+        const laying  = document.getElementById('tab-laying')
+
+        growing.classList.add('hidden')
+        laying.classList.add('hidden')
+
+        const active = document.getElementById('tab-' + tab)
+        active.classList.remove('hidden')
+        active.style.animation = 'none'
+        active.offsetHeight
+        active.style.animation = 'fadeInUp 0.4s ease forwards'
 
         document.getElementById('btn-growing').className = 'px-6 py-2 rounded-lg text-sm font-bold transition-all bg-sidebar border border-border text-muted'
         document.getElementById('btn-laying').className  = 'px-6 py-2 rounded-lg text-sm font-bold transition-all bg-sidebar border border-border text-muted'

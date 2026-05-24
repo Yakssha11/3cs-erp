@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'stock',
     'consumption',
     'flock',
+    'chicken_production',
     'finance',
 
     # Laying module
@@ -49,6 +50,15 @@ INSTALLED_APPS = [
     'egg_production',
     'laying_finance',
     'erp_config',
+
+    # Program module
+    'program',
+
+    # Master Data
+    'master_data',
+
+    # Sales module
+    'sales',
 ]
 
 MIDDLEWARE = [
@@ -120,7 +130,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Manila'
 
 USE_I18N = True
 

@@ -116,6 +116,96 @@
             </a>
             {% endif %}
 
+            <!-- Master Data — admin only -->
+            {% if request.user|has_group:'admin' %}
+            <div class="mt-2">
+                <button onclick="toggleGroup('masterdata')"
+                        class="w-full flex items-center justify-between px-5 py-3 text-sm font-bold text-blue hover:bg-content transition-all">
+                    <div class="flex items-center gap-3">
+                        <span class="text-xl w-6 text-center">🗂️</span>
+                        Master Data
+                    </div>
+                    <span id="masterdata-arrow" class="text-xs text-muted">▶</span>
+                </button>
+                <div id="masterdata-children" class="group-children bg-primary/30">
+                    <a href="{% url 'master_data' %}" onclick="closeSidebar()"
+                       class="nav-item flex items-center gap-3 pl-10 pr-5 py-2.5 text-sm font-semibold cursor-pointer transition-all
+                              {% if request.resolver_match.url_name == 'master_data' %}active text-blue{% else %}text-white{% endif %}">
+                        <span class="text-base w-5 text-center">⚙️</span>
+                        Master Config
+                    </a>
+                    <a href="{% url 'master_data_records' %}" onclick="closeSidebar()"
+                       class="nav-item flex items-center gap-3 pl-10 pr-5 py-2.5 text-sm font-semibold cursor-pointer transition-all
+                              {% if request.resolver_match.url_name == 'master_data_records' %}active text-blue{% else %}text-white{% endif %}">
+                        <span class="text-base w-5 text-center">📋</span>
+                        View Records
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Sales Group — admin and viewer -->
+            {% if request.user|has_group:'admin' or request.user|has_group:'viewer' %}
+            <div class="mt-2">
+                <button onclick="toggleGroup('sales')"
+                        class="w-full flex items-center justify-between px-5 py-3 text-sm font-bold text-green hover:bg-content transition-all">
+                    <div class="flex items-center gap-3">
+                        <span class="text-xl w-6 text-center">💵</span>
+                        Sales
+                    </div>
+                    <span id="sales-arrow" class="text-xs text-muted">▶</span>
+                </button>
+                <div id="sales-children" class="group-children bg-primary/30">
+                    <a href="{% url 'growing_sales' %}" onclick="closeSidebar()"
+                       class="nav-item flex items-center gap-3 pl-10 pr-5 py-2.5 text-sm font-semibold cursor-pointer transition-all
+                              {% if request.resolver_match.url_name == 'growing_sales' %}active text-teal{% else %}text-white{% endif %}">
+                        <span class="text-base w-5 text-center">🌱</span>
+                        Growing Sales
+                    </a>
+                    <a href="{% url 'laying_sales' %}" onclick="closeSidebar()"
+                       class="nav-item flex items-center gap-3 pl-10 pr-5 py-2.5 text-sm font-semibold cursor-pointer transition-all
+                              {% if request.resolver_match.url_name == 'laying_sales' %}active text-amber{% else %}text-white{% endif %}">
+                        <span class="text-base w-5 text-center">🥚</span>
+                        Laying Sales
+                    </a>
+                    <a href="{% url 'sales_analytics' %}" onclick="closeSidebar()"
+                       class="nav-item flex items-center gap-3 pl-10 pr-5 py-2.5 text-sm font-semibold cursor-pointer transition-all
+                              {% if request.resolver_match.url_name == 'sales_analytics' %}active text-green{% else %}text-white{% endif %}">
+                        <span class="text-base w-5 text-center">📈</span>
+                        Sales Analytics
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Program Group -->
+            <div class="mt-2">
+                <button onclick="toggleGroup('program')"
+                        class="w-full flex items-center justify-between px-5 py-3 text-sm font-bold text-blue hover:bg-content transition-all">
+                    <div class="flex items-center gap-3">
+                        <span class="text-xl w-6 text-center">💉</span>
+                        Program
+                    </div>
+                    <span id="program-arrow" class="text-xs text-muted">▶</span>
+                </button>
+                <div id="program-children" class="group-children bg-primary/30">
+                    {% if request.user|has_group:'admin' %}
+                    <a href="{% url 'program_growing' %}" onclick="closeSidebar()"
+                       class="nav-item flex items-center gap-3 pl-10 pr-5 py-2.5 text-sm font-semibold cursor-pointer transition-all
+                              {% if request.resolver_match.url_name == 'program_growing' or request.resolver_match.url_name == 'program_laying' %}active text-green{% else %}text-white{% endif %}">
+                        <span class="text-base w-5 text-center">➕</span>
+                        Create Program
+                    </a>
+                    {% endif %}
+                    <a href="{% url 'view_growing' %}" onclick="closeSidebar()"
+                       class="nav-item flex items-center gap-3 pl-10 pr-5 py-2.5 text-sm font-semibold cursor-pointer transition-all
+                              {% if request.resolver_match.url_name == 'view_growing' or request.resolver_match.url_name == 'view_laying' %}active text-blue{% else %}text-white{% endif %}">
+                        <span class="text-base w-5 text-center">📋</span>
+                        View Program
+                    </a>
+                </div>
+            </div>
+
             <!-- Growing Group -->
             <div class="mt-2">
                 <button onclick="toggleGroup('growing')"
@@ -126,9 +216,7 @@
                     </div>
                     <span id="growing-arrow" class="text-xs text-muted">▶</span>
                 </button>
-
                 <div id="growing-children" class="group-children bg-primary/30">
-
                     {% if request.user|has_group:'admin' or request.user|has_group:'viewer' or request.user|has_group:'stock' %}
                     <a href="{% url 'stock_list' %}" onclick="closeSidebar()"
                        class="nav-item flex items-center gap-3 pl-10 pr-5 py-2.5 text-sm font-semibold cursor-pointer transition-all
@@ -137,7 +225,6 @@
                         Stock
                     </a>
                     {% endif %}
-
                     {% if request.user|has_group:'admin' or request.user|has_group:'viewer' or request.user|has_group:'consumption' %}
                     <a href="{% url 'consumption_list' %}" onclick="closeSidebar()"
                        class="nav-item flex items-center gap-3 pl-10 pr-5 py-2.5 text-sm font-semibold cursor-pointer transition-all
@@ -146,7 +233,6 @@
                         Consumption
                     </a>
                     {% endif %}
-
                     {% if request.user|has_group:'admin' or request.user|has_group:'viewer' or request.user|has_group:'flock' %}
                     <a href="{% url 'flock_list' %}" onclick="closeSidebar()"
                        class="nav-item flex items-center gap-3 pl-10 pr-5 py-2.5 text-sm font-semibold cursor-pointer transition-all
@@ -155,7 +241,14 @@
                         Flock
                     </a>
                     {% endif %}
-
+                    {% if request.user|has_group:'admin' or request.user|has_group:'viewer' %}
+                    <a href="{% url 'chicken_production_list' %}" onclick="closeSidebar()"
+                       class="nav-item flex items-center gap-3 pl-10 pr-5 py-2.5 text-sm font-semibold cursor-pointer transition-all
+                              {% if request.resolver_match.url_name == 'chicken_production_list' %}active text-teal{% else %}text-white{% endif %}">
+                        <span class="text-base w-5 text-center">🐔</span>
+                        Chicken Production
+                    </a>
+                    {% endif %}
                     {% if request.user|has_group:'admin' or request.user|has_group:'viewer' or request.user|has_group:'finance' %}
                     <a href="{% url 'finance_list' %}" onclick="closeSidebar()"
                        class="nav-item flex items-center gap-3 pl-10 pr-5 py-2.5 text-sm font-semibold cursor-pointer transition-all
@@ -164,7 +257,6 @@
                         Finance
                     </a>
                     {% endif %}
-
                 </div>
             </div>
 
@@ -179,26 +271,41 @@
                     <span id="laying-arrow" class="text-xs text-muted">▶</span>
                 </button>
                 <div id="laying-children" class="group-children bg-primary/30">
+                    {% if request.user|has_group:'admin' or request.user|has_group:'viewer' %}
+                    <a href="{% url 'laying_consumption_list' %}" onclick="closeSidebar()"
+                    class="nav-item flex items-center gap-3 pl-10 pr-5 py-2.5 text-sm font-semibold cursor-pointer transition-all
+                            {% if request.resolver_match.url_name == 'laying_consumption_list' %}active text-amber{% else %}text-white{% endif %}">
+                        <span class="text-base w-5 text-center">📉</span>
+                        Consumption
+                    </a>
+                    {% endif %}
+                    {% if request.user|has_group:'admin' or request.user|has_group:'viewer' or request.user|has_group:'laying_flock_user' %}
                     <a href="{% url 'laying_flock_list' %}" onclick="closeSidebar()"
-                       class="nav-item flex items-center gap-3 pl-10 pr-5 py-2.5 text-sm font-semibold cursor-pointer transition-all
-                              {% if 'laying_flock' in request.resolver_match.url_name %}active text-green{% else %}text-white{% endif %}">
+                    class="nav-item flex items-center gap-3 pl-10 pr-5 py-2.5 text-sm font-semibold cursor-pointer transition-all
+                            {% if 'laying_flock' in request.resolver_match.url_name %}active text-green{% else %}text-white{% endif %}">
                         <span class="text-base w-5 text-center">🐔</span>
                         Flock (RTL)
                     </a>
+                    {% endif %}
+                    {% if request.user|has_group:'admin' or request.user|has_group:'viewer' or request.user|has_group:'egg_production_user' %}
                     <a href="{% url 'egg_production_list' %}" onclick="closeSidebar()"
-                       class="nav-item flex items-center gap-3 pl-10 pr-5 py-2.5 text-sm font-semibold cursor-pointer transition-all
-                              {% if 'egg_production' in request.resolver_match.url_name %}active text-amber{% else %}text-white{% endif %}">
+                    class="nav-item flex items-center gap-3 pl-10 pr-5 py-2.5 text-sm font-semibold cursor-pointer transition-all
+                            {% if 'egg_production' in request.resolver_match.url_name %}active text-amber{% else %}text-white{% endif %}">
                         <span class="text-base w-5 text-center">🥚</span>
                         Egg Production
                     </a>
+                    {% endif %}
+                    {% if request.user|has_group:'admin' or request.user|has_group:'viewer' or request.user|has_group:'laying_finance_user' %}
                     <a href="{% url 'laying_finance_list' %}" onclick="closeSidebar()"
-                       class="nav-item flex items-center gap-3 pl-10 pr-5 py-2.5 text-sm font-semibold cursor-pointer transition-all
-                              {% if 'laying_finance' in request.resolver_match.url_name %}active text-amber{% else %}text-white{% endif %}">
+                    class="nav-item flex items-center gap-3 pl-10 pr-5 py-2.5 text-sm font-semibold cursor-pointer transition-all
+                            {% if 'laying_finance' in request.resolver_match.url_name %}active text-amber{% else %}text-white{% endif %}">
                         <span class="text-base w-5 text-center">💰</span>
                         Finance
                     </a>
+                    {% endif %}
                 </div>
             </div>
+
         </nav>
 
         <!-- footer -->
@@ -261,7 +368,7 @@
         function toggleGroup(name) {
             const children = document.getElementById(name + '-children')
             const arrow    = document.getElementById(name + '-arrow')
-            const allGroups = ['growing', 'laying']
+            const allGroups = ['growing', 'laying', 'program', 'masterdata', 'sales']
             allGroups.forEach(g => {
                 if (g !== name) {
                     document.getElementById(g + '-children').classList.remove('open')
@@ -283,6 +390,18 @@
             if (path.includes('laying') || path.includes('eggs')) {
                 document.getElementById('laying-children').classList.add('open')
                 document.getElementById('laying-arrow').textContent = '▼'
+            }
+            if (path.includes('program')) {
+                document.getElementById('program-children').classList.add('open')
+                document.getElementById('program-arrow').textContent = '▼'
+            }
+            if (path.includes('masterdata')) {
+                document.getElementById('masterdata-children').classList.add('open')
+                document.getElementById('masterdata-arrow').textContent = '▼'
+            }
+            if (path.includes('sales')) {
+                document.getElementById('sales-children').classList.add('open')
+                document.getElementById('sales-arrow').textContent = '▼'
             }
         })
     </script>

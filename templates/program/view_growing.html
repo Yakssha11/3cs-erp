@@ -1,0 +1,156 @@
+{% extends 'base.html' %}
+{% load auth_extras %}
+
+{% block page_title %}View Program — Growing{% endblock %}
+
+{% block content %}
+
+<!-- header -->
+<div class="flex items-center justify-between mb-6">
+    <div>
+        <h1 class="text-2xl font-bold text-white">📋 View Program — Growing</h1>
+        <p class="text-muted text-sm mt-1">Medication schedule and consumption summary</p>
+    </div>
+    <!-- toggle -->
+    <div class="flex gap-2">
+        <a href="{% url 'view_growing' %}"
+           class="px-4 py-2 rounded-lg text-xs font-bold border bg-green text-white border-green">
+            🌱 Growing
+        </a>
+        <a href="{% url 'view_laying' %}"
+           class="px-4 py-2 rounded-lg text-xs font-bold border bg-sidebar text-muted border-border hover:border-amber">
+            🥚 Laying
+        </a>
+    </div>
+</div>
+
+<!-- active flock count -->
+<div class="bg-sidebar border border-border rounded-xl px-4 py-3 mb-6 flex items-center justify-between">
+    <span class="text-muted text-sm">Total Active Chicks (Growing):</span>
+    <span class="text-green font-bold text-lg">{{ total_chicks }}</span>
+</div>
+
+<!-- programs -->
+{% for ps in program_summaries %}
+<div class="bg-sidebar border border-border rounded-xl mb-8">
+
+    <!-- program header -->
+    <div class="px-4 py-3 border-b border-border">
+        <h2 class="text-sm font-bold text-white">🌱 {{ ps.program.name }}</h2>
+        {% if ps.program.description %}
+        <p class="text-xs text-muted mt-0.5">{{ ps.program.description }}</p>
+        {% endif %}
+    </div>
+
+    <!-- schedule table -->
+    <div class="overflow-x-auto">
+    <table class="w-full text-sm whitespace-nowrap">
+        <thead>
+            <tr class="border-b border-border text-muted text-xs uppercase tracking-wider">
+                <th class="px-4 py-3 text-left">Week</th>
+                <th class="px-4 py-3 text-left">Day</th>
+                <th class="px-4 py-3 text-left">Medicine / Vaccine</th>
+                <th class="px-4 py-3 text-left">Dose</th>
+                <th class="px-4 py-3 text-left">Unit</th>
+                <th class="px-4 py-3 text-left">Per</th>
+                <th class="px-4 py-3 text-left">Method</th>
+                <th class="px-4 py-3 text-left">Remarks</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for step in ps.program.steps.all %}
+            <tr class="border-b border-border hover:bg-content transition-all">
+                <td class="px-4 py-3">
+                    <span class="px-2 py-1 rounded text-xs font-bold bg-green-900/40 text-green-400">
+                        Week {{ step.week }}
+                    </span>
+                </td>
+                <td class="px-4 py-3 text-white font-bold">Day {{ step.day }}</td>
+                <td class="px-4 py-3 text-white">{{ step.medicine }}</td>
+                <td class="px-4 py-3 text-muted">{{ step.dose_amount }}</td>
+                <td class="px-4 py-3 text-muted">{{ step.dose_unit }}</td>
+                <td class="px-4 py-3 text-muted">{{ step.dose_per }}</td>
+                <td class="px-4 py-3">
+                    <span class="px-2 py-1 rounded text-xs font-bold bg-blue-900/40 text-blue-400">
+                        {{ step.method }}
+                    </span>
+                </td>
+                <td class="px-4 py-3 text-muted text-xs">{{ step.remarks }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="8" class="px-4 py-6 text-center text-muted text-xs">
+                    No steps defined yet.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+
+    <!-- consumption summary -->
+    {% if ps.summary %}
+    <div class="px-4 py-4 border-t border-border">
+        <h3 class="text-xs font-bold text-muted uppercase tracking-wider mb-4">
+            Consumption Summary
+        </h3>
+        <div class="grid grid-cols-1 gap-4">
+            {% for med in ps.summary %}
+            <div class="bg-content rounded-xl p-4">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-white font-bold text-sm">{{ med.medicine }}</span>
+                    <span class="text-xs font-bold
+                        {% if med.percentage >= 80 %}text-green
+                        {% elif med.percentage >= 50 %}text-amber
+                        {% else %}text-red-400{% endif %}">
+                        {{ med.percentage }}%
+                    </span>
+                </div>
+                <div class="w-full bg-border rounded-full h-2 mb-3">
+                    <div class="h-2 rounded-full
+                        {% if med.percentage >= 80 %}bg-green
+                        {% elif med.percentage >= 50 %}bg-amber
+                        {% else %}bg-red-400{% endif %}"
+                         style="width: {% if med.percentage > 100 %}100{% else %}{{ med.percentage }}{% endif %}%">
+                    </div>
+                </div>
+                <div class="grid grid-cols-3 gap-2 text-xs text-muted">
+                    <div>
+                        <p class="mb-0.5">Required</p>
+                        <p class="text-white font-semibold">
+                            {{ med.required|floatformat:2 }} {{ med.dose_unit }}
+                        </p>
+                        <p class="text-muted">{{ med.dose_amount }} {{ med.dose_unit }}/{{ med.dose_per }} × {{ total_chicks }} chicks</p>
+                    </div>
+                    <div>
+                        <p class="mb-0.5">Consumed</p>
+                        <p class="text-white font-semibold">
+                            {{ med.consumed|floatformat:2 }} {{ med.dose_unit }}
+                        </p>
+                    </div>
+                    <div>
+                        <p class="mb-0.5">Remaining</p>
+                        <p class="font-semibold
+                            {% if med.required > med.consumed %}text-red-400{% else %}text-green{% endif %}">
+                            {% if med.required > med.consumed %}
+                                {{ med.required|floatformat:2 }} {{ med.dose_unit }} needed
+                            {% else %}
+                                ✅ Sufficient
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+{% empty %}
+<div class="bg-sidebar border border-border rounded-xl px-4 py-8 text-center text-muted">
+    No Growing programs yet. <a href="{% url 'program_growing' %}" class="text-green underline">Create one here.</a>
+</div>
+{% endfor %}
+
+{% endblock %}

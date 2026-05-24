@@ -170,4 +170,9 @@ urlpatterns = [
     path('laying/flock/', include('laying_flock.urls')),
     path('laying/eggs/', include('egg_production.urls')),
     path('laying/finance/', include('laying_finance.urls')),
+    path('laying/finance/', include('laying_finance.urls')),
+    path('program/',        include('program.urls')),
+    path('masterdata/',     include('master_data.urls')),
+    path('sales/',          include('sales.urls')),
+    path('chicken/',        include('chicken_production.urls')),
 ]

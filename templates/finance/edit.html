@@ -34,11 +34,12 @@
                     <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Nature</label>
                     <select name="nature" required
                             class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber">
-                        <option value="Feed"          {% if finance.nature == 'Feed' %}selected{% endif %}>Feed</option>
-                        <option value="Medicine"      {% if finance.nature == 'Medicine' %}selected{% endif %}>Medicine</option>
-                        <option value="Meals"         {% if finance.nature == 'Meals' %}selected{% endif %}>Meals</option>
-                        <option value="Salary"        {% if finance.nature == 'Salary' %}selected{% endif %}>Salary</option>
-                        <option value="Miscellaneous" {% if finance.nature == 'Miscellaneous' %}selected{% endif %}>Miscellaneous</option>
+                        <option value="">Select nature</option>
+                        {% for category in categories %}
+                        <option value="{{ category.name }}" {% if finance.nature == category.name %}selected{% endif %}>
+                            {{ category.name }}
+                        </option>
+                        {% endfor %}
                     </select>
                 </div>
 
@@ -47,9 +48,12 @@
                     <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Building</label>
                     <select name="building" required
                             class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber">
-                        <option value="Growing House 1" {% if finance.building == 'Growing House 1' %}selected{% endif %}>Growing House 1</option>
-                        <option value="Growing House 2" {% if finance.building == 'Growing House 2' %}selected{% endif %}>Growing House 2</option>
-                        <option value="General"         {% if finance.building == 'General' %}selected{% endif %}>General</option>
+                        <option value="">Select building</option>
+                        {% for building in buildings %}
+                        <option value="{{ building.name }}" {% if finance.building == building.name %}selected{% endif %}>
+                            {{ building.name }}
+                        </option>
+                        {% endfor %}
                     </select>
                 </div>
 

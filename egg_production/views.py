@@ -9,9 +9,11 @@ from datetime import date
 
 @login_required
 def egg_production_list(request):
-    productions  = EggProduction.objects.all().order_by('-collection_date')
-    flocks       = LayingFlock.objects.filter(status='Active')
+    from erp_config.models import Building
+    productions   = EggProduction.objects.all().order_by('-collection_date')
+    flocks        = LayingFlock.objects.filter(status='Active')
     current_price = EggPriceConfig.objects.first()
+    buildings     = Building.objects.filter(type='Laying')
 
     paginator    = Paginator(productions, 10)
     page         = request.GET.get('page')
@@ -21,6 +23,7 @@ def egg_production_list(request):
         'productions':   productions,
         'flocks':        flocks,
         'current_price': current_price,
+        'buildings':     buildings,
     })
 
 @login_required
@@ -34,7 +37,6 @@ def egg_production_save(request):
         recorded   = request.POST['recorded_by']
         remarks    = request.POST.get('remarks', '')
 
-        # get current price
         price_obj = EggPriceConfig.objects.first()
         if not price_obj:
             messages.error(request, 'No egg price set! Please set a price in Config first.')
@@ -75,6 +77,7 @@ def egg_production_delete(request, pk):
 
 @login_required
 def egg_production_update(request, pk):
+    from erp_config.models import Building
     production = get_object_or_404(EggProduction, pk=pk)
     if request.method == 'POST':
         production.building        = request.POST['building']
@@ -84,8 +87,6 @@ def egg_production_update(request, pk):
         production.cracked_eggs    = production.total_eggs - production.good_eggs
         production.recorded_by     = request.POST['recorded_by']
         production.remarks         = request.POST.get('remarks', '')
-
-        # recalculate
         production.production_rate = round(
             (production.good_eggs / production.hen_count * 100), 2
         ) if production.hen_count > 0 else 0
@@ -95,10 +96,12 @@ def egg_production_update(request, pk):
         production.save()
         messages.success(request, 'Record updated!')
         return redirect('egg_production_list')
-    flocks = LayingFlock.objects.filter(status='Active')
+    flocks    = LayingFlock.objects.filter(status='Active')
+    buildings = Building.objects.filter(type='Laying')
     return render(request, 'egg_production/edit.html', {
         'production': production,
         'flocks':     flocks,
+        'buildings':  buildings,
     })
 
 @login_required

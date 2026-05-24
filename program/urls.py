@@ -1,0 +1,13 @@
+from django.urls import path
+from . import views
+
+urlpatterns = [
+    path('growing/',                    views.program_growing, name='program_growing'),
+    path('laying/',                     views.program_laying,  name='program_laying'),
+    path('save/',                       views.program_save,    name='program_save'),
+    path('delete/<int:pk>/',            views.program_delete,  name='program_delete'),
+    path('<int:program_pk>/step/save/', views.step_save,       name='step_save'),
+    path('step/delete/<int:pk>/',       views.step_delete,     name='step_delete'),
+    path('view/growing/',               views.view_growing,    name='view_growing'),
+    path('view/laying/',                views.view_laying,     name='view_laying'),
+]

@@ -17,11 +17,20 @@ def generate_item_id():
 
 @login_required
 def stock_list(request):
-    stock_all = Stock.objects.all().order_by('-date')
-    paginator = Paginator(stock_all, 10) 
-    page      = request.GET.get('page')
-    stocks    = paginator.get_page(page)
-    return render(request, 'stock/list.html', {'stocks': stocks})
+    from erp_config.models import Category, Unit, Building
+    stock_all  = Stock.objects.all().order_by('-date')
+    paginator  = Paginator(stock_all, 10)
+    page       = request.GET.get('page')
+    stocks     = paginator.get_page(page)
+    categories = Category.objects.all()
+    units      = Unit.objects.all()
+    buildings  = Building.objects.filter(type='Growing')
+    return render(request, 'stock/list.html', {
+        'stocks':     stocks,
+        'categories': categories,
+        'units':      units,
+        'buildings':  buildings,
+    })
 
 @login_required
 def stock_save(request):
@@ -64,6 +73,7 @@ def generate_id(request):
 
 @login_required
 def stock_update(request, pk):
+    from erp_config.models import Category, Unit, Building
     stock = get_object_or_404(Stock, pk=pk)
     if request.method == 'POST':
         stock.item_id       = request.POST['item_id']
@@ -76,7 +86,15 @@ def stock_update(request, pk):
         stock.save()
         messages.success(request, f'"{stock.name}" updated successfully!')
         return redirect('stock_list')
-    return render(request, 'stock/edit.html', {'stock': stock})
+    categories = Category.objects.all()
+    units      = Unit.objects.all()
+    buildings  = Building.objects.filter(type='Growing')
+    return render(request, 'stock/edit.html', {
+        'stock':      stock,
+        'categories': categories,
+        'units':      units,
+        'buildings':  buildings,
+    })
 
 @login_required
 def export_stock(request):

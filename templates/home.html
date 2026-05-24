@@ -1,108 +1,234 @@
 {% extends 'base.html' %}
 {% load auth_extras %}
+{% load static %}
 
 {% block page_title %}Home{% endblock %}
 
 {% block content %}
 
+<!-- splash screen -->
+<div id="splash" class="fixed inset-0 z-50 flex flex-col items-center justify-center cursor-pointer"
+     style="background: linear-gradient(135deg, #081C2C 0%, #0D2538 50%, #081C2C 100%)"
+     onclick="dismissSplash()">
+
+    <!-- animated background bubbles -->
+    <div class="absolute inset-0 overflow-hidden pointer-events-none">
+        <div style="position:absolute;width:300px;height:300px;border-radius:50%;
+                    background:radial-gradient(circle, rgba(26,143,209,0.08) 0%, transparent 70%);
+                    top:-50px;left:-50px;animation:floatBubble 6s ease-in-out infinite;"></div>
+        <div style="position:absolute;width:200px;height:200px;border-radius:50%;
+                    background:radial-gradient(circle, rgba(46,204,113,0.08) 0%, transparent 70%);
+                    bottom:100px;right:100px;animation:floatBubble 8s ease-in-out infinite reverse;"></div>
+        <div style="position:absolute;width:150px;height:150px;border-radius:50%;
+                    background:radial-gradient(circle, rgba(212,136,10,0.08) 0%, transparent 70%);
+                    top:200px;right:-30px;animation:floatBubble 7s ease-in-out infinite 1s;"></div>
+    </div>
+
+    <!-- logo -->
+    <div id="splash-logo" style="opacity:0;animation:splashFadeUp 0.8s ease 0.2s forwards;text-align:center;">
+        <img src="{% static 'logo.jpg' %}"
+             alt="3C's Farm"
+             class="w-24 h-24 rounded-full object-cover mb-6 shadow-2xl"
+             style="box-shadow: 0 0 40px rgba(26,143,209,0.4)"
+             onerror="this.style.display='none';document.getElementById('splash-emoji').style.display='block'">
+        <div id="splash-emoji" style="display:none;font-size:5rem;margin-bottom:1.5rem;">🐔</div>
+    </div>
+
+    <!-- title -->
+    <div id="splash-title" style="opacity:0;animation:splashFadeUp 0.8s ease 0.5s forwards;text-align:center;">
+        <h1 style="font-size:2.5rem;font-weight:800;color:white;margin-bottom:0.5rem;letter-spacing:-0.5px;">
+            Welcome to <span style="color:#1A8FD1;">3C's</span> ERP
+        </h1>
+        <p style="color:#6A8FAD;font-size:0.95rem;margin-bottom:2rem;">
+            Poultry Farm Management System
+        </p>
+    </div>
+
+    <!-- divider -->
+    <div id="splash-divider" style="opacity:0;animation:splashFadeUp 0.8s ease 0.8s forwards;">
+        <div style="width:60px;height:3px;background:linear-gradient(90deg,#1A8FD1,#2ECC71);border-radius:2px;margin:0 auto 2rem;"></div>
+    </div>
+
+    <!-- cta -->
+    <div id="splash-cta" style="opacity:0;animation:splashPulse 2s ease 1.2s infinite;">
+        <p style="color:#6A8FAD;font-size:0.85rem;letter-spacing:0.05em;">
+            👆 Click anywhere to continue
+        </p>
+    </div>
+
+    <!-- auto timer bar -->
+    <div style="position:absolute;bottom:0;left:0;height:3px;background:#1A8FD1;border-radius:2px;width:0%;"
+         id="timer-bar"></div>
+</div>
+
+<!-- main content -->
+<div id="main-content" style="opacity:0;transition:opacity 0.6s ease;">
+
+<style>
+    @keyframes splashFadeUp {
+        from { opacity:0; transform:translateY(20px); }
+        to   { opacity:1; transform:translateY(0); }
+    }
+    @keyframes floatBubble {
+        0%,100% { transform:translateY(0px); }
+        50%      { transform:translateY(-20px); }
+    }
+    @keyframes splashPulse {
+        0%,100% { opacity:0.4; }
+        50%      { opacity:1; }
+    }
+    @keyframes fadeInUp {
+        from { opacity:0; transform:translateY(16px); }
+        to   { opacity:1; transform:translateY(0); }
+    }
+    @keyframes pulse-red {
+        0%,100% { opacity:1; }
+        50%      { opacity:0.4; }
+    }
+    .kpi-card {
+        opacity:0;
+        animation:fadeInUp 0.5s ease forwards;
+        transition:transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .kpi-card:hover {
+        transform:translateY(-4px);
+        box-shadow:0 10px 30px rgba(0,0,0,0.35);
+    }
+    .action-card {
+        opacity:0;
+        animation:fadeInUp 0.5s ease forwards;
+        transition:transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .action-card:hover {
+        transform:translateY(-4px);
+        box-shadow:0 10px 30px rgba(0,0,0,0.35);
+    }
+    .pulse-dot { animation:pulse-red 1.2s ease-in-out infinite; }
+    .section-label {
+        display:flex; align-items:center; gap:8px; margin-bottom:12px;
+    }
+    .section-label::after {
+        content:''; flex:1; height:1px; background:#1E3A50;
+    }
+</style>
+
 <!-- welcome -->
-<div class="mb-6">
+<div class="mb-6" style="animation:fadeInUp 0.4s ease forwards;opacity:0;">
     <h1 class="text-2xl font-bold text-white">
         👋 Welcome back, {{ request.user.username }}!
     </h1>
-    <p class="text-muted text-sm mt-1">Here's what's happening at 3C's Farm today.</p>
+    <p class="text-muted text-sm mt-1">
+        Here's what's happening at 3C's Farm today.
+        <span class="ml-2 text-xs text-border" id="today-date"></span>
+    </p>
 </div>
 
 <!-- Growing KPIs -->
-<div class="mb-2">
-    <p class="text-xs font-bold text-teal uppercase tracking-widest mb-3">🌱 Growing</p>
+<div class="section-label">
+    <p class="text-xs font-bold text-teal uppercase tracking-widest">🌱 Growing</p>
 </div>
 <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
 
-    <div class="bg-sidebar border border-border rounded-xl p-5 border-t-2 border-t-blue">
+    <div class="kpi-card bg-sidebar border border-border rounded-xl p-5 border-l-4 border-l-blue" style="animation-delay:0.05s">
         <p class="text-xs text-muted mb-2">🐔 Total Alive</p>
-        <p class="text-3xl font-bold text-blue">{{ total_chicks|default:"0" }}</p>
+        <p class="text-3xl font-bold text-blue" data-target="{{ total_chicks|default:'0' }}">0</p>
         <p class="text-xs text-muted mt-1">across all flocks</p>
     </div>
 
-    <div class="bg-sidebar border border-border rounded-xl p-5 border-t-2 border-t-red-500">
-        <p class="text-xs text-muted mb-2">💀 Deaths Today</p>
-        <p class="text-3xl font-bold text-red-400">{{ today_deaths|default:"0" }}</p>
+    <div class="kpi-card bg-sidebar border border-border rounded-xl p-5 border-l-4
+                {% if today_deaths > 0 %}border-l-red-500{% else %}border-l-green{% endif %}"
+         style="animation-delay:0.1s">
+        <p class="text-xs text-muted mb-2 flex items-center gap-2">
+            💀 Deaths Today
+            {% if today_deaths > 0 %}
+            <span class="pulse-dot inline-block w-2 h-2 rounded-full bg-red-500"></span>
+            {% endif %}
+        </p>
+        <p class="text-3xl font-bold {% if today_deaths > 0 %}text-red-400{% else %}text-green{% endif %}"
+           data-target="{{ today_deaths|default:'0' }}">0</p>
         <p class="text-xs text-muted mt-1">recorded today</p>
     </div>
 
-    <div class="bg-sidebar border border-border rounded-xl p-5 border-t-2 border-t-teal">
+    <div class="kpi-card bg-sidebar border border-border rounded-xl p-5 border-l-4 border-l-teal" style="animation-delay:0.15s">
         <p class="text-xs text-muted mb-2">💰 This Month</p>
-        <p class="text-3xl font-bold text-teal">₱{{ total_expense|default:"0"|floatformat:0 }}</p>
+        <p class="text-3xl font-bold text-teal" data-target="{{ total_expense|default:'0'|floatformat:0 }}" data-prefix="₱">₱0</p>
         <p class="text-xs text-muted mt-1">total expenses</p>
     </div>
 
-    <div class="bg-sidebar border border-border rounded-xl p-5 border-t-2 border-t-purple-500">
+    <div class="kpi-card bg-sidebar border border-border rounded-xl p-5 border-l-4 border-l-purple-500" style="animation-delay:0.2s">
         <p class="text-xs text-muted mb-2">📦 Stock Items</p>
-        <p class="text-3xl font-bold text-purple-400">{{ stock_items|default:"0" }}</p>
+        <p class="text-3xl font-bold text-purple-400" data-target="{{ stock_items|default:'0' }}">0</p>
         <p class="text-xs text-muted mt-1">in inventory</p>
     </div>
 
-    <div class="bg-sidebar border border-border rounded-xl p-5 border-t-2
-                {% if low_stock > 0 %}border-t-red-500{% else %}border-t-green{% endif %}">
-        <p class="text-xs text-muted mb-2">⚠️ Low Stock</p>
-        <p class="text-3xl font-bold {% if low_stock > 0 %}text-red-400{% else %}text-green{% endif %}">
-            {{ low_stock|default:"0" }}
+    <div class="kpi-card bg-sidebar border border-border rounded-xl p-5 border-l-4
+                {% if low_stock > 0 %}border-l-red-500{% else %}border-l-green{% endif %}"
+         style="animation-delay:0.25s">
+        <p class="text-xs text-muted mb-2 flex items-center gap-2">
+            ⚠️ Low Stock
+            {% if low_stock > 0 %}
+            <span class="pulse-dot inline-block w-2 h-2 rounded-full bg-red-500"></span>
+            {% endif %}
         </p>
+        <p class="text-3xl font-bold {% if low_stock > 0 %}text-red-400{% else %}text-green{% endif %}"
+           data-target="{{ low_stock|default:'0' }}">0</p>
         <p class="text-xs text-muted mt-1">items running low</p>
     </div>
 
 </div>
 
 <!-- Laying KPIs -->
-<div class="mb-2">
-    <p class="text-xs font-bold text-amber uppercase tracking-widest mb-3">🥚 Laying</p>
+<div class="section-label">
+    <p class="text-xs font-bold text-amber uppercase tracking-widest">🥚 Laying</p>
 </div>
 <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
 
-    <div class="bg-sidebar border border-border rounded-xl p-5 border-t-2 border-t-amber">
+    <div class="kpi-card bg-sidebar border border-border rounded-xl p-5 border-l-4 border-l-amber" style="animation-delay:0.3s">
         <p class="text-xs text-muted mb-2">🐔 Total Hens</p>
-        <p class="text-3xl font-bold text-amber">{{ laying_hens|default:"0" }}</p>
+        <p class="text-3xl font-bold text-amber" data-target="{{ laying_hens|default:'0' }}">0</p>
         <p class="text-xs text-muted mt-1">across RTL buildings</p>
     </div>
 
-    <div class="bg-sidebar border border-border rounded-xl p-5 border-t-2 border-t-green">
+    <div class="kpi-card bg-sidebar border border-border rounded-xl p-5 border-l-4 border-l-green" style="animation-delay:0.35s">
         <p class="text-xs text-muted mb-2">🥚 Eggs Today</p>
-        <p class="text-3xl font-bold text-green">{{ eggs_today|default:"0" }}</p>
+        <p class="text-3xl font-bold text-green" data-target="{{ eggs_today|default:'0' }}">0</p>
         <p class="text-xs text-muted mt-1">good eggs collected</p>
     </div>
 
-    <div class="bg-sidebar border border-border rounded-xl p-5 border-t-2 border-t-blue">
+    <div class="kpi-card bg-sidebar border border-border rounded-xl p-5 border-l-4 border-l-blue" style="animation-delay:0.4s">
         <p class="text-xs text-muted mb-2">📈 Avg Rate</p>
-        <p class="text-3xl font-bold text-blue">{{ avg_rate|default:"0" }}%</p>
+        <p class="text-3xl font-bold text-blue" data-target="{{ avg_rate|default:'0' }}" data-suffix="%">0%</p>
         <p class="text-xs text-muted mt-1">production rate</p>
     </div>
 
-    <div class="bg-sidebar border border-border rounded-xl p-5 border-t-2 border-t-teal">
+    <div class="kpi-card bg-sidebar border border-border rounded-xl p-5 border-l-4 border-l-teal" style="animation-delay:0.45s">
         <p class="text-xs text-muted mb-2">💰 Total Revenue</p>
-        <p class="text-3xl font-bold text-teal">₱{{ total_revenue|default:"0"|floatformat:0 }}</p>
+        <p class="text-3xl font-bold text-teal" data-target="{{ total_revenue|default:'0'|floatformat:0 }}" data-prefix="₱">₱0</p>
         <p class="text-xs text-muted mt-1">from egg sales</p>
     </div>
 
-    <div class="bg-sidebar border border-border rounded-xl p-5 border-t-2
-                {% if net_profit >= 0 %}border-t-green{% else %}border-t-red-500{% endif %}">
+    <div class="kpi-card bg-sidebar border border-border rounded-xl p-5 border-l-4
+                {% if net_profit >= 0 %}border-l-green{% else %}border-l-red-500{% endif %}"
+         style="animation-delay:0.5s">
         <p class="text-xs text-muted mb-2">📊 Net Profit</p>
-        <p class="text-3xl font-bold {% if net_profit >= 0 %}text-green{% else %}text-red-400{% endif %}">
-            ₱{{ net_profit|default:"0"|floatformat:0 }}
-        </p>
+        <p class="text-3xl font-bold {% if net_profit >= 0 %}text-green{% else %}text-red-400{% endif %}"
+           data-target="{{ net_profit|default:'0'|floatformat:0 }}" data-prefix="₱">₱0</p>
         <p class="text-xs text-muted mt-1">revenue - expenses</p>
     </div>
 
 </div>
 
 <!-- quick actions -->
-<h2 class="text-xs font-bold text-muted uppercase tracking-wider mb-3">Quick Actions</h2>
+<div class="section-label">
+    <p class="text-xs font-bold text-muted uppercase tracking-wider">Quick Actions</p>
+</div>
 <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
 
     {% if request.user|has_group:'admin' or request.user|has_group:'viewer' or request.user|has_group:'stock' %}
     <a href="{% url 'stock_list' %}"
-       class="bg-sidebar border border-border hover:border-blue rounded-xl p-5 transition-all group">
-        <div class="text-2xl mb-2">📦</div>
+       class="action-card bg-sidebar border border-border hover:border-blue rounded-xl p-5 group"
+       style="animation-delay:0.55s">
+        <div class="w-10 h-10 rounded-lg bg-blue/20 flex items-center justify-center text-xl mb-3 group-hover:bg-blue/30 transition-all">📦</div>
         <p class="text-sm font-bold text-white group-hover:text-blue transition-all">Stock</p>
         <p class="text-xs text-muted mt-1">Manage inventory</p>
     </a>
@@ -110,8 +236,9 @@
 
     {% if request.user|has_group:'admin' or request.user|has_group:'viewer' or request.user|has_group:'consumption' %}
     <a href="{% url 'consumption_list' %}"
-       class="bg-sidebar border border-border hover:border-teal rounded-xl p-5 transition-all group">
-        <div class="text-2xl mb-2">📉</div>
+       class="action-card bg-sidebar border border-border hover:border-teal rounded-xl p-5 group"
+       style="animation-delay:0.6s">
+        <div class="w-10 h-10 rounded-lg bg-teal/20 flex items-center justify-center text-xl mb-3 group-hover:bg-teal/30 transition-all">📉</div>
         <p class="text-sm font-bold text-white group-hover:text-teal transition-all">Consumption</p>
         <p class="text-xs text-muted mt-1">Log usage</p>
     </a>
@@ -119,8 +246,9 @@
 
     {% if request.user|has_group:'admin' or request.user|has_group:'viewer' or request.user|has_group:'flock' %}
     <a href="{% url 'flock_list' %}"
-       class="bg-sidebar border border-border hover:border-green rounded-xl p-5 transition-all group">
-        <div class="text-2xl mb-2">🐔</div>
+       class="action-card bg-sidebar border border-border hover:border-green rounded-xl p-5 group"
+       style="animation-delay:0.65s">
+        <div class="w-10 h-10 rounded-lg bg-green/20 flex items-center justify-center text-xl mb-3 group-hover:bg-green/30 transition-all">🐔</div>
         <p class="text-sm font-bold text-white group-hover:text-green transition-all">Flock</p>
         <p class="text-xs text-muted mt-1">Track batches</p>
     </a>
@@ -128,40 +256,96 @@
 
     {% if request.user|has_group:'admin' or request.user|has_group:'viewer' or request.user|has_group:'finance' %}
     <a href="{% url 'finance_list' %}"
-       class="bg-sidebar border border-border hover:border-amber rounded-xl p-5 transition-all group">
-        <div class="text-2xl mb-2">💰</div>
+       class="action-card bg-sidebar border border-border hover:border-amber rounded-xl p-5 group"
+       style="animation-delay:0.7s">
+        <div class="w-10 h-10 rounded-lg bg-amber/20 flex items-center justify-center text-xl mb-3 group-hover:bg-amber/30 transition-all">💰</div>
         <p class="text-sm font-bold text-white group-hover:text-amber transition-all">Finance</p>
         <p class="text-xs text-muted mt-1">Track expenses</p>
     </a>
     {% endif %}
 
-    {% if request.user|has_group:'admin' or request.user|has_group:'viewer' %}
+    {% if request.user|has_group:'admin' or request.user|has_group:'viewer' or request.user|has_group:'laying_flock_user' %}
     <a href="{% url 'laying_flock_list' %}"
-       class="bg-sidebar border border-border hover:border-amber rounded-xl p-5 transition-all group">
-        <div class="text-2xl mb-2">🐔</div>
+       class="action-card bg-sidebar border border-border hover:border-amber rounded-xl p-5 group"
+       style="animation-delay:0.75s">
+        <div class="w-10 h-10 rounded-lg bg-amber/20 flex items-center justify-center text-xl mb-3 group-hover:bg-amber/30 transition-all">🐔</div>
         <p class="text-sm font-bold text-white group-hover:text-amber transition-all">Flock (RTL)</p>
         <p class="text-xs text-muted mt-1">Laying hen batches</p>
     </a>
     {% endif %}
 
-    {% if request.user|has_group:'admin' or request.user|has_group:'viewer' %}
+    {% if request.user|has_group:'admin' or request.user|has_group:'viewer' or request.user|has_group:'egg_production_user' %}
     <a href="{% url 'egg_production_list' %}"
-       class="bg-sidebar border border-border hover:border-amber rounded-xl p-5 transition-all group">
-        <div class="text-2xl mb-2">🥚</div>
+       class="action-card bg-sidebar border border-border hover:border-amber rounded-xl p-5 group"
+       style="animation-delay:0.8s">
+        <div class="w-10 h-10 rounded-lg bg-amber/20 flex items-center justify-center text-xl mb-3 group-hover:bg-amber/30 transition-all">🥚</div>
         <p class="text-sm font-bold text-white group-hover:text-amber transition-all">Egg Production</p>
         <p class="text-xs text-muted mt-1">Log daily eggs</p>
     </a>
     {% endif %}
 
-    {% if request.user|has_group:'admin' or request.user|has_group:'viewer' %}
+    {% if request.user|has_group:'admin' or request.user|has_group:'viewer' or request.user|has_group:'laying_finance_user' %}
     <a href="{% url 'laying_finance_list' %}"
-       class="bg-sidebar border border-border hover:border-amber rounded-xl p-5 transition-all group">
-        <div class="text-2xl mb-2">💰</div>
+       class="action-card bg-sidebar border border-border hover:border-amber rounded-xl p-5 group"
+       style="animation-delay:0.85s">
+        <div class="w-10 h-10 rounded-lg bg-amber/20 flex items-center justify-center text-xl mb-3 group-hover:bg-amber/30 transition-all">💰</div>
         <p class="text-sm font-bold text-white group-hover:text-amber transition-all">Laying Finance</p>
         <p class="text-xs text-muted mt-1">Track laying expenses</p>
     </a>
     {% endif %}
 
 </div>
+
+</div> <!-- end main-content -->
+
+<script>
+    // ── splash ────────────────────────────────────────────────
+    const bar = document.getElementById('timer-bar')
+    let width = 0
+    const timerInterval = setInterval(() => {
+        width += 100 / 30
+        bar.style.width = Math.min(width, 100) + '%'
+    }, 100)
+
+    const autoTimer = setTimeout(() => dismissSplash(), 3000)
+
+    function dismissSplash() {
+        clearTimeout(autoTimer)
+        clearInterval(timerInterval)
+        const splash = document.getElementById('splash')
+        const main   = document.getElementById('main-content')
+        splash.style.transition = 'opacity 0.6s ease, transform 0.6s ease'
+        splash.style.opacity    = '0'
+        splash.style.transform  = 'scale(1.03)'
+        setTimeout(() => {
+            splash.style.display = 'none'
+            main.style.opacity   = '1'
+            document.querySelectorAll('[data-target]').forEach(el => animateCount(el))
+        }, 600)
+    }
+
+    // ── today's date ──────────────────────────────────────────
+    const now = new Date()
+    document.getElementById('today-date').textContent =
+        now.toLocaleDateString('en-PH', { weekday:'long', year:'numeric', month:'long', day:'numeric' })
+
+    // ── count up ──────────────────────────────────────────────
+    function animateCount(el) {
+        const target   = parseFloat(el.getAttribute('data-target')) || 0
+        const prefix   = el.getAttribute('data-prefix') || ''
+        const suffix   = el.getAttribute('data-suffix') || ''
+        const duration = 1200
+        const start    = performance.now()
+        function update(time) {
+            const elapsed  = time - start
+            const progress = Math.min(elapsed / duration, 1)
+            const ease     = 1 - Math.pow(1 - progress, 3)
+            const value    = Math.floor(ease * target)
+            el.textContent = prefix + value.toLocaleString() + suffix
+            if (progress < 1) requestAnimationFrame(update)
+        }
+        requestAnimationFrame(update)
+    }
+</script>
 
 {% endblock %}
