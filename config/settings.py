@@ -166,4 +166,5 @@ STATICFILES_DIRS = [BASE_DIR / 'static']
 CSRF_TRUSTED_ORIGINS = [
     'https://*.trycloudflare.com',
     'https://*.ngrok-free.app',
+    'https://3csfarm.pythonanywhere.com',
 ]
