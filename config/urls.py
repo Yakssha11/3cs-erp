@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.urls import path, include
 from django.contrib.auth import views as auth_views
+from django.contrib.auth import logout as auth_logout
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 
@@ -156,6 +157,10 @@ def analytics(request):
         'rtl2_exp':       rtl2_exp,
     })
 
+def logout_view(request):
+    auth_logout(request)
+    return redirect('/login/')
+
 urlpatterns = [
     path('admin/',       admin.site.urls),
     path('',             home,            name='home'),
@@ -165,7 +170,7 @@ urlpatterns = [
     path('finance/',     include('finance.urls')),
     path('analytics/',   analytics,       name='analytics'),
     path('login/',       auth_views.LoginView.as_view(template_name='login.html'), name='login'),
-    path('logout/',      auth_views.LogoutView.as_view(next_page='/login/'),        name='logout'),
+    path('logout/',      logout_view,        name='logout'),
     path('config/', include('erp_config.urls')),
     path('laying/flock/', include('laying_flock.urls')),
     path('laying/eggs/', include('egg_production.urls')),
