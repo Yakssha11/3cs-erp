@@ -341,10 +341,13 @@
                 {% else %}
                 <span class="px-1.5 py-0.5 rounded text-xs bg-amber/20 text-amber">Staff</span>
                 {% endif %}
-                <a href="{% url 'logout' %}"
-                   class="text-xs text-muted hover:text-white transition-all bg-content px-3 py-1.5 rounded border border-border">
-                    Logout
-                </a>
+                <form method="POST" action="{% url 'logout' %}" style="margin:0;padding:0;display:inline;">
+                    {% csrf_token %}
+                    <button type="submit"
+                            class="text-xs text-muted hover:text-white transition-all bg-content px-3 py-1.5 rounded border border-border">
+                        Logout
+                    </button>
+                </form>
             </div>
         </header>
 
