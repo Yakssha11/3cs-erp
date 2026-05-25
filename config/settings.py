@@ -94,16 +94,30 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'stockmanagementsystem',
-        'USER': 'root',
-        'PASSWORD': '',
-        'HOST': 'localhost',
-        'PORT': '3306',
+import os
+
+if os.environ.get('PYTHONANYWHERE_SITE'):
+    DATABASES = {
+        'default': {
+            'ENGINE':   'django.db.backends.mysql',
+            'NAME':     '3csfarm$stockmanagementsystem',
+            'USER':     '3csfarm',
+            'PASSWORD': 'your_mysql_password_here',
+            'HOST':     '3csfarm.mysql.pythonanywhere-services.com',
+            'PORT':     '3306',
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE':   'django.db.backends.mysql',
+            'NAME':     'stockmanagementsystem',
+            'USER':     'root',
+            'PASSWORD': '',
+            'HOST':     'localhost',
+            'PORT':     '3306',
+        }
+    }
 
 
 # Password validation
