@@ -102,7 +102,7 @@ if os.environ.get('PYTHONANYWHERE_SITE'):
             'ENGINE':   'django.db.backends.mysql',
             'NAME':     '3csfarm$stockmanagementsystem',
             'USER':     '3csfarm',
-            'PASSWORD': '3csfarm123',
+            'PASSWORD': 'Yassha123',
             'HOST':     '3csfarm.mysql.pythonanywhere-services.com',
             'PORT':     '3306',
         }
