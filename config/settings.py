@@ -168,3 +168,8 @@ CSRF_TRUSTED_ORIGINS = [
     'https://*.ngrok-free.app',
     'https://3csfarm.pythonanywhere.com',
 ]
+
+CSRF_USE_SESSIONS = False
+SESSION_COOKIE_SECURE = False
+CSRF_COOKIE_SECURE = False
+CSRF_COOKIE_HTTPONLY = False
