@@ -167,6 +167,7 @@ CSRF_TRUSTED_ORIGINS = [
     'https://*.trycloudflare.com',
     'https://*.ngrok-free.app',
     'https://3csfarm.pythonanywhere.com',
+    'http://3csfarm.pythonanywhere.com',
 ]
 
 CSRF_USE_SESSIONS = False
