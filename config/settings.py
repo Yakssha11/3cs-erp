@@ -170,6 +170,10 @@ CSRF_TRUSTED_ORIGINS = [
     'http://3csfarm.pythonanywhere.com',
 ]
 
+# Fix for PythonAnywhere proxy
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+USE_X_FORWARDED_HOST = True
+
 CSRF_USE_SESSIONS = False
 SESSION_COOKIE_SECURE = False
 CSRF_COOKIE_SECURE = False
