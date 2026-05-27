@@ -170,14 +170,26 @@ def consumption_delete(request, pk):
 @login_required
 def get_items(request):
     from django.db.models import Sum
+    from master_data.models import Material
     category = request.GET.get('category', '')
     items = Stock.objects.filter(
         category=category,
         quantity__gt=0
-    ).values('item_id', 'name').annotate(
+    ).values('item_id', 'name', 'unit').annotate(
         quantity=Sum('quantity')
     ).order_by('name')
-    return JsonResponse({'items': list(items)})
+
+    # add unit from Material as fallback
+    result = []
+    for item in items:
+        material = Material.objects.filter(item_id=item['item_id']).first()
+        result.append({
+            'item_id':  item['item_id'],
+            'name':     item['name'],
+            'quantity': item['quantity'],
+            'unit':     material.unit if material else item['unit'],
+        })
+    return JsonResponse({'items': result})
 
 @login_required
 def consumption_update(request, pk):
