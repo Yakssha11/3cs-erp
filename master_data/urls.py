@@ -12,4 +12,9 @@ urlpatterns = [
     # suppliers
     path('supplier/save/',            views.supplier_save,       name='supplier_save'),
     path('supplier/delete/<int:pk>/', views.supplier_delete,     name='supplier_delete'),
+
+    # materials
+    path('material/save/',            views.material_save,       name='material_save'),
+    path('material/delete/<int:pk>/', views.material_delete,     name='material_delete'),
+    path('material/list/',            views.get_materials,       name='get_materials_list'),
 ]

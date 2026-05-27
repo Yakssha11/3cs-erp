@@ -19,7 +19,7 @@
 <div class="flex items-center justify-between mb-6">
     <div>
         <h1 class="text-2xl font-bold text-white">📋 Master Data — Records</h1>
-        <p class="text-muted text-sm mt-1">View and export customers and suppliers</p>
+        <p class="text-muted text-sm mt-1">View and export customers, suppliers and materials</p>
     </div>
     <a href="?tab={{ active_tab }}&search={{ search }}&export=1"
        class="bg-[#196E78] hover:bg-[#145960] text-white text-sm font-bold px-4 py-2 rounded-lg transition-all">
@@ -37,12 +37,14 @@
             class="tab-btn px-4 py-2 rounded-lg text-xs font-bold transition-all border">
         🏭 Suppliers
     </button>
+    <button onclick="showTab('materials')" id="btn-materials"
+            class="tab-btn px-4 py-2 rounded-lg text-xs font-bold transition-all border">
+        📦 Materials
+    </button>
 </div>
 
 <!-- ── CUSTOMERS TAB ──────────────────────────────────── -->
 <div id="tab-customers" class="tab-content hidden">
-
-    <!-- search -->
     <form method="GET" class="mb-4">
         <input type="hidden" name="tab" value="customers">
         <input type="text" name="search" value="{{ search }}"
@@ -50,8 +52,6 @@
                onchange="this.form.submit()"
                class="w-full bg-sidebar border border-border rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-blue">
     </form>
-
-    <!-- table -->
     <div class="bg-sidebar border border-border rounded-xl">
         <div class="px-4 py-3 border-b border-border flex items-center justify-between">
             <h2 class="text-sm font-bold text-white">👥 Customers</h2>
@@ -86,45 +86,32 @@
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="5" class="px-4 py-8 text-center text-muted">
-                        No customers found.
-                    </td>
+                    <td colspan="5" class="px-4 py-8 text-center text-muted">No customers found.</td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
         </div>
     </div>
-
-    <!-- pagination -->
     {% if customers.has_other_pages %}
     <div class="flex items-center justify-between mt-4">
-        <p class="text-xs text-muted">
-            Page {{ customers.number }} of {{ customers.paginator.num_pages }}
-        </p>
+        <p class="text-xs text-muted">Page {{ customers.number }} of {{ customers.paginator.num_pages }}</p>
         <div class="flex gap-2">
             {% if customers.has_previous %}
             <a href="?tab=customers&search={{ search }}&cpage={{ customers.previous_page_number }}"
-               class="px-3 py-1.5 rounded-lg text-xs font-bold bg-sidebar border border-border text-muted hover:border-blue transition-all">
-                ← Prev
-            </a>
+               class="px-3 py-1.5 rounded-lg text-xs font-bold bg-sidebar border border-border text-muted hover:border-blue transition-all">← Prev</a>
             {% endif %}
             {% if customers.has_next %}
             <a href="?tab=customers&search={{ search }}&cpage={{ customers.next_page_number }}"
-               class="px-3 py-1.5 rounded-lg text-xs font-bold bg-sidebar border border-border text-muted hover:border-blue transition-all">
-                Next →
-            </a>
+               class="px-3 py-1.5 rounded-lg text-xs font-bold bg-sidebar border border-border text-muted hover:border-blue transition-all">Next →</a>
             {% endif %}
         </div>
     </div>
     {% endif %}
-
 </div>
 
 <!-- ── SUPPLIERS TAB ──────────────────────────────────── -->
 <div id="tab-suppliers" class="tab-content hidden">
-
-    <!-- search -->
     <form method="GET" class="mb-4">
         <input type="hidden" name="tab" value="suppliers">
         <input type="text" name="search" value="{{ search }}"
@@ -132,8 +119,6 @@
                onchange="this.form.submit()"
                class="w-full bg-sidebar border border-border rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-teal">
     </form>
-
-    <!-- table -->
     <div class="bg-sidebar border border-border rounded-xl">
         <div class="px-4 py-3 border-b border-border flex items-center justify-between">
             <h2 class="text-sm font-bold text-white">🏭 Suppliers</h2>
@@ -169,43 +154,100 @@
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="5" class="px-4 py-8 text-center text-muted">
-                        No suppliers found.
-                    </td>
+                    <td colspan="5" class="px-4 py-8 text-center text-muted">No suppliers found.</td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
         </div>
     </div>
-
-    <!-- pagination -->
     {% if suppliers.has_other_pages %}
     <div class="flex items-center justify-between mt-4">
-        <p class="text-xs text-muted">
-            Page {{ suppliers.number }} of {{ suppliers.paginator.num_pages }}
-        </p>
+        <p class="text-xs text-muted">Page {{ suppliers.number }} of {{ suppliers.paginator.num_pages }}</p>
         <div class="flex gap-2">
             {% if suppliers.has_previous %}
             <a href="?tab=suppliers&search={{ search }}&spage={{ suppliers.previous_page_number }}"
-               class="px-3 py-1.5 rounded-lg text-xs font-bold bg-sidebar border border-border text-muted hover:border-teal transition-all">
-                ← Prev
-            </a>
+               class="px-3 py-1.5 rounded-lg text-xs font-bold bg-sidebar border border-border text-muted hover:border-teal transition-all">← Prev</a>
             {% endif %}
             {% if suppliers.has_next %}
             <a href="?tab=suppliers&search={{ search }}&spage={{ suppliers.next_page_number }}"
-               class="px-3 py-1.5 rounded-lg text-xs font-bold bg-sidebar border border-border text-muted hover:border-teal transition-all">
-                Next →
-            </a>
+               class="px-3 py-1.5 rounded-lg text-xs font-bold bg-sidebar border border-border text-muted hover:border-teal transition-all">Next →</a>
             {% endif %}
         </div>
     </div>
     {% endif %}
+</div>
 
+<!-- ── MATERIALS TAB ──────────────────────────────────── -->
+<div id="tab-materials" class="tab-content hidden">
+    <form method="GET" class="mb-4">
+        <input type="hidden" name="tab" value="materials">
+        <input type="text" name="search" value="{{ search }}"
+               placeholder="🔍  Search materials..."
+               onchange="this.form.submit()"
+               class="w-full bg-sidebar border border-border rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-green">
+    </form>
+    <div class="bg-sidebar border border-border rounded-xl">
+        <div class="px-4 py-3 border-b border-border flex items-center justify-between">
+            <h2 class="text-sm font-bold text-white">📦 Materials</h2>
+            <span class="text-xs text-muted">{{ materials.paginator.count }} total</span>
+        </div>
+        <div class="overflow-x-auto">
+        <table class="w-full text-sm whitespace-nowrap">
+            <thead>
+                <tr class="border-b border-border text-muted text-xs uppercase tracking-wider">
+                    <th class="px-4 py-3 text-left">Item ID</th>
+                    <th class="px-4 py-3 text-left">Name</th>
+                    <th class="px-4 py-3 text-left">Category</th>
+                    <th class="px-4 py-3 text-left">Unit</th>
+                    <th class="px-4 py-3 text-left">Price</th>
+                    <th class="px-4 py-3 text-left">Description</th>
+                    <th class="px-4 py-3 text-left">Date Added</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for material in materials %}
+                <tr class="border-b border-border hover:bg-content transition-all">
+                    <td class="px-4 py-3 text-muted font-mono text-xs">{{ material.item_id }}</td>
+                    <td class="px-4 py-3 text-white font-semibold">{{ material.name }}</td>
+                    <td class="px-4 py-3">
+                        <span class="px-2 py-1 rounded text-xs font-bold bg-green/20 text-green">
+                            {{ material.category }}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3 text-muted">{{ material.unit }}</td>
+                    <td class="px-4 py-3 text-green font-bold">₱{{ material.price }}</td>
+                    <td class="px-4 py-3 text-muted text-xs">{{ material.description|default:"—" }}</td>
+                    <td class="px-4 py-3 text-muted text-xs">{{ material.Date|date:"Y-m-d" }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="px-4 py-8 text-center text-muted">No materials found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+    {% if materials.has_other_pages %}
+    <div class="flex items-center justify-between mt-4">
+        <p class="text-xs text-muted">Page {{ materials.number }} of {{ materials.paginator.num_pages }}</p>
+        <div class="flex gap-2">
+            {% if materials.has_previous %}
+            <a href="?tab=materials&search={{ search }}&mpage={{ materials.previous_page_number }}"
+               class="px-3 py-1.5 rounded-lg text-xs font-bold bg-sidebar border border-border text-muted hover:border-green transition-all">← Prev</a>
+            {% endif %}
+            {% if materials.has_next %}
+            <a href="?tab=materials&search={{ search }}&mpage={{ materials.next_page_number }}"
+               class="px-3 py-1.5 rounded-lg text-xs font-bold bg-sidebar border border-border text-muted hover:border-green transition-all">Next →</a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
 </div>
 
 <script>
-    const tabs = ['customers', 'suppliers']
+    const tabs = ['customers', 'suppliers', 'materials']
 
     function showTab(name) {
         tabs.forEach(t => {

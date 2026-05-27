@@ -38,3 +38,19 @@ class Supplier(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.type})"
+    
+class Material(models.Model):
+    item_id     = models.CharField(max_length=10, unique=True)
+    name        = models.CharField(max_length=100)
+    category    = models.CharField(max_length=100)
+    unit        = models.CharField(max_length=50)
+    price       = models.DecimalField(max_digits=10, decimal_places=2)
+    description = models.CharField(max_length=255, blank=True)
+    Date        = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'materials'
+        ordering = ['name']
+
+    def __str__(self):
+        return f"{self.item_id} — {self.name}"
