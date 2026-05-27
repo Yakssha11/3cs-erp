@@ -25,7 +25,7 @@ def fifo_deduct(item_id, quantity):
         return False, 0, ''
 
     item_name    = batches.first().name
-    total_available = sum(b.quantity for b in batches)
+    total_available = sum(int(b.quantity) for b in batches)
 
     if quantity > total_available:
         return False, total_available, item_name
@@ -34,16 +34,16 @@ def fifo_deduct(item_id, quantity):
     for batch in batches:
         if remaining <= 0:
             break
-        if batch.quantity >= remaining:
-            batch.quantity -= remaining
+        if int(batch.quantity) >= remaining:
+            batch.quantity = int(batch.quantity) - remaining
             batch.save()
             remaining = 0
         else:
-            remaining -= batch.quantity
+            remaining -= int(batch.quantity)
             batch.quantity = 0
             batch.save()
 
-    total_left = sum(Stock.objects.filter(item_id=item_id).values_list('quantity', flat=True))
+    total_left = sum(int(q) for q in Stock.objects.filter(item_id=item_id).values_list('quantity', flat=True))
     return True, total_left, item_name
 
 def fifo_restore(item_id, quantity):
