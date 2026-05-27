@@ -64,7 +64,7 @@
 
             <div>
                 <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Item</label>
-                <select name="item_id" id="itemSelect" required
+                <select name="item_id" id="itemSelect" required onchange="fillUnit()"
                         class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber">
                     <option value="">Select category first</option>
                 </select>
@@ -78,7 +78,7 @@
 
             <div>
                 <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Unit</label>
-                <select name="unit" required
+                <select name="unit" id="unitSelect" required
                         class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber">
                     <option value="">Select unit</option>
                     {% for unit in units %}
@@ -242,7 +242,7 @@
             .then(data => {
                 select.innerHTML = '<option value="">Select item</option>'
                 data.items.forEach(item => {
-                    select.innerHTML += `<option value="${item.item_id}">
+                    select.innerHTML += `<option value="${item.item_id}" data-unit="${item.unit}">
                         ${item.name} (${item.item_id}) — Stock: ${item.quantity}
                     </option>`
                 })
@@ -250,6 +250,21 @@
                     select.innerHTML = '<option value="">No items in this category</option>'
                 }
             })
+    }
+
+    function fillUnit() {
+        const itemSelect = document.getElementById('itemSelect')
+        const option     = itemSelect.options[itemSelect.selectedIndex]
+        const unit       = option.getAttribute('data-unit')
+        if (unit) {
+            const unitSelect = document.getElementById('unitSelect')
+            for (let i = 0; i < unitSelect.options.length; i++) {
+                if (unitSelect.options[i].value === unit) {
+                    unitSelect.selectedIndex = i
+                    break
+                }
+            }
+        }
     }
 
     function filterTable() {

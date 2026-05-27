@@ -34,6 +34,7 @@
         </button>
     </div>
 </div>
+
 <!-- add form -->
 <div id="addForm" class="hidden bg-sidebar border border-border rounded-xl p-6 mb-6">
     <h2 class="text-sm font-bold text-muted uppercase tracking-wider mb-4">New Consumption Entry</h2>
@@ -68,7 +69,7 @@
             <!-- item -->
             <div>
                 <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Item</label>
-                <select name="item_id" id="itemSelect" required
+                <select name="item_id" id="itemSelect" required onchange="fillUnit()"
                         class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-teal">
                     <option value="">Select category first</option>
                 </select>
@@ -85,7 +86,7 @@
             <!-- unit -->
             <div>
                 <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Unit</label>
-                <select name="unit" required
+                <select name="unit" id="unitSelect" required
                         class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-teal">
                     <option value="">Select unit</option>
                     {% for unit in units %}
@@ -185,6 +186,7 @@
                         <form method="POST" action="{% url 'consumption_delete' c.pk %}"
                               onsubmit="return confirm('Delete this record? Stock will be restored.')"
                               style="margin:0;padding:0;display:inline;line-height:1">
+                            {% csrf_token %}
                             <button type="submit"
                                     style="margin:0;padding:0;line-height:1"
                                     class="text-red-400 hover:text-red-300 text-xs font-bold transition-all">
@@ -225,12 +227,9 @@
             ← Prev
         </a>
         {% endif %}
-
         {% for num in consumptions.paginator.page_range %}
             {% if consumptions.number == num %}
-            <span class="px-3 py-1.5 rounded-lg text-xs font-bold bg-teal text-white">
-                {{ num }}
-            </span>
+            <span class="px-3 py-1.5 rounded-lg text-xs font-bold bg-teal text-white">{{ num }}</span>
             {% elif num > consumptions.number|add:'-3' and num < consumptions.number|add:'3' %}
             <a href="?page={{ num }}"
                class="px-3 py-1.5 rounded-lg text-xs font-bold bg-sidebar border border-border text-muted hover:border-teal hover:text-white transition-all">
@@ -238,7 +237,6 @@
             </a>
             {% endif %}
         {% endfor %}
-
         {% if consumptions.has_next %}
         <a href="?page={{ consumptions.next_page_number }}"
            class="px-3 py-1.5 rounded-lg text-xs font-bold bg-sidebar border border-border text-muted hover:border-teal hover:text-white transition-all">
@@ -269,7 +267,7 @@
             .then(data => {
                 select.innerHTML = '<option value="">Select item</option>'
                 data.items.forEach(item => {
-                    select.innerHTML += `<option value="${item.item_id}">
+                    select.innerHTML += `<option value="${item.item_id}" data-unit="${item.unit}">
                         ${item.name} (${item.item_id}) — Stock: ${item.quantity}
                     </option>`
                 })
@@ -277,6 +275,21 @@
                     select.innerHTML = '<option value="">No items in this category</option>'
                 }
             })
+    }
+
+    function fillUnit() {
+        const itemSelect = document.getElementById('itemSelect')
+        const option     = itemSelect.options[itemSelect.selectedIndex]
+        const unit       = option.getAttribute('data-unit')
+        if (unit) {
+            const unitSelect = document.getElementById('unitSelect')
+            for (let i = 0; i < unitSelect.options.length; i++) {
+                if (unitSelect.options[i].value === unit) {
+                    unitSelect.selectedIndex = i
+                    break
+                }
+            }
+        }
     }
 
     function filterTable() {
@@ -287,7 +300,6 @@
         })
     }
 
-    // set today's date by default
     document.addEventListener('DOMContentLoaded', function() {
         const today = new Date().toISOString().split('T')[0]
         const dateInput = document.querySelector('input[name="date_consumed"]')
