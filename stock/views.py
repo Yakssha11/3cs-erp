@@ -38,7 +38,7 @@ def stock_list(request):
                 'has_expiring': False,
                 'has_expired':  False,
             }
-        grouped[stock.item_id]['total_qty'] += stock.quantity
+        grouped[stock.item_id]['total_qty'] += int(stock.quantity)
         if stock.expiry_date:
             if stock.expiry_date < today:
                 grouped[stock.item_id]['has_expired'] = True
