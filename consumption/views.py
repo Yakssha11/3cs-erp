@@ -47,12 +47,9 @@ def fifo_deduct(item_id, quantity):
     return True, total_left, item_name
 
 def fifo_restore(item_id, quantity):
-    """
-    Restores quantity to the most recent batch (reverse FIFO).
-    """
     batch = Stock.objects.filter(item_id=item_id).order_by('-expiry_date', '-date').first()
     if batch:
-        batch.quantity += quantity
+        batch.quantity = int(batch.quantity) + int(quantity)
         batch.save()
 
 @login_required
