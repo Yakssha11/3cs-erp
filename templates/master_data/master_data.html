@@ -234,6 +234,17 @@
         <form method="POST" action="{% url 'material_save' %}">
             {% csrf_token %}
             <div class="grid grid-cols-2 gap-4 mb-4">
+                <div class="col-span-2">
+                    <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Item ID</label>
+                    <div class="flex gap-2">
+                        <input type="text" name="item_id" id="material_item_id" required placeholder="e.g. 123-A"
+                               class="flex-1 bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-green">
+                        <button type="button" onclick="generateMaterialId()"
+                                class="bg-teal hover:bg-[#138A72] text-white text-sm font-bold px-4 py-2 rounded-lg transition-all">
+                            Generate
+                        </button>
+                    </div>
+                </div>
                 <div>
                     <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Name</label>
                     <input type="text" name="name" required placeholder="e.g. Broiler Feeds"
@@ -342,6 +353,16 @@
         document.getElementById('tab-' + name).classList.remove('hidden')
         const activeBtn = document.getElementById('btn-' + name)
         activeBtn.className = 'tab-btn px-4 py-2 rounded-lg text-xs font-bold transition-all border bg-blue text-white border-blue'
+    }
+
+    function generateMaterialId() {
+        fetch("{% url 'get_materials_list' %}?generate=1")
+            .then(r => r.json())
+            .then(data => {
+                if (data.item_id) {
+                    document.getElementById('material_item_id').value = data.item_id
+                }
+            })
     }
 
     document.addEventListener('DOMContentLoaded', function() {

@@ -100,9 +100,14 @@ def material_save(request):
 
         if name:
             # generate unique item_id
-            item_id = generate_material_id()
-            while Material.objects.filter(item_id=item_id).exists():
+            item_id = request.POST.get('item_id', '').strip()
+            if not item_id:
                 item_id = generate_material_id()
+                while Material.objects.filter(item_id=item_id).exists():
+                    item_id = generate_material_id()
+            if Material.objects.filter(item_id=item_id).exists():
+                messages.error(request, f'Item ID {item_id} already exists!')
+                return redirect('/masterdata/?tab=materials')
 
             Material.objects.create(
                 item_id     = item_id,
@@ -126,6 +131,11 @@ def material_delete(request, pk):
 
 @login_required
 def get_materials(request):
+    if request.GET.get('generate'):
+        item_id = generate_material_id()
+        while Material.objects.filter(item_id=item_id).exists():
+            item_id = generate_material_id()
+        return JsonResponse({'item_id': item_id})
     materials = Material.objects.all().values('item_id', 'name', 'category', 'unit', 'price')
     return JsonResponse({'materials': list(materials)})
 
