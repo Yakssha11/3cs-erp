@@ -3,6 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import JsonResponse
 from django.core.paginator import Paginator
+from django.db.models import F
 from .models import Consumption
 from stock.models import Stock
 import openpyxl
@@ -16,7 +17,7 @@ def fifo_deduct(item_id, quantity, consumption=None):
     batches = Stock.objects.filter(
         item_id=item_id,
         quantity__gt=0
-    ).order_by('expiry_date', 'date')
+    ).order_by(F('expiry_date').asc(nulls_last=True), 'date')
 
     if not batches.exists():
         return False, 0, ''
@@ -43,11 +44,10 @@ def fifo_deduct(item_id, quantity, consumption=None):
             batch.quantity = 0
             batch.save()
 
-        # save deduction record
         if consumption:
             ConsumptionBatchDeduction.objects.create(
-                consumption      = consumption,
-                stock_batch      = batch,
+                consumption       = consumption,
+                stock_batch       = batch,
                 quantity_deducted = deducted
             )
 
@@ -58,15 +58,15 @@ def fifo_restore(consumption):
     from .models import ConsumptionBatchDeduction
     deductions = ConsumptionBatchDeduction.objects.filter(consumption=consumption)
     if deductions.exists():
-        # restore exactly what was deducted per batch
         for deduction in deductions:
             if deduction.stock_batch:
                 deduction.stock_batch.quantity = int(deduction.stock_batch.quantity) + int(deduction.quantity_deducted)
                 deduction.stock_batch.save()
         deductions.delete()
     else:
-        # fallback — restore to newest batch
-        batch = Stock.objects.filter(item_id=consumption.item_id).order_by('-expiry_date', '-date').first()
+        batch = Stock.objects.filter(item_id=consumption.item_id).order_by(
+            F('expiry_date').desc(nulls_last=True), '-date'
+        ).first()
         if batch:
             batch.quantity = int(batch.quantity) + int(consumption.quantity)
             batch.save()
@@ -74,16 +74,6 @@ def fifo_restore(consumption):
 @login_required
 def consumption_list(request):
     from erp_config.models import Category, Unit, Building
-    from master_data.models import Material
-    consumption_all = Consumption.objects.filter(
-        growing_house__in=Stock.objects.values_list('growing_house', flat=True)
-    ).order_by('-date_consumed')
-
-    # get unique materials from stock for dropdown
-    stock_items = Stock.objects.filter(quantity__gt=0).values(
-        'item_id', 'name', 'category'
-    ).distinct()
-
     consumption_all = Consumption.objects.all().order_by('-date_consumed')
     paginator       = Paginator(consumption_all, 10)
     page            = request.GET.get('page')
@@ -94,7 +84,6 @@ def consumption_list(request):
     stock_items     = Stock.objects.filter(quantity__gt=0).order_by('item_id').values(
                         'item_id', 'name', 'category', 'unit'
                       ).distinct()
-
     return render(request, 'consumption/list.html', {
         'consumptions': consumptions,
         'categories':   categories,
@@ -116,10 +105,9 @@ def consumption_save(request):
         recorded      = request.POST['recorded_by']
         date_consumed = request.POST['date_consumed']
 
-        # check available stock
         batches = Stock.objects.filter(
             item_id=item_id, quantity__gt=0
-        ).order_by('expiry_date', 'date')
+        ).order_by(F('expiry_date').asc(nulls_last=True), 'date')
 
         if not batches.exists():
             messages.error(request, 'Item not found in stock!')
@@ -132,7 +120,6 @@ def consumption_save(request):
             messages.error(request, f'Not enough stock! Available: {total_available}')
             return redirect('consumption_list')
 
-        # create consumption record
         consumption = Consumption.objects.create(
             growing_house = house,
             category      = category,
@@ -145,7 +132,6 @@ def consumption_save(request):
             date_consumed = date_consumed
         )
 
-        # FIFO deduct and record per batch
         remaining = quantity
         for batch in batches:
             if remaining <= 0:
@@ -183,9 +169,8 @@ def consumption_delete(request, pk):
 
 @login_required
 def get_items(request):
-    category = request.GET.get('category', '')
-    # get unique items per category with total available quantity
     from django.db.models import Sum
+    category = request.GET.get('category', '')
     items = Stock.objects.filter(
         category=category,
         quantity__gt=0
@@ -298,10 +283,9 @@ def laying_consumption_save(request):
         recorded      = request.POST['recorded_by']
         date_consumed = request.POST['date_consumed']
 
-        # check available stock
         batches = Stock.objects.filter(
             item_id=item_id, quantity__gt=0
-        ).order_by('expiry_date', 'date')
+        ).order_by(F('expiry_date').asc(nulls_last=True), 'date')
 
         if not batches.exists():
             messages.error(request, 'Item not found in stock!')
@@ -314,7 +298,6 @@ def laying_consumption_save(request):
             messages.error(request, f'Not enough stock! Available: {total_available}')
             return redirect('laying_consumption_list')
 
-        # create consumption record
         consumption = Consumption.objects.create(
             growing_house = house,
             category      = category,
@@ -327,7 +310,6 @@ def laying_consumption_save(request):
             date_consumed = date_consumed
         )
 
-        # FIFO deduct and record per batch
         remaining = quantity
         for batch in batches:
             if remaining <= 0:

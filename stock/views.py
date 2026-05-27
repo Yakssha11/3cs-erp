@@ -8,6 +8,7 @@ from datetime import date, timedelta
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment
 from django.http import HttpResponse, JsonResponse
+from django.db.models import F
 
 @login_required
 def stock_list(request):
@@ -19,7 +20,7 @@ def stock_list(request):
     materials = Material.objects.all()
 
     # group stocks by item_id
-    stocks_raw = Stock.objects.all().order_by('item_id', 'expiry_date')
+    stocks_raw = Stock.objects.all().order_by('item_id', F('expiry_date').asc(nulls_last=True), 'date')
     grouped    = {}
     today      = date.today()
     soon       = today + timedelta(days=30)
