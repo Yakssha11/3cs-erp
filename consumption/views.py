@@ -10,9 +10,64 @@ from openpyxl.styles import Font, PatternFill, Alignment
 from django.http import HttpResponse
 from datetime import date
 
+# ── FIFO deduction helper ─────────────────────────────────
+def fifo_deduct(item_id, quantity):
+    """
+    Deducts quantity from stock batches using FIFO (oldest expiry first).
+    Returns (success, remaining_qty, item_name) 
+    """
+    batches = Stock.objects.filter(
+        item_id=item_id,
+        quantity__gt=0
+    ).order_by('expiry_date', 'date')
+
+    if not batches.exists():
+        return False, 0, ''
+
+    item_name    = batches.first().name
+    total_available = sum(b.quantity for b in batches)
+
+    if quantity > total_available:
+        return False, total_available, item_name
+
+    remaining = quantity
+    for batch in batches:
+        if remaining <= 0:
+            break
+        if batch.quantity >= remaining:
+            batch.quantity -= remaining
+            batch.save()
+            remaining = 0
+        else:
+            remaining -= batch.quantity
+            batch.quantity = 0
+            batch.save()
+
+    total_left = sum(Stock.objects.filter(item_id=item_id).values_list('quantity', flat=True))
+    return True, total_left, item_name
+
+def fifo_restore(item_id, quantity):
+    """
+    Restores quantity to the most recent batch (reverse FIFO).
+    """
+    batch = Stock.objects.filter(item_id=item_id).order_by('-expiry_date', '-date').first()
+    if batch:
+        batch.quantity += quantity
+        batch.save()
+
 @login_required
 def consumption_list(request):
     from erp_config.models import Category, Unit, Building
+    from master_data.models import Material
+    consumption_all = Consumption.objects.filter(
+        growing_house__in=Stock.objects.values_list('growing_house', flat=True)
+    ).order_by('-date_consumed')
+
+    # get unique materials from stock for dropdown
+    stock_items = Stock.objects.filter(quantity__gt=0).values(
+        'item_id', 'name', 'category'
+    ).distinct()
+
     consumption_all = Consumption.objects.all().order_by('-date_consumed')
     paginator       = Paginator(consumption_all, 10)
     page            = request.GET.get('page')
@@ -20,11 +75,16 @@ def consumption_list(request):
     categories      = Category.objects.all()
     units           = Unit.objects.all()
     buildings       = Building.objects.filter(type='Growing')
+    stock_items     = Stock.objects.filter(quantity__gt=0).order_by('item_id').values(
+                        'item_id', 'name', 'category', 'unit'
+                      ).distinct()
+
     return render(request, 'consumption/list.html', {
         'consumptions': consumptions,
         'categories':   categories,
         'units':        units,
         'buildings':    buildings,
+        'stock_items':  stock_items,
     })
 
 @login_required
@@ -37,42 +97,34 @@ def consumption_save(request):
         unit     = request.POST['unit']
         remarks  = request.POST.get('remarks', '')
         recorded = request.POST['recorded_by']
-        date     = request.POST['date_consumed']
+        date_consumed = request.POST['date_consumed']
 
-        try:
-            stock = Stock.objects.get(item_id=item_id)
-        except Stock.DoesNotExist:
-            messages.error(request, 'Item not found in stock!')
-            return redirect('consumption_list')
+        # FIFO deduction
+        success, remaining, item_name = fifo_deduct(item_id, quantity)
 
-        if quantity > stock.quantity:
-            messages.error(request, f'Not enough stock! Available: {stock.quantity}')
+        if not success:
+            messages.error(request, f'Not enough stock! Available: {remaining}')
             return redirect('consumption_list')
 
         Consumption.objects.create(
-            growing_house=house, category=category,
-            item_id=item_id, item_name=stock.name,
-            quantity=quantity, unit=unit,
-            remarks=remarks, recorded_by=recorded,
-            date_consumed=date
+            growing_house = house,
+            category      = category,
+            item_id       = item_id,
+            item_name     = item_name,
+            quantity      = quantity,
+            unit          = unit,
+            remarks       = remarks,
+            recorded_by   = recorded,
+            date_consumed = date_consumed
         )
 
-        stock.quantity -= quantity
-        stock.save()
-
-        messages.success(request, f'Consumption saved! Remaining {stock.name}: {stock.quantity}')
+        messages.success(request, f'Consumption saved! Remaining {item_name}: {remaining}')
     return redirect('consumption_list')
 
 @login_required
 def consumption_delete(request, pk):
     consumption = get_object_or_404(Consumption, pk=pk)
-    # restore stock
-    try:
-        stock = Stock.objects.get(item_id=consumption.item_id)
-        stock.quantity += consumption.quantity
-        stock.save()
-    except Stock.DoesNotExist:
-        pass
+    fifo_restore(consumption.item_id, consumption.quantity)
     consumption.delete()
     messages.success(request, 'Record deleted and stock restored!')
     return redirect('consumption_list')
@@ -80,7 +132,14 @@ def consumption_delete(request, pk):
 @login_required
 def get_items(request):
     category = request.GET.get('category', '')
-    items = Stock.objects.filter(category=category).values('item_id', 'name', 'quantity')
+    # get unique items per category with total available quantity
+    from django.db.models import Sum
+    items = Stock.objects.filter(
+        category=category,
+        quantity__gt=0
+    ).values('item_id', 'name').annotate(
+        quantity=Sum('quantity')
+    ).order_by('name')
     return JsonResponse({'items': list(items)})
 
 @login_required
@@ -163,11 +222,15 @@ def laying_consumption_list(request):
     categories   = Category.objects.all()
     units        = Unit.objects.all()
     buildings    = Building.objects.filter(type='Laying')
+    stock_items  = Stock.objects.filter(quantity__gt=0).order_by('item_id').values(
+                    'item_id', 'name', 'category', 'unit'
+                   ).distinct()
     return render(request, 'consumption/laying_list.html', {
         'consumptions': consumptions,
         'categories':   categories,
         'units':        units,
         'buildings':    buildings,
+        'stock_items':  stock_items,
     })
 
 @login_required
@@ -182,21 +245,18 @@ def laying_consumption_save(request):
         recorded      = request.POST['recorded_by']
         date_consumed = request.POST['date_consumed']
 
-        try:
-            stock = Stock.objects.get(item_id=item_id)
-        except Stock.DoesNotExist:
-            messages.error(request, 'Item not found in stock!')
-            return redirect('laying_consumption_list')
+        # FIFO deduction
+        success, remaining, item_name = fifo_deduct(item_id, quantity)
 
-        if quantity > stock.quantity:
-            messages.error(request, f'Not enough stock! Available: {stock.quantity}')
+        if not success:
+            messages.error(request, f'Not enough stock! Available: {remaining}')
             return redirect('laying_consumption_list')
 
         Consumption.objects.create(
             growing_house = house,
             category      = category,
             item_id       = item_id,
-            item_name     = stock.name,
+            item_name     = item_name,
             quantity      = quantity,
             unit          = unit,
             remarks       = remarks,
@@ -204,10 +264,7 @@ def laying_consumption_save(request):
             date_consumed = date_consumed
         )
 
-        stock.quantity -= quantity
-        stock.save()
-
-        messages.success(request, f'Consumption saved! Remaining {stock.name}: {stock.quantity}')
+        messages.success(request, f'Consumption saved! Remaining {item_name}: {remaining}')
     return redirect('laying_consumption_list')
 
 @login_required
@@ -255,12 +312,7 @@ def export_laying_consumption(request):
 @login_required
 def laying_consumption_delete(request, pk):
     consumption = get_object_or_404(Consumption, pk=pk)
-    try:
-        stock = Stock.objects.get(item_id=consumption.item_id)
-        stock.quantity += consumption.quantity
-        stock.save()
-    except Stock.DoesNotExist:
-        pass
+    fifo_restore(consumption.item_id, consumption.quantity)
     consumption.delete()
     messages.success(request, 'Record deleted and stock restored!')
     return redirect('laying_consumption_list')
