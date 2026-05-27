@@ -18,3 +18,22 @@ class Consumption(models.Model):
 
     def __str__(self):
         return f"{self.item_name} - {self.growing_house}"
+    
+class ConsumptionBatchDeduction(models.Model):
+    consumption = models.ForeignKey(
+        Consumption,
+        on_delete=models.CASCADE,
+        related_name='batch_deductions'
+    )
+    stock_batch        = models.ForeignKey(
+        Stock,
+        on_delete=models.SET_NULL,
+        null=True
+    )
+    quantity_deducted  = models.DecimalField(max_digits=10, decimal_places=2)
+
+    class Meta:
+        db_table = 'consumption_batch_deductions'
+
+    def __str__(self):
+        return f"Consumption #{self.consumption_id} → Batch {self.stock_batch_id} → {self.quantity_deducted}"
