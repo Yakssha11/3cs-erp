@@ -1,6 +1,10 @@
+from pyexpat.errors import messages
+
 from django.contrib import admin
 from django.urls import path, include
 from django.contrib.auth import views as auth_views
+from django.contrib.auth import authenticate, login as auth_login
+from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth import logout as auth_logout
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
@@ -161,6 +165,19 @@ def logout_view(request):
     auth_logout(request)
     return redirect('/login/')
 
+@csrf_exempt
+def login_view(request):
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+        user = authenticate(request, username=username, password=password)
+        if user:
+            auth_login(request, user)
+            return redirect('/')
+        else:
+            messages.error(request, 'Invalid username or password.')
+    return render(request, 'login.html')
+
 urlpatterns = [
     path('admin/',       admin.site.urls),
     path('',             home,            name='home'),
@@ -169,7 +186,7 @@ urlpatterns = [
     path('flock/',       include('flock.urls')),
     path('finance/',     include('finance.urls')),
     path('analytics/',   analytics,       name='analytics'),
-    path('login/',       auth_views.LoginView.as_view(template_name='login.html'), name='login'),
+    path('login/',       login_view, name='login'),
     path('logout/',      logout_view,        name='logout'),
     path('config/', include('erp_config.urls')),
     path('laying/flock/', include('laying_flock.urls')),
