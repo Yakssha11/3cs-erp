@@ -271,6 +271,14 @@
                     <span id="laying-arrow" class="text-xs text-muted">▶</span>
                 </button>
                 <div id="laying-children" class="group-children bg-primary/30">
+                    {% if request.user|has_group:'admin' or request.user|has_group:'viewer' or request.user|has_group:'stock' %}
+                    <a href="{% url 'laying_stock' %}" onclick="closeSidebar()"
+                    class="nav-item flex items-center gap-3 pl-10 pr-5 py-2.5 text-sm font-semibold cursor-pointer transition-all
+                            {% if request.resolver_match.url_name == 'laying_stock' %}active text-blue{% else %}text-white{% endif %}">
+                        <span class="text-base w-5 text-center">📦</span>
+                        Stock
+                    </a>
+                    {% endif %}
                     {% if request.user|has_group:'admin' or request.user|has_group:'viewer' %}
                     <a href="{% url 'laying_consumption_list' %}" onclick="closeSidebar()"
                     class="nav-item flex items-center gap-3 pl-10 pr-5 py-2.5 text-sm font-semibold cursor-pointer transition-all

@@ -20,7 +20,10 @@ def stock_list(request):
     materials = Material.objects.all()
 
     # group stocks by item_id
-    stocks_raw = Stock.objects.all().order_by('item_id', F('expiry_date').asc(nulls_last=True), 'date')
+    growing_building_names = Building.objects.filter(type='Growing').values_list('name', flat=True)
+    stocks_raw = Stock.objects.filter(
+        growing_house__in=growing_building_names
+    ).order_by('item_id', F('expiry_date').asc(nulls_last=True), 'date')
     grouped    = {}
     today      = date.today()
     soon       = today + timedelta(days=30)
@@ -158,3 +161,85 @@ def stock_update(request, pk):
         'stock':     stock,
         'buildings': buildings,
     })
+
+@login_required
+def laying_stock(request):
+    from erp_config.models import Building
+    from master_data.models import Material
+
+    buildings = Building.objects.filter(type='Laying')
+    materials = Material.objects.all()
+
+    laying_building_names = buildings.values_list('name', flat=True)
+
+    stocks_raw = Stock.objects.filter(
+        growing_house__in=laying_building_names
+    ).order_by('item_id', F('expiry_date').asc(nulls_last=True), 'date')
+
+    grouped = {}
+    today   = date.today()
+    soon    = today + timedelta(days=30)
+
+    for stock in stocks_raw:
+        if stock.item_id not in grouped:
+            grouped[stock.item_id] = {
+                'item_id':       stock.item_id,
+                'name':          stock.name,
+                'category':      stock.category,
+                'unit':          stock.unit,
+                'price':         stock.price,
+                'growing_house': stock.growing_house,
+                'total_qty':     0,
+                'batches':       [],
+                'has_expiring':  False,
+                'has_expired':   False,
+            }
+        grouped[stock.item_id]['total_qty'] += int(stock.quantity)
+        if stock.expiry_date:
+            if stock.expiry_date < today:
+                grouped[stock.item_id]['has_expired'] = True
+            elif stock.expiry_date <= soon:
+                grouped[stock.item_id]['has_expiring'] = True
+        grouped[stock.item_id]['batches'].append(stock)
+
+    grouped_list = list(grouped.values())
+
+    return render(request, 'stock/laying_list.html', {
+        'grouped_stocks': grouped_list,
+        'buildings':      buildings,
+        'materials':      materials,
+        'today':          today,
+        'soon':           soon,
+    })
+
+@login_required
+def get_items(request):
+    building_name = request.GET.get('building')
+    if not building_name:
+        return JsonResponse({'items': []})
+
+    batches = Stock.objects.filter(
+        growing_house=building_name,
+        quantity__gt=0
+    ).order_by('item_id', F('expiry_date').asc(nulls_last=True))
+
+    items = {}
+    for stock in batches:
+        if stock.item_id not in items:
+            items[stock.item_id] = {
+                'item_id':   stock.item_id,
+                'name':      stock.name,
+                'unit':      stock.unit,
+                'category':  stock.category,
+                'total_qty': 0,
+                'batches':   [],
+            }
+        items[stock.item_id]['total_qty'] += int(stock.quantity)
+        items[stock.item_id]['batches'].append({
+            'id':     stock.pk,
+            'batch':  stock.batch,
+            'qty':    stock.quantity,
+            'expiry': str(stock.expiry_date) if stock.expiry_date else None,
+        })
+
+    return JsonResponse({'items': list(items.values())})

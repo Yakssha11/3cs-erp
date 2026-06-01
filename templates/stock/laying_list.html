@@ -1,0 +1,276 @@
+{% extends 'base.html' %}
+{% load auth_extras %}
+
+{% block page_title %}Laying Stock{% endblock %}
+
+{% block content %}
+
+{% if messages %}
+{% for message in messages %}
+<div class="mb-4 px-4 py-3 rounded-lg text-sm font-semibold
+    {% if message.tags == 'error' %}bg-red-900/40 text-red-400 border border-red-800
+    {% else %}bg-green-900/40 text-green-400 border border-green-800{% endif %}">
+    {{ message }}
+</div>
+{% endfor %}
+{% endif %}
+
+<!-- header -->
+<div class="flex items-center justify-between mb-6">
+    <div>
+        <h1 class="text-2xl font-bold text-white">🥚 Laying Stock</h1>
+        <p class="text-muted text-sm mt-1">Laying buildings inventory</p>
+    </div>
+    <div class="flex gap-3">
+        <a href="{% url 'export_stock' %}"
+           class="bg-[#196E78] hover:bg-[#145960] text-white text-sm font-bold px-4 py-2 rounded-lg transition-all">
+            📥 Export XLSX
+        </a>
+        <button onclick="toggleForm()"
+                class="bg-[#1A8FD1] hover:bg-[#157AB0] text-white text-sm font-bold px-4 py-2 rounded-lg transition-all">
+            + Add Stock
+        </button>
+    </div>
+</div>
+
+<!-- add form -->
+<div id="addForm" class="hidden bg-sidebar border border-border rounded-xl p-6 mb-6">
+    <h2 class="text-sm font-bold text-muted uppercase tracking-wider mb-4">New Laying Stock Entry</h2>
+    <form method="POST" action="{% url 'stock_save' %}">
+        {% csrf_token %}
+        <div class="grid grid-cols-2 gap-4 mb-4">
+
+            <!-- material -->
+            <div class="col-span-2">
+                <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Material</label>
+                <select name="item_id" id="materialSelect" required onchange="fillMaterial()"
+                        class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue">
+                    <option value="">Select material</option>
+                    {% for material in materials %}
+                    <option value="{{ material.item_id }}"
+                            data-name="{{ material.name }}"
+                            data-category="{{ material.category }}"
+                            data-unit="{{ material.unit }}"
+                            data-price="{{ material.price }}">
+                        {{ material.item_id }} — {{ material.name }} ({{ material.category }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- auto-filled fields (readonly) -->
+            <div>
+                <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Item ID</label>
+                <input type="text" id="display_item_id" readonly
+                       class="w-full bg-content/50 border border-border rounded-lg px-3 py-2 text-muted text-sm cursor-not-allowed">
+            </div>
+
+            <div>
+                <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Name</label>
+                <input type="text" id="display_name" readonly
+                       class="w-full bg-content/50 border border-border rounded-lg px-3 py-2 text-muted text-sm cursor-not-allowed">
+            </div>
+
+            <div>
+                <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Category</label>
+                <input type="text" id="display_category" readonly
+                       class="w-full bg-content/50 border border-border rounded-lg px-3 py-2 text-muted text-sm cursor-not-allowed">
+            </div>
+
+            <div>
+                <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Unit</label>
+                <input type="text" id="display_unit" readonly
+                       class="w-full bg-content/50 border border-border rounded-lg px-3 py-2 text-muted text-sm cursor-not-allowed">
+            </div>
+
+            <div>
+                <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Price (₱)</label>
+                <input type="text" id="display_price" readonly
+                       class="w-full bg-content/50 border border-border rounded-lg px-3 py-2 text-muted text-sm cursor-not-allowed">
+            </div>
+
+            <!-- manual fields -->
+            <div>
+                <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Quantity</label>
+                <input type="number" name="quantity" required placeholder="0"
+                       class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue">
+            </div>
+
+            <div>
+                <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Unit Quantity <span class="text-muted normal-case">(e.g. 30L per bottle)</span></label>
+                <input type="text" name="unit_quantity" placeholder="e.g. 30L"
+                       class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue">
+            </div>
+
+            <div>
+                <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Laying Building</label>
+                <select name="growing_house"
+                        class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue">
+                    <option value="">Select building</option>
+                    {% for building in buildings %}
+                    <option value="{{ building.name }}">{{ building.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div>
+                <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Batch</label>
+                <input type="text" name="batch" placeholder="e.g. Batch 001"
+                       class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue">
+            </div>
+
+            <div>
+                <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Expiry Date</label>
+                <input type="date" name="expiry_date"
+                       class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue">
+            </div>
+
+        </div>
+        <div class="flex gap-3">
+            <button type="submit"
+                    class="bg-[#17A98A] hover:bg-[#129070] text-white text-sm font-bold px-6 py-2 rounded-lg transition-all">
+                Save
+            </button>
+            <button type="button" onclick="toggleForm()"
+                    class="bg-content hover:bg-border text-muted text-sm font-bold px-6 py-2 rounded-lg transition-all border border-border">
+                Cancel
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- search -->
+<div class="mb-4">
+    <input type="text" id="searchInput" onkeyup="filterTable()"
+           placeholder="🔍  Search by name, category or item ID..."
+           class="w-full bg-sidebar border border-border rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-blue">
+</div>
+
+<!-- stock table -->
+<div class="bg-sidebar border border-border rounded-xl">
+    <div class="overflow-x-auto">
+    <table class="w-full text-sm whitespace-nowrap" id="stockTable">
+        <thead>
+            <tr class="border-b border-border text-muted text-xs uppercase tracking-wider">
+                <th class="px-4 py-3 text-left">Item ID</th>
+                <th class="px-4 py-3 text-left">Name</th>
+                <th class="px-4 py-3 text-left">Category</th>
+                <th class="px-4 py-3 text-left">Unit</th>
+                <th class="px-4 py-3 text-left">Price</th>
+                <th class="px-4 py-3 text-left">Batch</th>
+                <th class="px-4 py-3 text-left">Unit Qty</th>
+                <th class="px-4 py-3 text-left">Qty</th>
+                <th class="px-4 py-3 text-left">Total</th>
+                <th class="px-4 py-3 text-left">Expiry</th>
+                <th class="px-4 py-3 text-left">Laying Building</th>
+                <th class="px-4 py-3 text-left">Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for group in grouped_stocks %}
+                {% for batch in group.batches %}
+                <tr class="border-b border-border hover:bg-content transition-all
+                    {% if batch.expiry_date and batch.expiry_date < today %}bg-red-900/10
+                    {% elif batch.expiry_date and batch.expiry_date <= soon %}bg-yellow-900/10{% endif %}">
+
+                    <td class="px-4 py-3 font-mono text-blue text-xs">
+                        {% if forloop.first %}{{ group.item_id }}{% endif %}
+                    </td>
+                    <td class="px-4 py-3 text-white font-semibold">
+                        {% if forloop.first %}{{ group.name }}{% endif %}
+                    </td>
+                    <td class="px-4 py-3 text-muted">
+                        {% if forloop.first %}{{ group.category }}{% endif %}
+                    </td>
+                    <td class="px-4 py-3 text-muted">
+                        {% if forloop.first %}{{ group.unit }}{% endif %}
+                    </td>
+                    <td class="px-4 py-3 text-green">
+                        {% if forloop.first %}₱{{ group.price }}{% endif %}
+                    </td>
+                    <td class="px-4 py-3 text-muted">{{ batch.batch|default:"—" }}</td>
+                    <td class="px-4 py-3 text-muted">{{ batch.unit_quantity|default:"—" }}</td>
+                    <td class="px-4 py-3">
+                        <span class="px-2 py-1 rounded text-xs font-bold
+                            {% if batch.quantity <= 0 %}bg-gray-900/40 text-gray-400
+                            {% elif batch.quantity <= 5 %}bg-red-900/40 text-red-400
+                            {% elif batch.quantity <= 20 %}bg-yellow-900/40 text-yellow-400
+                            {% else %}bg-green-900/40 text-green-400{% endif %}">
+                            {{ batch.quantity }}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3">
+                        {% if forloop.first %}
+                        <span class="text-white font-bold">{{ group.total_qty }}</span>
+                        {% if group.has_expired %}
+                        <span class="ml-1 px-1.5 py-0.5 rounded text-xs bg-red-900/40 text-red-400">Expired</span>
+                        {% elif group.has_expiring %}
+                        <span class="ml-1 px-1.5 py-0.5 rounded text-xs bg-yellow-900/40 text-yellow-400">Expiring</span>
+                        {% endif %}
+                        {% endif %}
+                    </td>
+                    <td class="px-4 py-3 text-xs
+                        {% if batch.expiry_date and batch.expiry_date < today %}text-red-400 font-bold
+                        {% elif batch.expiry_date and batch.expiry_date <= soon %}text-yellow-400 font-bold
+                        {% else %}text-muted{% endif %}">
+                        {{ batch.expiry_date|default:"—" }}
+                    </td>
+                    <td class="px-4 py-3 text-muted">{{ batch.growing_house|default:"—" }}</td>
+                    <td class="px-4 py-3">
+                        {% if request.user|has_group:'admin' %}
+                        <a href="{% url 'stock_update' batch.pk %}"
+                           class="text-blue hover:text-blue-300 text-xs font-bold transition-all leading-none">
+                            Edit
+                        </a>
+                        <span class="text-border">|</span>
+                        <form method="POST" action="{% url 'stock_delete' batch.pk %}"
+                              onsubmit="return confirm('Delete {{ batch.name }} Batch {{ batch.batch }}?')"
+                              style="margin:0;padding:0;display:inline;line-height:1">
+                            {% csrf_token %}
+                            <button type="submit"
+                                    style="margin:0;padding:0;line-height:1"
+                                    class="text-red-400 hover:text-red-300 text-xs font-bold transition-all">
+                                Delete
+                            </button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            {% empty %}
+            <tr>
+                <td colspan="12" class="px-4 py-8 text-center text-muted">
+                    No laying stock found. Click "+ Add Stock" to get started.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</div>
+
+<script>
+    function toggleForm() {
+        document.getElementById('addForm').classList.toggle('hidden')
+    }
+
+    function fillMaterial() {
+        const select   = document.getElementById('materialSelect')
+        const option   = select.options[select.selectedIndex]
+        document.getElementById('display_item_id').value  = option.value
+        document.getElementById('display_name').value     = option.getAttribute('data-name') || ''
+        document.getElementById('display_category').value = option.getAttribute('data-category') || ''
+        document.getElementById('display_unit').value     = option.getAttribute('data-unit') || ''
+        document.getElementById('display_price').value    = '₱' + (option.getAttribute('data-price') || '')
+    }
+
+    function filterTable() {
+        const input = document.getElementById('searchInput').value.toLowerCase()
+        const rows  = document.querySelectorAll('#stockTable tbody tr')
+        rows.forEach(row => {
+            row.style.display = row.textContent.toLowerCase().includes(input) ? '' : 'none'
+        })
+    }
+</script>
+
+{% endblock %}
