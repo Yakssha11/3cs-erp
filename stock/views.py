@@ -124,7 +124,13 @@ def export_stock(request):
         cell.fill = header_fill
         cell.alignment = Alignment(horizontal='center')
 
-    for row, stock in enumerate(Stock.objects.all().order_by('item_id', 'expiry_date'), 2):
+    from erp_config.models import Building
+    if request.GET.get('next') == 'laying':
+        building_names = Building.objects.filter(type='Laying').values_list('name', flat=True)
+    else:
+        building_names = Building.objects.filter(type='Growing').values_list('name', flat=True)
+
+    for row, stock in enumerate(Stock.objects.filter(growing_house__in=building_names).order_by('item_id', 'expiry_date'), 2):
         ws.cell(row=row, column=1,  value=stock.item_id)
         ws.cell(row=row, column=2,  value=stock.name)
         ws.cell(row=row, column=3,  value=stock.batch)
