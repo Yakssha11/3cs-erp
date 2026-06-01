@@ -7,7 +7,7 @@
 <div class="max-w-2xl mx-auto">
 
     <div class="flex items-center gap-4 mb-6">
-        <a href="{% url 'stock_list' %}"
+        <a href="{% if next == 'laying' %}{% url 'laying_stock' %}{% else %}{% url 'stock_list' %}{% endif %}"
            class="text-muted hover:text-white transition-all text-sm">
             ← Back to Stock
         </a>
@@ -43,6 +43,7 @@
 
         <form method="POST">
             {% csrf_token %}
+            <input type="hidden" name="next" value="{{ next }}">
             <div class="grid grid-cols-2 gap-4 mb-6">
 
                 <div>
@@ -72,13 +73,13 @@
                 </div>
 
                 <div class="col-span-2">
-                    <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Growing House</label>
+                    <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Building</label>
                     <select name="growing_house"
                             class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue">
-                        <option value="">Select house</option>
+                        <option value="">Select building</option>
                         {% for building in buildings %}
                         <option value="{{ building.name }}" {% if stock.growing_house == building.name %}selected{% endif %}>
-                            {{ building.name }}
+                            {{ building.name }} ({{ building.type }})
                         </option>
                         {% endfor %}
                     </select>
@@ -91,7 +92,7 @@
                         class="bg-[#1A8FD1] hover:bg-[#157AB0] text-white text-sm font-bold px-6 py-2 rounded-lg transition-all">
                     Update
                 </button>
-                <a href="{% url 'stock_list' %}"
+                <a href="{% if next == 'laying' %}{% url 'laying_stock' %}{% else %}{% url 'stock_list' %}{% endif %}"
                    class="bg-content hover:bg-border text-muted text-sm font-bold px-6 py-2 rounded-lg transition-all border border-border">
                     Cancel
                 </a>

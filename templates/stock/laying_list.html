@@ -36,7 +36,7 @@
 <!-- add form -->
 <div id="addForm" class="hidden bg-sidebar border border-border rounded-xl p-6 mb-6">
     <h2 class="text-sm font-bold text-muted uppercase tracking-wider mb-4">New Laying Stock Entry</h2>
-    <form method="POST" action="{% url 'stock_save' %}">
+    <form method="POST" action="{% url 'stock_save' %}?next=laying">
         {% csrf_token %}
         <div class="grid grid-cols-2 gap-4 mb-4">
 
@@ -218,12 +218,12 @@
                     <td class="px-4 py-3 text-muted">{{ batch.growing_house|default:"—" }}</td>
                     <td class="px-4 py-3">
                         {% if request.user|has_group:'admin' %}
-                        <a href="{% url 'stock_update' batch.pk %}"
+                        <a href="{% url 'stock_update' batch.pk %}?next=laying"
                            class="text-blue hover:text-blue-300 text-xs font-bold transition-all leading-none">
                             Edit
                         </a>
                         <span class="text-border">|</span>
-                        <form method="POST" action="{% url 'stock_delete' batch.pk %}"
+                        <form method="POST" action="{% url 'stock_delete' batch.pk %}?next=laying"
                               onsubmit="return confirm('Delete {{ batch.name }} Batch {{ batch.batch }}?')"
                               style="margin:0;padding:0;display:inline;line-height:1">
                             {% csrf_token %}

@@ -19,7 +19,6 @@ def stock_list(request):
     buildings = Building.objects.filter(type='Growing')
     materials = Material.objects.all()
 
-    # group stocks by item_id
     growing_building_names = Building.objects.filter(type='Growing').values_list('name', flat=True)
     stocks_raw = Stock.objects.filter(
         growing_house__in=growing_building_names
@@ -71,11 +70,12 @@ def stock_save(request):
         batch         = request.POST.get('batch', '')
         expiry_date   = request.POST.get('expiry_date') or None
 
-        # get material details
         try:
             material = Material.objects.get(item_id=item_id)
         except Material.DoesNotExist:
             messages.error(request, 'Material not found!')
+            if request.GET.get('next') == 'laying':
+                return redirect('laying_stock')
             return redirect('stock_list')
 
         Stock.objects.create(
@@ -91,6 +91,8 @@ def stock_save(request):
             expiry_date   = expiry_date,
         )
         messages.success(request, f'Stock "{material.name}" — Batch {batch} added!')
+    if request.GET.get('next') == 'laying':
+        return redirect('laying_stock')
     return redirect('stock_list')
 
 @login_required
@@ -100,6 +102,8 @@ def stock_delete(request, pk):
     batch = stock.batch
     stock.delete()
     messages.success(request, f'"{name}" Batch {batch} deleted!')
+    if request.GET.get('next') == 'laying':
+        return redirect('laying_stock')
     return redirect('stock_list')
 
 @login_required
@@ -155,11 +159,14 @@ def stock_update(request, pk):
         stock.growing_house = request.POST.get('growing_house', '')
         stock.save()
         messages.success(request, f'"{stock.name}" Batch {stock.batch} updated!')
+        if request.POST.get('next') == 'laying':
+            return redirect('laying_stock')
         return redirect('stock_list')
-    buildings = Building.objects.filter(type='Growing')
+    buildings = Building.objects.filter(type='Growing') | Building.objects.filter(type='Laying')
     return render(request, 'stock/edit.html', {
         'stock':     stock,
         'buildings': buildings,
+        'next':      request.GET.get('next', ''),
     })
 
 @login_required
