@@ -392,7 +392,8 @@
 
         document.addEventListener('DOMContentLoaded', function() {
             const path = window.location.pathname
-            if (path.includes('stock') || path.includes('consumption') ||
+            if ((path.includes('stock') && !path.includes('laying')) || 
+                (path.includes('consumption') && !path.includes('laying')) ||
                 (path.includes('finance') && !path.includes('laying')) ||
                 (path.includes('flock') && !path.includes('laying'))) {
                 document.getElementById('growing-children').classList.add('open')
