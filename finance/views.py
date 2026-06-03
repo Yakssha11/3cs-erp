@@ -83,7 +83,7 @@ def finance_update(request, pk):
         messages.success(request, 'Expense record updated!')
         return redirect('finance_list')
     from erp_config.models import Building, Category
-    buildings  = Building.objects.all()
+    buildings  = Building.objects.filter(type='Growing')
     categories = Category.objects.all()
     return render(request, 'finance/edit.html', {
         'finance':    finance,
