@@ -172,14 +172,20 @@ def get_items(request):
     from django.db.models import Sum
     from master_data.models import Material
     category = request.GET.get('category', '')
-    items = Stock.objects.filter(
-        category=category,
-        quantity__gt=0
-    ).values('item_id', 'name', 'unit').annotate(
+    building = request.GET.get('building', '')
+
+    filters = {'quantity__gt': 0}
+    if category:
+        filters['category'] = category
+    if building:
+        filters['growing_house'] = building
+
+    items = Stock.objects.filter(**filters).values(
+        'item_id', 'name', 'unit'
+    ).annotate(
         quantity=Sum('quantity')
     ).order_by('name')
 
-    # add unit from Material as fallback
     result = []
     for item in items:
         material = Material.objects.filter(item_id=item['item_id']).first()

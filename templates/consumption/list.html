@@ -254,6 +254,7 @@
 
     function loadItems() {
         const category = document.getElementById('categorySelect').value
+        const building = document.querySelector('select[name="growing_house"]').value
         const select   = document.getElementById('itemSelect')
         select.innerHTML = '<option value="">Loading...</option>'
 
@@ -262,7 +263,7 @@
             return
         }
 
-        fetch(`{% url 'get_items' %}?category=${category}`)
+        fetch(`{% url 'get_items' %}?category=${category}&building=${building}`)
             .then(r => r.json())
             .then(data => {
                 select.innerHTML = '<option value="">Select item</option>'
