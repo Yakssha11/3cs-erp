@@ -162,18 +162,25 @@
                 <td class="px-4 py-3 text-muted">{{ c.recorded_by }}</td>
                 <td class="px-4 py-3 text-muted text-xs">{{ c.remarks }}</td>
                 <td class="px-4 py-3">
-                    {% if request.user|has_group:'admin' %}
-                    <form method="POST" action="{% url 'laying_consumption_delete' c.pk %}"
-                          onsubmit="return confirm('Delete this record? Stock will be restored.')"
-                          style="margin:0;padding:0;display:inline;line-height:1">
-                        {% csrf_token %}
-                        <button type="submit"
-                                style="margin:0;padding:0;line-height:1"
-                                class="text-red-400 hover:text-red-300 text-xs font-bold transition-all">
-                            Delete
-                        </button>
-                    </form>
-                    {% endif %}
+                    <div class="flex items-center gap-3">
+                        {% if request.user|has_group:'admin' %}
+                        <a href="{% url 'laying_consumption_update' c.pk %}"
+                           class="text-blue hover:text-blue-300 text-xs font-bold transition-all leading-none">
+                            Edit
+                        </a>
+                        <span class="text-border">|</span>
+                        <form method="POST" action="{% url 'laying_consumption_delete' c.pk %}"
+                              onsubmit="return confirm('Delete this record? Stock will be restored.')"
+                              style="margin:0;padding:0;display:inline;line-height:1">
+                            {% csrf_token %}
+                            <button type="submit"
+                                    style="margin:0;padding:0;line-height:1"
+                                    class="text-red-400 hover:text-red-300 text-xs font-bold transition-all">
+                                Delete
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
                 </td>
             </tr>
             {% empty %}

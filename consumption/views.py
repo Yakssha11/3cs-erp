@@ -419,3 +419,45 @@ def laying_consumption_delete(request, pk):
     consumption.delete()
     messages.success(request, 'Record deleted and stock restored!')
     return redirect('laying_consumption_list')
+
+@login_required
+def laying_consumption_update(request, pk):
+    from erp_config.models import Category, Unit, Building
+    consumption = get_object_or_404(Consumption, pk=pk)
+    if request.method == 'POST':
+        # restore old stock first
+        fifo_restore(consumption)
+
+        # update fields
+        consumption.growing_house = request.POST['growing_house']
+        consumption.category      = request.POST['category']
+        consumption.item_id       = request.POST['item_id']
+        consumption.item_name     = request.POST['item_name']
+        consumption.quantity      = float(request.POST['quantity'])
+        consumption.unit          = request.POST['unit']
+        consumption.remarks       = request.POST.get('remarks', '')
+        consumption.recorded_by   = request.POST['recorded_by']
+        consumption.date_consumed = request.POST['date_consumed']
+        consumption.save()
+
+        # re-deduct stock with FIFO
+        success, remaining, item_name = fifo_deduct(
+            consumption.item_id,
+            consumption.quantity,
+            consumption
+        )
+        if not success:
+            messages.error(request, f'Not enough stock! Available: {remaining}')
+        else:
+            messages.success(request, f'Record updated! Remaining {item_name}: {remaining}')
+        return redirect('laying_consumption_list')
+
+    categories = Category.objects.all()
+    units      = Unit.objects.all()
+    buildings  = Building.objects.filter(type='Laying')
+    return render(request, 'consumption/laying_edit.html', {
+        'consumption': consumption,
+        'categories':  categories,
+        'units':       units,
+        'buildings':   buildings,
+    })

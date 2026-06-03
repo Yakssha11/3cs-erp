@@ -14,4 +14,5 @@ urlpatterns = [
     path('laying/save/',          views.laying_consumption_save,  name='laying_consumption_save'),
     path('laying/export/',        views.export_laying_consumption, name='export_laying_consumption'),
     path('laying/delete/<int:pk>/', views.laying_consumption_delete, name='laying_consumption_delete'),
+    path('laying/edit/<int:pk>/',   views.laying_consumption_update, name='laying_consumption_update'),
 ]
