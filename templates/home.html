@@ -300,6 +300,13 @@
 
 <script>
     // ── splash ────────────────────────────────────────────────
+    const splashSeen = sessionStorage.getItem('splashSeen')
+    if (splashSeen) {
+        document.getElementById('splash').style.display = 'none'
+        document.getElementById('main-content').style.opacity = '1'
+        document.querySelectorAll('[data-target]').forEach(el => animateCount(el))
+    }
+
     const bar = document.getElementById('timer-bar')
     let width = 0
     const timerInterval = setInterval(() => {
@@ -320,6 +327,7 @@
         setTimeout(() => {
             splash.style.display = 'none'
             main.style.opacity   = '1'
+            sessionStorage.setItem('splashSeen', 'true')
             document.querySelectorAll('[data-target]').forEach(el => animateCount(el))
         }, 600)
     }
