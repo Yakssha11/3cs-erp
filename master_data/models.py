@@ -38,15 +38,18 @@ class Supplier(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.type})"
-    
+
 class Material(models.Model):
-    item_id     = models.CharField(max_length=10, unique=True)
-    name        = models.CharField(max_length=100)
-    category    = models.CharField(max_length=100)
-    unit        = models.CharField(max_length=50)
-    price       = models.DecimalField(max_digits=10, decimal_places=2)
-    description = models.CharField(max_length=255, blank=True)
-    Date        = models.DateTimeField(auto_now_add=True)
+    item_id           = models.CharField(max_length=10, unique=True)
+    name              = models.CharField(max_length=100)
+    category          = models.CharField(max_length=100)
+    unit              = models.CharField(max_length=50)
+    price             = models.DecimalField(max_digits=10, decimal_places=2)
+    description       = models.CharField(max_length=255, blank=True)
+    total_stock_value = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    total_stock_qty   = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    map_price         = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    Date              = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         db_table = 'materials'
@@ -54,3 +57,16 @@ class Material(models.Model):
 
     def __str__(self):
         return f"{self.item_id} — {self.name}"
+
+    def recalculate_map(self):
+        from stock.models import Stock
+        batches = Stock.objects.filter(
+            item_id=self.item_id,
+            unit_price__isnull=False
+        )
+        total_value = sum(b.unit_price * b.quantity for b in batches)
+        total_qty   = sum(b.quantity for b in batches)
+        self.total_stock_value = total_value
+        self.total_stock_qty   = total_qty
+        self.map_price         = total_value / total_qty if total_qty > 0 else 0
+        self.save()

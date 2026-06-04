@@ -11,6 +11,7 @@ class Stock(models.Model):
     unit          = models.CharField(max_length=20, blank=True)
     batch         = models.CharField(max_length=50, blank=True)
     expiry_date   = models.DateField(null=True, blank=True)
+    unit_price    = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     date          = models.DateTimeField(auto_now_add=True)
 
     class Meta:
