@@ -269,10 +269,14 @@ def stock_pricing(request):
         messages.error(request, 'Access denied.')
         return redirect('stock_list')
 
-    stocks = Stock.objects.all().order_by('item_id', F('expiry_date').asc(nulls_last=True), 'date')
+    stocks         = Stock.objects.all().order_by('item_id', F('expiry_date').asc(nulls_last=True), 'date')
+    unpriced_count = stocks.filter(unit_price__isnull=True).count()
+    total_count    = stocks.count()
 
     return render(request, 'stock/pricing.html', {
-        'stocks': stocks,
+        'stocks':         stocks,
+        'unpriced_count': unpriced_count,
+        'total_count':    total_count,
     })
 
 @login_required

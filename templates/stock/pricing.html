@@ -24,22 +24,18 @@
 </div>
 
 <!-- summary bar -->
-{% with unpriced=stocks|length %}
 <div class="bg-sidebar border border-border rounded-xl px-6 py-4 mb-4 grid grid-cols-2 gap-4 text-center">
     <div>
         <p class="text-muted text-xs uppercase tracking-wider mb-1">Total Batches</p>
-        <p class="text-xl font-bold text-white">{{ stocks|length }}</p>
+        <p class="text-xl font-bold text-white">{{ total_count }}</p>
     </div>
     <div>
         <p class="text-muted text-xs uppercase tracking-wider mb-1">Unpriced</p>
-        <p class="text-xl font-bold text-red-400">
-            {% with count=0 %}
-            {% for stock in stocks %}{% if not stock.unit_price %}{{ forloop.counter0|add:1 }}{% endif %}{% endfor %}
-            {% endwith %}
+        <p class="text-xl font-bold {% if unpriced_count > 0 %}text-red-400{% else %}text-green{% endif %}">
+            {{ unpriced_count }}
         </p>
     </div>
 </div>
-{% endwith %}
 
 <!-- search -->
 <div class="mb-4">
