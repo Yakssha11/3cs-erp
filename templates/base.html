@@ -411,7 +411,7 @@
 
         document.addEventListener('DOMContentLoaded', function() {
             const path = window.location.pathname
-            if ((path.includes('stock') && !path.includes('laying')) || 
+            if ((path.includes('stock') && !path.includes('laying') && !path.includes('pricing')) || 
                 (path.includes('consumption') && !path.includes('laying')) ||
                 (path.includes('finance') && !path.includes('laying')) ||
                 (path.includes('flock') && !path.includes('laying'))) {
