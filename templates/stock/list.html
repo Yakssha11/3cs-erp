@@ -43,19 +43,25 @@
             <!-- material -->
             <div class="col-span-2">
                 <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Material</label>
-                <select name="item_id" id="materialSelect" required onchange="fillMaterial()"
-                        class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue">
-                    <option value="">Select material</option>
-                    {% for material in materials %}
-                    <option value="{{ material.item_id }}"
-                            data-name="{{ material.name }}"
-                            data-category="{{ material.category }}"
-                            data-unit="{{ material.unit }}"
-                            data-price="{{ material.price }}">
-                        {{ material.item_id }} — {{ material.name }} ({{ material.category }})
-                    </option>
-                    {% endfor %}
-                </select>
+                <div class="flex gap-2">
+                    <select name="item_id" id="materialSelect" required onchange="fillMaterial()"
+                            class="flex-1 bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue">
+                        <option value="">Select material</option>
+                        {% for material in materials %}
+                        <option value="{{ material.item_id }}"
+                                data-name="{{ material.name }}"
+                                data-category="{{ material.category }}"
+                                data-unit="{{ material.unit }}"
+                                data-price="{{ material.price }}">
+                            {{ material.item_id }} — {{ material.name }} ({{ material.category }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <button type="button" onclick="openScanner('form')"
+                            class="bg-[#1A8FD1] hover:bg-[#157AB0] text-white text-sm font-bold px-3 py-2 rounded-lg transition-all whitespace-nowrap">
+                        📷 Scan
+                    </button>
+                </div>
             </div>
 
             <!-- auto-filled fields (readonly) -->
@@ -140,10 +146,14 @@
 </div>
 
 <!-- search -->
-<div class="mb-4">
+<div class="mb-4 flex gap-2">
     <input type="text" id="searchInput" onkeyup="filterTable()"
            placeholder="🔍  Search by name, category or item ID..."
-           class="w-full bg-sidebar border border-border rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-blue">
+           class="flex-1 bg-sidebar border border-border rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-blue">
+    <button onclick="openScanner('search')"
+            class="bg-[#1A8FD1] hover:bg-[#157AB0] text-white text-sm font-bold px-3 py-2 rounded-lg transition-all whitespace-nowrap">
+        📷 Scan
+    </button>
 </div>
 
 <!-- stock table -->
@@ -173,38 +183,23 @@
                     {% if batch.expiry_date and batch.expiry_date < today %}bg-red-900/10
                     {% elif batch.expiry_date and batch.expiry_date <= soon %}bg-yellow-900/10{% endif %}">
 
-                    <!-- item id — only on first batch -->
                     <td class="px-4 py-3 font-mono text-blue text-xs">
                         {% if forloop.first %}{{ group.item_id }}{% endif %}
                     </td>
-
-                    <!-- name — only on first batch -->
                     <td class="px-4 py-3 text-white font-semibold">
                         {% if forloop.first %}{{ group.name }}{% endif %}
                     </td>
-
-                    <!-- category — only on first batch -->
                     <td class="px-4 py-3 text-muted">
                         {% if forloop.first %}{{ group.category }}{% endif %}
                     </td>
-
-                    <!-- unit — only on first batch -->
                     <td class="px-4 py-3 text-muted">
                         {% if forloop.first %}{{ group.unit }}{% endif %}
                     </td>
-
-                    <!-- price — only on first batch -->
                     <td class="px-4 py-3 text-green">
                         {% if forloop.first %}₱{{ group.price }}{% endif %}
                     </td>
-
-                    <!-- batch -->
                     <td class="px-4 py-3 text-muted">{{ batch.batch|default:"—" }}</td>
-
-                    <!-- unit qty -->
                     <td class="px-4 py-3 text-muted">{{ batch.unit_quantity|default:"—" }}</td>
-
-                    <!-- qty -->
                     <td class="px-4 py-3">
                         <span class="px-2 py-1 rounded text-xs font-bold
                             {% if batch.quantity <= 0 %}bg-gray-900/40 text-gray-400
@@ -214,8 +209,6 @@
                             {{ batch.quantity }}
                         </span>
                     </td>
-
-                    <!-- total — only on first batch -->
                     <td class="px-4 py-3">
                         {% if forloop.first %}
                         <span class="text-white font-bold">{{ group.total_qty }}</span>
@@ -226,19 +219,13 @@
                         {% endif %}
                         {% endif %}
                     </td>
-
-                    <!-- expiry -->
                     <td class="px-4 py-3 text-xs
                         {% if batch.expiry_date and batch.expiry_date < today %}text-red-400 font-bold
                         {% elif batch.expiry_date and batch.expiry_date <= soon %}text-yellow-400 font-bold
                         {% else %}text-muted{% endif %}">
                         {{ batch.expiry_date|default:"—" }}
                     </td>
-
-                    <!-- growing house -->
                     <td class="px-4 py-3 text-muted">{{ batch.growing_house|default:"—" }}</td>
-
-                    <!-- action -->
                     <td class="px-4 py-3">
                         {% if request.user|has_group:'admin' %}
                         <a href="{% url 'stock_update' batch.pk %}"
@@ -272,7 +259,38 @@
     </div>
 </div>
 
+<!-- barcode scanner modal -->
+<div id="scannerModal" class="hidden fixed inset-0 z-50 flex items-center justify-center"
+     style="background:rgba(0,0,0,0.85)">
+    <div class="bg-sidebar border border-border rounded-xl p-4 w-full max-w-sm mx-4">
+        <div class="flex items-center justify-between mb-3">
+            <h3 class="text-sm font-bold text-white">📷 Scan Barcode</h3>
+            <button onclick="closeScanner()"
+                    class="text-muted hover:text-white text-lg leading-none">✕</button>
+        </div>
+        <div id="scanner-container" class="relative rounded-lg overflow-hidden bg-black"
+             style="height:260px">
+            <video id="scanner-video" class="w-full h-full object-cover"></video>
+            <!-- aim guide -->
+            <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div style="width:220px;height:80px;border:2px solid #1A8FD1;border-radius:8px;
+                            box-shadow:0 0 0 9999px rgba(0,0,0,0.45)"></div>
+            </div>
+        </div>
+        <p id="scanner-status" class="text-xs text-muted text-center mt-3">
+            Point camera at a barcode...
+        </p>
+        <p id="scanner-result" class="text-xs text-blue text-center mt-1 font-bold"></p>
+    </div>
+</div>
+
+<!-- ZXing barcode library -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/zxing-js/0.21.3/index.min.js"></script>
+
 <script>
+    let codeReader = null
+    let scannerMode = 'search' // 'search' or 'form'
+
     function toggleForm() {
         document.getElementById('addForm').classList.toggle('hidden')
     }
@@ -293,6 +311,72 @@
         rows.forEach(row => {
             row.style.display = row.textContent.toLowerCase().includes(input) ? '' : 'none'
         })
+    }
+
+    function openScanner(mode) {
+        scannerMode = mode
+        document.getElementById('scannerModal').classList.remove('hidden')
+        document.getElementById('scanner-status').textContent = 'Point camera at a barcode...'
+        document.getElementById('scanner-result').textContent = ''
+        startScanner()
+    }
+
+    function closeScanner() {
+        document.getElementById('scannerModal').classList.add('hidden')
+        stopScanner()
+    }
+
+    function startScanner() {
+        if (typeof ZXing === 'undefined') {
+            document.getElementById('scanner-status').textContent = 'Scanner library not loaded.'
+            return
+        }
+        codeReader = new ZXing.BrowserMultiFormatReader()
+        codeReader.decodeFromVideoDevice(null, 'scanner-video', (result, err) => {
+            if (result) {
+                const code = result.getText()
+                document.getElementById('scanner-result').textContent = 'Found: ' + code
+                handleScanResult(code)
+            }
+        })
+    }
+
+    function stopScanner() {
+        if (codeReader) {
+            codeReader.reset()
+            codeReader = null
+        }
+    }
+
+    function handleScanResult(code) {
+        if (scannerMode === 'form') {
+            // try to match item_id in material dropdown
+            const select  = document.getElementById('materialSelect')
+            let   matched = false
+            for (let i = 0; i < select.options.length; i++) {
+                if (select.options[i].value === code) {
+                    select.selectedIndex = i
+                    fillMaterial()
+                    matched = true
+                    break
+                }
+            }
+            if (matched) {
+                closeScanner()
+                // open add form if not already open
+                document.getElementById('addForm').classList.remove('hidden')
+                document.getElementById('scanner-status').textContent = '✅ Item found!'
+            } else {
+                document.getElementById('scanner-status').textContent = '⚠️ Item ID "' + code + '" not found in materials.'
+                document.getElementById('scanner-result').textContent = ''
+            }
+        } else {
+            // search mode — fill search input and filter table
+            closeScanner()
+            const searchInput = document.getElementById('searchInput')
+            searchInput.value = code
+            filterTable()
+        }
     }
 </script>
 

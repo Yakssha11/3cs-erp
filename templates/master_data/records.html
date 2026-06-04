@@ -203,6 +203,7 @@
                     <th class="px-4 py-3 text-left">Price</th>
                     <th class="px-4 py-3 text-left">Description</th>
                     <th class="px-4 py-3 text-left">Date Added</th>
+                    <th class="px-4 py-3 text-left">Barcode</th>
                 </tr>
             </thead>
             <tbody>
@@ -219,10 +220,16 @@
                     <td class="px-4 py-3 text-green font-bold">₱{{ material.price }}</td>
                     <td class="px-4 py-3 text-muted text-xs">{{ material.description|default:"—" }}</td>
                     <td class="px-4 py-3 text-muted text-xs">{{ material.Date|date:"Y-m-d" }}</td>
+                    <td class="px-4 py-3">
+                        <button onclick="showBarcode('{{ material.item_id }}', '{{ material.name }}')"
+                                class="text-blue hover:text-blue-300 text-xs font-bold transition-all">
+                            🏷️ Barcode
+                        </button>
+                    </td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="7" class="px-4 py-8 text-center text-muted">No materials found.</td>
+                    <td colspan="8" class="px-4 py-8 text-center text-muted">No materials found.</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -246,6 +253,35 @@
     {% endif %}
 </div>
 
+<!-- barcode modal -->
+<div id="barcodeModal" class="hidden fixed inset-0 z-50 flex items-center justify-center"
+     style="background:rgba(0,0,0,0.85)">
+    <div class="bg-sidebar border border-border rounded-xl p-6 w-full max-w-sm mx-4">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-sm font-bold text-white">🏷️ Barcode</h3>
+            <button onclick="closeBarcode()"
+                    class="text-muted hover:text-white text-lg leading-none">✕</button>
+        </div>
+        <div class="bg-white rounded-lg p-4 text-center mb-4">
+            <p id="barcode-name" class="text-gray-800 text-xs font-bold mb-2"></p>
+            <svg id="barcode-svg"></svg>
+            <p id="barcode-id" class="text-gray-600 text-xs mt-2 font-mono"></p>
+        </div>
+        <div class="flex gap-3">
+            <button onclick="printBarcode()"
+                    class="flex-1 bg-[#1A8FD1] hover:bg-[#157AB0] text-white text-sm font-bold py-2 rounded-lg transition-all">
+                🖨️ Print
+            </button>
+            <button onclick="closeBarcode()"
+                    class="flex-1 bg-content hover:bg-border text-muted text-sm font-bold py-2 rounded-lg transition-all border border-border">
+                Close
+            </button>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.11.6/JsBarcode.all.min.js"></script>
+
 <script>
     const tabs = ['customers', 'suppliers', 'materials']
 
@@ -258,6 +294,48 @@
         document.getElementById('tab-' + name).classList.remove('hidden')
         const activeBtn = document.getElementById('btn-' + name)
         activeBtn.className = 'tab-btn px-4 py-2 rounded-lg text-xs font-bold transition-all border bg-blue text-white border-blue'
+    }
+
+    function showBarcode(itemId, name) {
+        document.getElementById('barcode-name').textContent = name
+        document.getElementById('barcode-id').textContent  = itemId
+        JsBarcode('#barcode-svg', itemId, {
+            format:       'CODE128',
+            width:        2,
+            height:       60,
+            displayValue: false,
+            margin:       10,
+        })
+        document.getElementById('barcodeModal').classList.remove('hidden')
+    }
+
+    function closeBarcode() {
+        document.getElementById('barcodeModal').classList.add('hidden')
+    }
+
+    function printBarcode() {
+        const name    = document.getElementById('barcode-name').textContent
+        const itemId  = document.getElementById('barcode-id').textContent
+        const svgEl   = document.getElementById('barcode-svg')
+        const svgData = new XMLSerializer().serializeToString(svgEl)
+        const win     = window.open('', '_blank')
+        win.document.write(`
+            <html><head><title>Barcode - ${itemId}</title>
+            <style>
+                body { display:flex; flex-direction:column; align-items:center;
+                       justify-content:center; height:100vh; margin:0;
+                       font-family:sans-serif; }
+                p { margin: 4px 0; font-size: 13px; }
+                .id { font-family: monospace; font-size: 12px; color: #555; }
+            </style></head>
+            <body>
+                <p><strong>${name}</strong></p>
+                ${svgData}
+                <p class="id">${itemId}</p>
+                <script>window.onload = () => { window.print(); window.close(); }<\/script>
+            </body></html>
+        `)
+        win.document.close()
     }
 
     document.addEventListener('DOMContentLoaded', function() {
