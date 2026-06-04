@@ -101,10 +101,20 @@ def stock_save(request):
 
 @login_required
 def stock_delete(request, pk):
-    stock = get_object_or_404(Stock, pk=pk)
-    name  = stock.name
-    batch = stock.batch
+    from master_data.models import Material
+    stock    = get_object_or_404(Stock, pk=pk)
+    name     = stock.name
+    batch    = stock.batch
+    item_id  = stock.item_id
     stock.delete()
+
+    # recalculate MAP after deletion
+    try:
+        material = Material.objects.get(item_id=item_id)
+        material.recalculate_map()
+    except Material.DoesNotExist:
+        pass
+
     messages.success(request, f'"{name}" Batch {batch} deleted!')
     if request.GET.get('next') == 'laying':
         return redirect('laying_stock')
