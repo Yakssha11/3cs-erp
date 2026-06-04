@@ -338,6 +338,12 @@
         now.toLocaleDateString('en-PH', { weekday:'long', year:'numeric', month:'long', day:'numeric' })
 
     // ── count up ──────────────────────────────────────────────
+    function formatValue(value) {
+        if (Math.abs(value) >= 1000000) return (value / 1000000).toFixed(1) + 'M'
+        if (Math.abs(value) >= 1000)    return (value / 1000).toFixed(1) + 'K'
+        return Math.floor(value).toLocaleString()
+    }
+
     function animateCount(el) {
         const target   = parseFloat(el.getAttribute('data-target')) || 0
         const prefix   = el.getAttribute('data-prefix') || ''
@@ -348,8 +354,8 @@
             const elapsed  = time - start
             const progress = Math.min(elapsed / duration, 1)
             const ease     = 1 - Math.pow(1 - progress, 3)
-            const value    = Math.floor(ease * target)
-            el.textContent = prefix + value.toLocaleString() + suffix
+            const value    = ease * target
+            el.textContent = prefix + formatValue(value) + suffix
             if (progress < 1) requestAnimationFrame(update)
         }
         requestAnimationFrame(update)
