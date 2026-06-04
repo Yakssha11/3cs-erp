@@ -2,6 +2,7 @@ from django.contrib import messages
 
 from django.contrib import admin
 from django.urls import path, include
+from django.views.generic import TemplateView
 from django.contrib.auth import views as auth_views
 from django.contrib.auth import authenticate, login as auth_login
 from django.views.decorators.csrf import csrf_exempt
@@ -179,6 +180,10 @@ def login_view(request):
     return render(request, 'login.html')
 
 urlpatterns = [
+    path('sw.js', TemplateView.as_view(
+        template_name='sw.js',
+        content_type='application/javascript'
+    ), name='sw'),
     path('admin/',       admin.site.urls),
     path('',             home,            name='home'),
     path('stock/',       include('stock.urls')),

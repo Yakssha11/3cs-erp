@@ -14,7 +14,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="3C's ERP">
     <link rel="apple-touch-icon" href="/static/logo.jpg">
-    
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -425,6 +425,11 @@
                 document.getElementById('sales-arrow').textContent = '▼'
             }
         })
+    </script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js')
+        }
     </script>
 </body>
 </html>
