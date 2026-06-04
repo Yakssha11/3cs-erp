@@ -74,7 +74,10 @@ def fifo_restore(consumption):
 @login_required
 def consumption_list(request):
     from erp_config.models import Category, Unit, Building
-    consumption_all = Consumption.objects.all().order_by('-date_consumed')
+    growing_buildings = Building.objects.filter(type='Growing').values_list('name', flat=True)
+    consumption_all = Consumption.objects.filter(
+                        growing_house__in=growing_buildings
+                      ).order_by('-date_consumed')
     paginator       = Paginator(consumption_all, 10)
     page            = request.GET.get('page')
     consumptions    = paginator.get_page(page)
@@ -256,7 +259,10 @@ def export_consumption(request):
         cell.fill = header_fill
         cell.alignment = Alignment(horizontal='center')
 
-    for row, c in enumerate(Consumption.objects.all().order_by('-date_consumed'), 2):
+    from erp_config.models import Building
+    growing_buildings = Building.objects.filter(type='Growing').values_list('name', flat=True)
+    for row, c in enumerate(Consumption.objects.filter(
+            growing_house__in=growing_buildings).order_by('-date_consumed'), 2):
         ws.cell(row=row, column=1, value=str(c.date_consumed))
         ws.cell(row=row, column=2, value=c.growing_house)
         ws.cell(row=row, column=3, value=c.category)
