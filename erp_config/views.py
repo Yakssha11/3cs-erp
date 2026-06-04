@@ -16,14 +16,16 @@ def config_view(request):
     chicken_price_history = ChickenPriceConfig.objects.all().order_by('-effective_date')
 
     return render(request, 'erp_config/config.html', {
-        'current_price': current_price,
-        'price_history': price_history,
-        'buildings':     buildings,
-        'categories':    categories,
-        'units':         units,
-        'causes':        causes,
-        'targets':       targets,
-        'active_tab':    request.GET.get('tab', 'price'),
+        'current_price':        current_price,
+        'price_history':        price_history,
+        'buildings':            buildings,
+        'categories':           categories,
+        'units':                units,
+        'causes':               causes,
+        'targets':              targets,
+        'current_chicken_price': current_chicken_price,
+        'chicken_price_history': chicken_price_history,
+        'active_tab':           request.GET.get('tab', 'price'),
     })
 
 @login_required
