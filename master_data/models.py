@@ -60,13 +60,14 @@ class Material(models.Model):
 
     def recalculate_map(self):
         from stock.models import Stock
+        from decimal import Decimal
         batches = Stock.objects.filter(
             item_id=self.item_id,
             unit_price__isnull=False
         )
-        total_value = sum(b.unit_price * b.quantity for b in batches)
-        total_qty   = sum(b.quantity for b in batches)
+        total_value = sum(b.unit_price * Decimal(b.quantity) for b in batches)
+        total_qty   = Decimal(sum(b.quantity for b in batches))
         self.total_stock_value = total_value
         self.total_stock_qty   = total_qty
-        self.map_price         = total_value / total_qty if total_qty > 0 else 0
+        self.map_price         = total_value / total_qty if total_qty > 0 else Decimal(0)
         self.save()
