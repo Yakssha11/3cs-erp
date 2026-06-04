@@ -220,7 +220,7 @@
                     {% if request.user|has_group:'admin' or request.user|has_group:'viewer' or request.user|has_group:'stock' %}
                     <a href="{% url 'stock_list' %}" onclick="closeSidebar()"
                        class="nav-item flex items-center gap-3 pl-10 pr-5 py-2.5 text-sm font-semibold cursor-pointer transition-all
-                              {% if 'stock' in request.resolver_match.url_name %}active text-blue{% else %}text-white{% endif %}">
+                              {% if request.resolver_match.url_name == 'stock_list' or request.resolver_match.url_name == 'stock_update' %}active text-blue{% else %}text-white{% endif %}">
                         <span class="text-base w-5 text-center">📦</span>
                         Stock
                     </a>
@@ -228,7 +228,7 @@
                     {% if request.user|has_group:'admin' or request.user|has_group:'viewer' or request.user|has_group:'consumption' %}
                     <a href="{% url 'consumption_list' %}" onclick="closeSidebar()"
                        class="nav-item flex items-center gap-3 pl-10 pr-5 py-2.5 text-sm font-semibold cursor-pointer transition-all
-                              {% if 'consumption' in request.resolver_match.url_name %}active text-teal{% else %}text-white{% endif %}">
+                              {% if request.resolver_match.url_name == 'consumption_list' or request.resolver_match.url_name == 'consumption_update' %}active text-teal{% else %}text-white{% endif %}">
                         <span class="text-base w-5 text-center">📉</span>
                         Consumption
                     </a>
@@ -273,40 +273,40 @@
                 <div id="laying-children" class="group-children bg-primary/30">
                     {% if request.user|has_group:'admin' or request.user|has_group:'viewer' or request.user|has_group:'stock' %}
                     <a href="{% url 'laying_stock' %}" onclick="closeSidebar()"
-                    class="nav-item flex items-center gap-3 pl-10 pr-5 py-2.5 text-sm font-semibold cursor-pointer transition-all
-                            {% if request.resolver_match.url_name == 'laying_stock' %}active text-blue{% else %}text-white{% endif %}">
+                       class="nav-item flex items-center gap-3 pl-10 pr-5 py-2.5 text-sm font-semibold cursor-pointer transition-all
+                              {% if request.resolver_match.url_name == 'laying_stock' %}active text-blue{% else %}text-white{% endif %}">
                         <span class="text-base w-5 text-center">📦</span>
                         Stock
                     </a>
                     {% endif %}
                     {% if request.user|has_group:'admin' or request.user|has_group:'viewer' %}
                     <a href="{% url 'laying_consumption_list' %}" onclick="closeSidebar()"
-                    class="nav-item flex items-center gap-3 pl-10 pr-5 py-2.5 text-sm font-semibold cursor-pointer transition-all
-                            {% if request.resolver_match.url_name == 'laying_consumption_list' %}active text-amber{% else %}text-white{% endif %}">
+                       class="nav-item flex items-center gap-3 pl-10 pr-5 py-2.5 text-sm font-semibold cursor-pointer transition-all
+                              {% if request.resolver_match.url_name == 'laying_consumption_list' or request.resolver_match.url_name == 'laying_consumption_update' %}active text-amber{% else %}text-white{% endif %}">
                         <span class="text-base w-5 text-center">📉</span>
                         Consumption
                     </a>
                     {% endif %}
                     {% if request.user|has_group:'admin' or request.user|has_group:'viewer' or request.user|has_group:'laying_flock_user' %}
                     <a href="{% url 'laying_flock_list' %}" onclick="closeSidebar()"
-                    class="nav-item flex items-center gap-3 pl-10 pr-5 py-2.5 text-sm font-semibold cursor-pointer transition-all
-                            {% if 'laying_flock' in request.resolver_match.url_name %}active text-green{% else %}text-white{% endif %}">
+                       class="nav-item flex items-center gap-3 pl-10 pr-5 py-2.5 text-sm font-semibold cursor-pointer transition-all
+                              {% if 'laying_flock' in request.resolver_match.url_name %}active text-green{% else %}text-white{% endif %}">
                         <span class="text-base w-5 text-center">🐔</span>
                         Flock (RTL)
                     </a>
                     {% endif %}
                     {% if request.user|has_group:'admin' or request.user|has_group:'viewer' or request.user|has_group:'egg_production_user' %}
                     <a href="{% url 'egg_production_list' %}" onclick="closeSidebar()"
-                    class="nav-item flex items-center gap-3 pl-10 pr-5 py-2.5 text-sm font-semibold cursor-pointer transition-all
-                            {% if 'egg_production' in request.resolver_match.url_name %}active text-amber{% else %}text-white{% endif %}">
+                       class="nav-item flex items-center gap-3 pl-10 pr-5 py-2.5 text-sm font-semibold cursor-pointer transition-all
+                              {% if 'egg_production' in request.resolver_match.url_name %}active text-amber{% else %}text-white{% endif %}">
                         <span class="text-base w-5 text-center">🥚</span>
                         Egg Production
                     </a>
                     {% endif %}
                     {% if request.user|has_group:'admin' or request.user|has_group:'viewer' or request.user|has_group:'laying_finance_user' %}
                     <a href="{% url 'laying_finance_list' %}" onclick="closeSidebar()"
-                    class="nav-item flex items-center gap-3 pl-10 pr-5 py-2.5 text-sm font-semibold cursor-pointer transition-all
-                            {% if 'laying_finance' in request.resolver_match.url_name %}active text-amber{% else %}text-white{% endif %}">
+                       class="nav-item flex items-center gap-3 pl-10 pr-5 py-2.5 text-sm font-semibold cursor-pointer transition-all
+                              {% if 'laying_finance' in request.resolver_match.url_name %}active text-amber{% else %}text-white{% endif %}">
                         <span class="text-base w-5 text-center">💰</span>
                         Finance
                     </a>
