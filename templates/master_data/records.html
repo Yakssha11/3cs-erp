@@ -202,6 +202,7 @@
                     <th class="px-4 py-3 text-left">Unit</th>
                     <th class="px-4 py-3 text-left">Price</th>
                     <th class="px-4 py-3 text-left">Description</th>
+                    <th class="px-4 py-3 text-left">MAP Price</th>
                     <th class="px-4 py-3 text-left">Date Added</th>
                     <th class="px-4 py-3 text-left">Barcode</th>
                 </tr>
@@ -219,6 +220,13 @@
                     <td class="px-4 py-3 text-muted">{{ material.unit }}</td>
                     <td class="px-4 py-3 text-green font-bold">₱{{ material.price }}</td>
                     <td class="px-4 py-3 text-muted text-xs">{{ material.description|default:"—" }}</td>
+                    <td class="px-4 py-3">
+                        {% if material.map_price %}
+                        <span class="text-blue font-bold">₱{{ material.map_price|floatformat:2 }}</span>
+                        {% else %}
+                        <span class="text-muted text-xs">—</span>
+                        {% endif %}
+                    </td>
                     <td class="px-4 py-3 text-muted text-xs">{{ material.Date|date:"Y-m-d" }}</td>
                     <td class="px-4 py-3">
                         <button onclick="showBarcode('{{ material.item_id }}', '{{ material.name }}')"
