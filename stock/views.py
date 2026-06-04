@@ -269,14 +269,40 @@ def stock_pricing(request):
         messages.error(request, 'Access denied.')
         return redirect('stock_list')
 
-    stocks         = Stock.objects.all().order_by('item_id', F('expiry_date').asc(nulls_last=True), 'date')
+    from erp_config.models import Building
+    tab = request.GET.get('tab', 'growing')
+
+    growing_buildings = Building.objects.filter(type='Growing').values_list('name', flat=True)
+    laying_buildings  = Building.objects.filter(type='Laying').values_list('name', flat=True)
+
+    if tab == 'laying':
+        stocks = Stock.objects.filter(
+            growing_house__in=laying_buildings
+        ).order_by('item_id', F('expiry_date').asc(nulls_last=True), 'date')
+    else:
+        stocks = Stock.objects.filter(
+            growing_house__in=growing_buildings
+        ).order_by('item_id', F('expiry_date').asc(nulls_last=True), 'date')
+
     unpriced_count = stocks.filter(unit_price__isnull=True).count()
     total_count    = stocks.count()
 
+    growing_unpriced = Stock.objects.filter(
+        growing_house__in=growing_buildings,
+        unit_price__isnull=True
+    ).count()
+    laying_unpriced  = Stock.objects.filter(
+        growing_house__in=laying_buildings,
+        unit_price__isnull=True
+    ).count()
+
     return render(request, 'stock/pricing.html', {
-        'stocks':         stocks,
-        'unpriced_count': unpriced_count,
-        'total_count':    total_count,
+        'stocks':           stocks,
+        'unpriced_count':   unpriced_count,
+        'total_count':      total_count,
+        'tab':              tab,
+        'growing_unpriced': growing_unpriced,
+        'laying_unpriced':  laying_unpriced,
     })
 
 @login_required

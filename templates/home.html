@@ -115,9 +115,19 @@
 <!-- owner pricing banner -->
 {% if request.user.username == 'CORONACIONR' %}
 {% if unpriced_count > 0 %}
-<div class="mb-4 px-4 py-3 rounded-lg text-sm font-semibold bg-yellow-900/40 text-yellow-400 border border-yellow-800 flex items-center justify-between">
-    <span>⚠️ {{ unpriced_count }} stock batch{{ unpriced_count|pluralize }} need{{ unpriced_count|pluralize:"s," }} pricing</span>
-    <a href="{% url 'stock_pricing' %}" class="bg-yellow-700 hover:bg-yellow-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-all">
+<div class="mb-4 px-4 py-3 rounded-lg bg-yellow-900/40 border border-yellow-800 flex items-center justify-between gap-4">
+    <div>
+        <p class="text-yellow-400 text-sm font-bold mb-1">⚠️ Stock items need pricing</p>
+        <div class="flex gap-4">
+            {% if growing_unpriced > 0 %}
+            <span class="text-xs text-yellow-300">🌱 Growing: <strong>{{ growing_unpriced }}</strong> unpriced</span>
+            {% endif %}
+            {% if laying_unpriced > 0 %}
+            <span class="text-xs text-yellow-300">🥚 Laying: <strong>{{ laying_unpriced }}</strong> unpriced</span>
+            {% endif %}
+        </div>
+    </div>
+    <a href="{% url 'stock_pricing' %}" class="bg-yellow-700 hover:bg-yellow-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-all whitespace-nowrap">
         Set Prices →
     </a>
 </div>
