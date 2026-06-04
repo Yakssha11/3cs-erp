@@ -112,6 +112,18 @@
     }
 </style>
 
+<!-- owner pricing banner -->
+{% if request.user.username == 'CORONACIONR' %}
+{% if unpriced_count > 0 %}
+<div class="mb-4 px-4 py-3 rounded-lg text-sm font-semibold bg-yellow-900/40 text-yellow-400 border border-yellow-800 flex items-center justify-between">
+    <span>⚠️ {{ unpriced_count }} stock batch{{ unpriced_count|pluralize }} need{{ unpriced_count|pluralize:"s," }} pricing</span>
+    <a href="{% url 'stock_pricing' %}" class="bg-yellow-700 hover:bg-yellow-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-all">
+        Set Prices →
+    </a>
+</div>
+{% endif %}
+{% endif %}
+
 <!-- welcome -->
 <div class="mb-6" style="animation:fadeInUp 0.4s ease forwards;opacity:0;">
     <h1 class="text-2xl font-bold text-white">

@@ -34,6 +34,7 @@ def home(request):
                     ).aggregate(Sum('amount'))['amount__sum'] or 0
     stock_items   = Stock.objects.count()
     low_stock     = Stock.objects.filter(quantity__lte=10).count()
+    unpriced_count = Stock.objects.filter(unit_price__isnull=True).count()
 
     # ── Laying KPIs ───────────────────────────────────────────
     laying_hens      = LayingFlock.objects.aggregate(Sum('current_count'))['current_count__sum'] or 0
@@ -58,6 +59,7 @@ def home(request):
         'total_revenue':  total_revenue,
         'laying_expenses': laying_expenses,
         'net_profit':     net_profit,
+        'unpriced_count': unpriced_count,
     })
 
 @login_required

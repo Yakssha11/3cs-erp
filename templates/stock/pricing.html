@@ -1,0 +1,163 @@
+{% extends 'base.html' %}
+{% load auth_extras %}
+
+{% block page_title %}Stock Pricing{% endblock %}
+
+{% block content %}
+
+{% if messages %}
+{% for message in messages %}
+<div class="mb-4 px-4 py-3 rounded-lg text-sm font-semibold
+    {% if message.tags == 'error' %}bg-red-900/40 text-red-400 border border-red-800
+    {% else %}bg-green-900/40 text-green-400 border border-green-800{% endif %}">
+    {{ message }}
+</div>
+{% endfor %}
+{% endif %}
+
+<!-- header -->
+<div class="flex items-center justify-between mb-6">
+    <div>
+        <h1 class="text-2xl font-bold text-white">💲 Stock Pricing</h1>
+        <p class="text-muted text-sm mt-1">Set unit prices for received stock batches</p>
+    </div>
+</div>
+
+<!-- summary bar -->
+{% with unpriced=stocks|length %}
+<div class="bg-sidebar border border-border rounded-xl px-6 py-4 mb-4 grid grid-cols-2 gap-4 text-center">
+    <div>
+        <p class="text-muted text-xs uppercase tracking-wider mb-1">Total Batches</p>
+        <p class="text-xl font-bold text-white">{{ stocks|length }}</p>
+    </div>
+    <div>
+        <p class="text-muted text-xs uppercase tracking-wider mb-1">Unpriced</p>
+        <p class="text-xl font-bold text-red-400">
+            {% with count=0 %}
+            {% for stock in stocks %}{% if not stock.unit_price %}{{ forloop.counter0|add:1 }}{% endif %}{% endfor %}
+            {% endwith %}
+        </p>
+    </div>
+</div>
+{% endwith %}
+
+<!-- search -->
+<div class="mb-4">
+    <input type="text" id="searchInput" onkeyup="filterTable()"
+           placeholder="🔍  Search by name, batch, building..."
+           class="w-full bg-sidebar border border-border rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-blue">
+</div>
+
+<!-- table -->
+<div class="bg-sidebar border border-border rounded-xl">
+    <div class="overflow-x-auto">
+    <table class="w-full text-sm whitespace-nowrap" id="pricingTable">
+        <thead>
+            <tr class="border-b border-border text-muted text-xs uppercase tracking-wider">
+                <th class="px-4 py-3 text-left">Item ID</th>
+                <th class="px-4 py-3 text-left">Name</th>
+                <th class="px-4 py-3 text-left">Batch</th>
+                <th class="px-4 py-3 text-left">Qty</th>
+                <th class="px-4 py-3 text-left">Building</th>
+                <th class="px-4 py-3 text-left">Expiry</th>
+                <th class="px-4 py-3 text-left">Date Added</th>
+                <th class="px-4 py-3 text-left">Unit Price</th>
+                <th class="px-4 py-3 text-left">Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for stock in stocks %}
+            <tr class="border-b border-border hover:bg-content transition-all
+                {% if not stock.unit_price %}bg-yellow-900/5{% endif %}"
+                id="row-{{ stock.pk }}">
+                <td class="px-4 py-3 font-mono text-blue text-xs">{{ stock.item_id }}</td>
+                <td class="px-4 py-3 text-white font-semibold">{{ stock.name }}</td>
+                <td class="px-4 py-3 text-muted">{{ stock.batch|default:"—" }}</td>
+                <td class="px-4 py-3 text-white">{{ stock.quantity }}</td>
+                <td class="px-4 py-3 text-muted">{{ stock.growing_house|default:"—" }}</td>
+                <td class="px-4 py-3 text-muted text-xs">{{ stock.expiry_date|default:"—" }}</td>
+                <td class="px-4 py-3 text-muted text-xs">{{ stock.date|date:"Y-m-d" }}</td>
+
+                <!-- unit price -->
+                <td class="px-4 py-3" id="price-display-{{ stock.pk }}">
+                    {% if stock.unit_price %}
+                    <span class="text-green font-bold">₱{{ stock.unit_price }}</span>
+                    {% else %}
+                    <span class="text-red-400 text-xs">Not set</span>
+                    {% endif %}
+                </td>
+
+                <!-- action -->
+                <td class="px-4 py-3" id="action-{{ stock.pk }}">
+                    {% if stock.unit_price %}
+                    <button onclick="editPrice({{ stock.pk }}, '{{ stock.unit_price }}')"
+                            class="text-blue hover:text-blue-300 text-xs font-bold transition-all">
+                        Edit
+                    </button>
+                    {% else %}
+                    <button onclick="editPrice({{ stock.pk }}, '')"
+                            class="text-amber hover:text-amber-300 text-xs font-bold transition-all">
+                        Set Price
+                    </button>
+                    {% endif %}
+                </td>
+            </tr>
+
+            <!-- inline edit row (hidden by default) -->
+            <tr id="edit-row-{{ stock.pk }}" class="hidden bg-content border-b border-border">
+                <td colspan="9" class="px-4 py-3">
+                    <form method="POST" action="{% url 'stock_price_save' stock.pk %}"
+                          class="flex items-center gap-3">
+                        {% csrf_token %}
+                        <span class="text-white text-sm font-bold">{{ stock.name }} — {{ stock.batch }}</span>
+                        <span class="text-muted text-xs">({{ stock.quantity }} {{ stock.unit }}</span>
+                        <div class="flex items-center gap-2">
+                            <span class="text-muted text-xs">₱</span>
+                            <input type="number" name="unit_price" step="0.01" required
+                                   id="price-input-{{ stock.pk }}"
+                                   placeholder="0.00"
+                                   class="bg-sidebar border border-border rounded-lg px-3 py-1.5 text-white text-sm focus:outline-none focus:border-blue w-32">
+                        </div>
+                        <button type="submit"
+                                class="bg-[#17A98A] hover:bg-[#129070] text-white text-xs font-bold px-4 py-1.5 rounded-lg transition-all">
+                            Save
+                        </button>
+                        <button type="button" onclick="cancelEdit({{ stock.pk }})"
+                                class="bg-content hover:bg-border text-muted text-xs font-bold px-4 py-1.5 rounded-lg transition-all border border-border">
+                            Cancel
+                        </button>
+                    </form>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="9" class="px-4 py-8 text-center text-muted">No stock batches found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</div>
+
+<script>
+    function editPrice(pk, currentPrice) {
+        document.getElementById('edit-row-' + pk).classList.remove('hidden')
+        const input = document.getElementById('price-input-' + pk)
+        if (currentPrice) input.value = currentPrice
+        input.focus()
+    }
+
+    function cancelEdit(pk) {
+        document.getElementById('edit-row-' + pk).classList.add('hidden')
+    }
+
+    function filterTable() {
+        const input = document.getElementById('searchInput').value.toLowerCase()
+        const rows  = document.querySelectorAll('#pricingTable tbody tr')
+        rows.forEach(row => {
+            row.style.display = row.textContent.toLowerCase().includes(input) ? '' : 'none'
+        })
+    }
+</script>
+
+{% endblock %}

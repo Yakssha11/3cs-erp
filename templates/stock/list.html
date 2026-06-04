@@ -90,12 +90,6 @@
                        class="w-full bg-content/50 border border-border rounded-lg px-3 py-2 text-muted text-sm cursor-not-allowed">
             </div>
 
-            <div>
-                <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Price (₱)</label>
-                <input type="text" id="display_price" readonly
-                       class="w-full bg-content/50 border border-border rounded-lg px-3 py-2 text-muted text-sm cursor-not-allowed">
-            </div>
-
             <!-- manual fields -->
             <div>
                 <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Quantity</label>
@@ -152,8 +146,9 @@
            placeholder="🔍  Search by name, category or item ID..."
            class="flex-1 bg-sidebar border border-border rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-blue">
     <button onclick="openScanner('search')"
-            class="bg-[#1A8FD1] hover:bg-[#157AB0] text-white text-sm font-bold px-3 py-2 rounded-lg transition-all whitespace-nowrap">
-        📷 Scan
+            class="bg-[#1A8FD1] hover:bg-[#157AB0] text-white font-bold px-2 sm:px-3 py-2 rounded-lg transition-all flex-shrink-0 text-sm">
+        <span class="hidden sm:inline">📷 Scan</span>
+        <span class="sm:hidden">📷</span>
     </button>
 </div>
 
@@ -167,7 +162,9 @@
                 <th class="px-4 py-3 text-left">Name</th>
                 <th class="px-4 py-3 text-left">Category</th>
                 <th class="px-4 py-3 text-left">Unit</th>
-                <th class="px-4 py-3 text-left">Price</th>
+                {% if is_owner %}
+                <th class="px-4 py-3 text-left">Unit Price</th>
+                {% endif %}
                 <th class="px-4 py-3 text-left">Batch</th>
                 <th class="px-4 py-3 text-left">Unit Qty</th>
                 <th class="px-4 py-3 text-left">Qty</th>
@@ -196,9 +193,15 @@
                     <td class="px-4 py-3 text-muted">
                         {% if forloop.first %}{{ group.unit }}{% endif %}
                     </td>
-                    <td class="px-4 py-3 text-green">
-                        {% if forloop.first %}₱{{ group.price }}{% endif %}
+                    {% if is_owner %}
+                    <td class="px-4 py-3">
+                        {% if batch.unit_price %}
+                        <span class="text-green font-bold">₱{{ batch.unit_price }}</span>
+                        {% else %}
+                        <span class="text-red-400 text-xs">Not set</span>
+                        {% endif %}
                     </td>
+                    {% endif %}
                     <td class="px-4 py-3 text-muted">{{ batch.batch|default:"—" }}</td>
                     <td class="px-4 py-3 text-muted">{{ batch.unit_quantity|default:"—" }}</td>
                     <td class="px-4 py-3">
@@ -250,7 +253,7 @@
                 {% endfor %}
             {% empty %}
             <tr>
-                <td colspan="12" class="px-4 py-8 text-center text-muted">
+                <td colspan="{% if is_owner %}12{% else %}11{% endif %}" class="px-4 py-8 text-center text-muted">
                     No stock items found. Click "+ Add Stock" to get started.
                 </td>
             </tr>
@@ -272,7 +275,6 @@
         <div id="scanner-container" class="relative rounded-lg overflow-hidden bg-black"
              style="height:260px">
             <video id="scanner-video" class="w-full h-full object-cover"></video>
-            <!-- aim guide -->
             <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
                 <div style="width:220px;height:80px;border:2px solid #1A8FD1;border-radius:8px;
                             box-shadow:0 0 0 9999px rgba(0,0,0,0.45)"></div>
@@ -285,12 +287,11 @@
     </div>
 </div>
 
-<!-- ZXing barcode library -->
 <script src="https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js"></script>
 
 <script>
     let codeReader = null
-    let scannerMode = 'search' // 'search' or 'form'
+    let scannerMode = 'search'
 
     function toggleForm() {
         document.getElementById('addForm').classList.toggle('hidden')
@@ -303,7 +304,6 @@
         document.getElementById('display_name').value     = option.getAttribute('data-name') || ''
         document.getElementById('display_category').value = option.getAttribute('data-category') || ''
         document.getElementById('display_unit').value     = option.getAttribute('data-unit') || ''
-        document.getElementById('display_price').value    = '₱' + (option.getAttribute('data-price') || '')
     }
 
     function filterTable() {
@@ -351,7 +351,6 @@
 
     function handleScanResult(code) {
         if (scannerMode === 'form') {
-            // try to match item_id in material dropdown
             const select  = document.getElementById('materialSelect')
             let   matched = false
             for (let i = 0; i < select.options.length; i++) {
@@ -364,15 +363,12 @@
             }
             if (matched) {
                 closeScanner()
-                // open add form if not already open
                 document.getElementById('addForm').classList.remove('hidden')
-                document.getElementById('scanner-status').textContent = '✅ Item found!'
             } else {
                 document.getElementById('scanner-status').textContent = '⚠️ Item ID "' + code + '" not found in materials.'
                 document.getElementById('scanner-result').textContent = ''
             }
         } else {
-            // search mode — fill search input and filter table
             closeScanner()
             const searchInput = document.getElementById('searchInput')
             searchInput.value = code

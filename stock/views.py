@@ -10,6 +10,8 @@ from openpyxl.styles import Font, PatternFill, Alignment
 from django.http import HttpResponse, JsonResponse
 from django.db.models import F
 
+OWNER_USERNAME = 'CORONACIONR'
+
 @login_required
 def stock_list(request):
     from erp_config.models import Building
@@ -50,6 +52,7 @@ def stock_list(request):
         grouped[stock.item_id]['batches'].append(stock)
 
     grouped_list = list(grouped.values())
+    is_owner     = request.user.username == OWNER_USERNAME
 
     return render(request, 'stock/list.html', {
         'grouped_stocks': grouped_list,
@@ -57,6 +60,7 @@ def stock_list(request):
         'materials':      materials,
         'today':          today,
         'soon':           soon,
+        'is_owner':       is_owner,
     })
 
 @login_required
@@ -216,6 +220,7 @@ def laying_stock(request):
         grouped[stock.item_id]['batches'].append(stock)
 
     grouped_list = list(grouped.values())
+    is_owner     = request.user.username == OWNER_USERNAME
 
     return render(request, 'stock/laying_list.html', {
         'grouped_stocks': grouped_list,
@@ -223,6 +228,7 @@ def laying_stock(request):
         'materials':      materials,
         'today':          today,
         'soon':           soon,
+        'is_owner':       is_owner,
     })
 
 @login_required
@@ -256,3 +262,41 @@ def get_items(request):
         })
 
     return JsonResponse({'items': list(items.values())})
+
+@login_required
+def stock_pricing(request):
+    if request.user.username != OWNER_USERNAME:
+        messages.error(request, 'Access denied.')
+        return redirect('stock_list')
+
+    stocks = Stock.objects.all().order_by('item_id', F('expiry_date').asc(nulls_last=True), 'date')
+
+    return render(request, 'stock/pricing.html', {
+        'stocks': stocks,
+    })
+
+@login_required
+def stock_price_save(request, pk):
+    if request.user.username != OWNER_USERNAME:
+        messages.error(request, 'Access denied.')
+        return redirect('stock_list')
+
+    if request.method == 'POST':
+        from master_data.models import Material
+        stock      = get_object_or_404(Stock, pk=pk)
+        unit_price = request.POST.get('unit_price')
+
+        if unit_price:
+            stock.unit_price = float(unit_price)
+            stock.save()
+
+            # recalculate MAP for this material
+            try:
+                material = Material.objects.get(item_id=stock.item_id)
+                material.recalculate_map()
+            except Material.DoesNotExist:
+                pass
+
+            messages.success(request, f'Price set for {stock.name} Batch {stock.batch}!')
+
+    return redirect('stock_pricing')
