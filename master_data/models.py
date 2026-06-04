@@ -65,8 +65,13 @@ class Material(models.Model):
             item_id=self.item_id,
             unit_price__isnull=False
         )
-        total_value = sum(b.unit_price * Decimal(b.quantity) for b in batches)
-        total_qty   = Decimal(sum(b.quantity for b in batches))
+        total_value = Decimal(0)
+        total_qty   = Decimal(0)
+        for b in batches:
+            unit_price = Decimal(str(b.unit_price))
+            quantity   = Decimal(str(b.quantity))
+            total_value += unit_price * quantity
+            total_qty   += quantity
         self.total_stock_value = total_value
         self.total_stock_qty   = total_qty
         self.map_price         = total_value / total_qty if total_qty > 0 else Decimal(0)
