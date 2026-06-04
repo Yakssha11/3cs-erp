@@ -32,20 +32,27 @@ def finance_list(request):
         if start and end:
             finances = finances.filter(expense_date__range=[start, end])
 
-    total     = sum(f.amount for f in finances)
+    from chicken_production.models import ChickenProduction
+    from django.db.models import Sum
+    total_expenses = float(sum(f.amount for f in finances))
+    chicken_revenue = float(ChickenProduction.objects.aggregate(
+                        total=Sum('total_revenue'))['total'] or 0)
+    net_profit     = chicken_revenue - total_expenses
 
     paginator  = Paginator(finances, 10)
     page       = request.GET.get('page')
     finances   = paginator.get_page(page)
-    buildings  = Building.objects.all()
+    buildings  = Building.objects.filter(type='Growing')
     categories = Category.objects.all()
 
     return render(request, 'finance/list.html', {
-        'finances':   finances,
-        'total':      total,
-        'period':     period,
-        'buildings':  buildings,
-        'categories': categories,
+        'finances':        finances,
+        'total_expenses':  total_expenses,
+        'chicken_revenue': chicken_revenue,
+        'net_profit':      net_profit,
+        'period':          period,
+        'buildings':       buildings,
+        'categories':      categories,
     })
 
 @login_required

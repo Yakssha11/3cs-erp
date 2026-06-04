@@ -145,14 +145,22 @@
     </form>
 </div>
 
-<!-- total bar -->
-<div class="bg-[#01415A] border border-border rounded-xl px-6 py-4 mb-4 flex items-center justify-between">
-    <span class="text-muted text-sm">
-        Showing <strong class="text-white">{{ finances.count }}</strong> records
-    </span>
-    <span class="text-xl font-bold text-green">
-        TOTAL: ₱{{ total|floatformat:2 }}
-    </span>
+<!-- KPI bar -->
+<div class="bg-[#01415A] border border-border rounded-xl px-6 py-4 mb-4 grid grid-cols-3 gap-4 text-center">
+    <div>
+        <p class="text-muted text-xs uppercase tracking-wider mb-1">Total Expenses</p>
+        <p class="text-xl font-bold text-red-400">₱{{ total_expenses|floatformat:2 }}</p>
+    </div>
+    <div>
+        <p class="text-muted text-xs uppercase tracking-wider mb-1">Chicken Revenue</p>
+        <p class="text-xl font-bold text-green">₱{{ chicken_revenue|floatformat:2 }}</p>
+    </div>
+    <div>
+        <p class="text-muted text-xs uppercase tracking-wider mb-1">Net Profit</p>
+        <p class="text-xl font-bold {% if net_profit >= 0 %}text-green{% else %}text-red-400{% endif %}">
+            ₱{{ net_profit|floatformat:2 }}
+        </p>
+    </div>
 </div>
 
 <!-- search -->
