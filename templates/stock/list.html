@@ -375,6 +375,25 @@
             filterTable()
         }
     }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const params = new URLSearchParams(window.location.search)
+        const scanId = params.get('scan')
+        if (scanId) {
+            document.getElementById('addForm').classList.remove('hidden')
+            const select = document.getElementById('materialSelect')
+            for (let i = 0; i < select.options.length; i++) {
+                if (select.options[i].value === scanId) {
+                    select.selectedIndex = i
+                    fillMaterial()
+                    break
+                }
+            }
+            // scroll to form
+            document.getElementById('addForm').scrollIntoView({ behavior: 'smooth' })
+        }
+    })
+    
 </script>
 
 {% endblock %}

@@ -340,3 +340,42 @@ def stock_price_save(request, pk):
             messages.success(request, f'Price set for {stock.name} Batch {stock.batch}!')
 
     return redirect('stock_pricing')
+
+@login_required
+def get_item_info(request):
+    from erp_config.models import Building
+    from django.db.models import Sum
+    item_id = request.GET.get('item_id')
+    if not item_id:
+        return JsonResponse({'found': False})
+
+    stocks = Stock.objects.filter(item_id=item_id)
+    if not stocks.exists():
+        return JsonResponse({'found': False})
+
+    item = stocks.first()
+
+    growing_buildings = Building.objects.filter(type='Growing').values_list('name', flat=True)
+    laying_buildings  = Building.objects.filter(type='Laying').values_list('name', flat=True)
+
+    growing_qty = Stock.objects.filter(
+        item_id=item_id,
+        growing_house__in=growing_buildings,
+        quantity__gt=0
+    ).aggregate(total=Sum('quantity'))['total'] or 0
+
+    laying_qty = Stock.objects.filter(
+        item_id=item_id,
+        growing_house__in=laying_buildings,
+        quantity__gt=0
+    ).aggregate(total=Sum('quantity'))['total'] or 0
+
+    return JsonResponse({
+        'found':       True,
+        'item_id':     item_id,
+        'name':        item.name,
+        'category':    item.category,
+        'unit':        item.unit,
+        'growing_qty': growing_qty,
+        'laying_qty':  laying_qty,
+    })

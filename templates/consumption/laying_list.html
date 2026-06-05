@@ -417,6 +417,47 @@
         const today = new Date().toISOString().split('T')[0]
         const dateInput = document.querySelector('input[name="date_consumed"]')
         if (dateInput) dateInput.value = today
+
+        // handle scan from home page
+        const params = new URLSearchParams(window.location.search)
+        const scanId = params.get('scan')
+        if (scanId) {
+            document.getElementById('addForm').classList.remove('hidden')
+            const building = document.getElementById('buildingSelect').value
+            fetch(`{% url 'get_items' %}?building=${building}`)
+                .then(r => r.json())
+                .then(data => {
+                    const item = data.items.find(i => i.item_id === scanId)
+                    if (item) {
+                        const catSelect = document.getElementById('categorySelect')
+                        for (let i = 0; i < catSelect.options.length; i++) {
+                            if (catSelect.options[i].value === item.category) {
+                                catSelect.selectedIndex = i
+                                break
+                            }
+                        }
+                        fetch(`{% url 'get_items' %}?category=${item.category}&building=${building}`)
+                            .then(r => r.json())
+                            .then(data2 => {
+                                const itemSelect = document.getElementById('itemSelect')
+                                itemSelect.innerHTML = '<option value="">Select item</option>'
+                                data2.items.forEach(i => {
+                                    itemSelect.innerHTML += `<option value="${i.item_id}" data-unit="${i.unit}">
+                                        ${i.name} (${i.item_id}) — Stock: ${i.quantity}
+                                    </option>`
+                                })
+                                for (let i = 0; i < itemSelect.options.length; i++) {
+                                    if (itemSelect.options[i].value === scanId) {
+                                        itemSelect.selectedIndex = i
+                                        fillUnit()
+                                        break
+                                    }
+                                }
+                                document.getElementById('addForm').scrollIntoView({ behavior: 'smooth' })
+                            })
+                    }
+                })
+        }
     })
 
     function openSearchScanner() {
