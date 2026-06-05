@@ -179,6 +179,8 @@ def flock_update(request, pk):
         flock.status        = request.POST['status']
         flock.notes         = request.POST.get('notes', '')
         flock.save()
+        # delete old snapshots so they regenerate correctly
+        FlockSnapshot.objects.filter(flock=flock).delete()
         messages.success(request, f'"{flock.batch_name}" updated successfully!')
         return redirect('flock_list')
     buildings = Building.objects.filter(type='Growing')
