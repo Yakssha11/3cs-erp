@@ -45,7 +45,7 @@
             <!-- growing house -->
             <div>
                 <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Growing House</label>
-                <select name="growing_house" required
+                <select name="growing_house" id="buildingSelect" required onchange="loadItems()"
                         class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-teal">
                     <option value="">Select house</option>
                     {% for building in buildings %}
@@ -67,12 +67,19 @@
             </div>
 
             <!-- item -->
-            <div>
+            <div class="col-span-2">
                 <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Item</label>
-                <select name="item_id" id="itemSelect" required onchange="fillUnit()"
-                        class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-teal">
-                    <option value="">Select category first</option>
-                </select>
+                <div class="flex gap-2">
+                    <select name="item_id" id="itemSelect" required onchange="fillUnit()"
+                            class="flex-1 bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-teal">
+                        <option value="">Select category first</option>
+                    </select>
+                    <button type="button" onclick="openScanner()"
+                            class="bg-[#17A98A] hover:bg-[#129070] text-white font-bold px-2 sm:px-3 py-2 rounded-lg transition-all flex-shrink-0 text-sm">
+                        <span class="hidden sm:inline">📷 Scan</span>
+                        <span class="sm:hidden">📷</span>
+                    </button>
+                </div>
             </div>
 
             <!-- quantity -->
@@ -247,14 +254,42 @@
 </div>
 {% endif %}
 
+<!-- barcode scanner modal -->
+<div id="scannerModal" class="hidden fixed inset-0 z-50 flex items-center justify-center"
+     style="background:rgba(0,0,0,0.85)">
+    <div class="bg-sidebar border border-border rounded-xl p-4 w-full max-w-sm mx-4">
+        <div class="flex items-center justify-between mb-3">
+            <h3 class="text-sm font-bold text-white">📷 Scan Item Barcode</h3>
+            <button onclick="closeScanner()"
+                    class="text-muted hover:text-white text-lg leading-none">✕</button>
+        </div>
+        <div id="scanner-container" class="relative rounded-lg overflow-hidden bg-black"
+             style="height:260px">
+            <video id="scanner-video" class="w-full h-full object-cover"></video>
+            <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div style="width:220px;height:80px;border:2px solid #17A98A;border-radius:8px;
+                            box-shadow:0 0 0 9999px rgba(0,0,0,0.45)"></div>
+            </div>
+        </div>
+        <p id="scanner-status" class="text-xs text-muted text-center mt-3">
+            Point camera at a barcode...
+        </p>
+        <p id="scanner-result" class="text-xs text-teal text-center mt-1 font-bold"></p>
+    </div>
+</div>
+
+<script src="https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js"></script>
+
 <script>
+    let codeReader = null
+
     function toggleForm() {
         document.getElementById('addForm').classList.toggle('hidden')
     }
 
     function loadItems() {
         const category = document.getElementById('categorySelect').value
-        const building = document.querySelector('select[name="growing_house"]').value
+        const building = document.getElementById('buildingSelect').value
         const select   = document.getElementById('itemSelect')
         select.innerHTML = '<option value="">Loading...</option>'
 
@@ -299,6 +334,101 @@
         rows.forEach(row => {
             row.style.display = row.textContent.toLowerCase().includes(input) ? '' : 'none'
         })
+    }
+
+    function openScanner() {
+        document.getElementById('addForm').classList.remove('hidden')
+        document.getElementById('scannerModal').classList.remove('hidden')
+        document.getElementById('scanner-status').textContent = 'Point camera at a barcode...'
+        document.getElementById('scanner-result').textContent = ''
+        startScanner()
+    }
+
+    function closeScanner() {
+        document.getElementById('scannerModal').classList.add('hidden')
+        stopScanner()
+    }
+
+    function startScanner() {
+        if (typeof ZXing === 'undefined') {
+            document.getElementById('scanner-status').textContent = 'Scanner library not loaded.'
+            return
+        }
+        codeReader = new ZXing.BrowserMultiFormatReader()
+        codeReader.decodeFromVideoDevice(null, 'scanner-video', (result, err) => {
+            if (result) {
+                const code = result.getText()
+                handleScanResult(code)
+            }
+        })
+    }
+
+    function stopScanner() {
+        if (codeReader) {
+            codeReader.reset()
+            codeReader = null
+        }
+    }
+
+    function handleScanResult(code) {
+        // try to find item in dropdown
+        const select  = document.getElementById('itemSelect')
+        let   matched = false
+        for (let i = 0; i < select.options.length; i++) {
+            if (select.options[i].value === code) {
+                select.selectedIndex = i
+                fillUnit()
+                matched = true
+                break
+            }
+        }
+
+        if (matched) {
+            closeScanner()
+            document.getElementById('scanner-result').textContent = '✅ Item found!'
+        } else {
+            // item not in dropdown yet — try loading all items by item_id
+            const building = document.getElementById('buildingSelect').value
+            fetch(`{% url 'get_items' %}?building=${building}`)
+                .then(r => r.json())
+                .then(data => {
+                    const item = data.items.find(i => i.item_id === code)
+                    if (item) {
+                        // set category first
+                        const catSelect = document.getElementById('categorySelect')
+                        for (let i = 0; i < catSelect.options.length; i++) {
+                            if (catSelect.options[i].value === item.category) {
+                                catSelect.selectedIndex = i
+                                break
+                            }
+                        }
+                        // load items for that category then select
+                        fetch(`{% url 'get_items' %}?category=${item.category}&building=${building}`)
+                            .then(r => r.json())
+                            .then(data2 => {
+                                const itemSelect = document.getElementById('itemSelect')
+                                itemSelect.innerHTML = '<option value="">Select item</option>'
+                                data2.items.forEach(i => {
+                                    itemSelect.innerHTML += `<option value="${i.item_id}" data-unit="${i.unit}">
+                                        ${i.name} (${i.item_id}) — Stock: ${i.quantity}
+                                    </option>`
+                                })
+                                // select the scanned item
+                                for (let i = 0; i < itemSelect.options.length; i++) {
+                                    if (itemSelect.options[i].value === code) {
+                                        itemSelect.selectedIndex = i
+                                        fillUnit()
+                                        break
+                                    }
+                                }
+                                closeScanner()
+                            })
+                    } else {
+                        document.getElementById('scanner-status').textContent = `⚠️ Item "${code}" not found in stock.`
+                        document.getElementById('scanner-result').textContent = ''
+                    }
+                })
+        }
     }
 
     document.addEventListener('DOMContentLoaded', function() {
