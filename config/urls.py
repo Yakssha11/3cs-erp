@@ -34,12 +34,14 @@ def home(request):
                     ).aggregate(Sum('amount'))['amount__sum'] or 0
     stock_items   = Stock.objects.count()
     low_stock     = Stock.objects.filter(quantity__lte=10).count()
-    from erp_config.models import Building
+    
+    from erp_config.models import Building, Cause
     growing_buildings    = Building.objects.filter(type='Growing').values_list('name', flat=True)
     laying_buildings     = Building.objects.filter(type='Laying').values_list('name', flat=True)
     growing_unpriced     = Stock.objects.filter(growing_house__in=growing_buildings, unit_price__isnull=True).count()
     laying_unpriced      = Stock.objects.filter(growing_house__in=laying_buildings, unit_price__isnull=True).count()
     unpriced_count       = growing_unpriced + laying_unpriced
+    causes               = Cause.objects.all()
 
     # ── Laying KPIs ───────────────────────────────────────────
     laying_hens      = LayingFlock.objects.aggregate(Sum('current_count'))['current_count__sum'] or 0
@@ -67,6 +69,7 @@ def home(request):
         'unpriced_count':   unpriced_count,
         'growing_unpriced': growing_unpriced,
         'laying_unpriced':  laying_unpriced,
+        'causes':           causes,
     })
 
 @login_required

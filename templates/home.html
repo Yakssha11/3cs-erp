@@ -345,14 +345,11 @@
 <div id="itemPopup" class="hidden fixed inset-0 z-50 flex items-center justify-center"
      style="background:rgba(0,0,0,0.85)">
     <div class="bg-sidebar border border-border rounded-xl p-5 w-full max-w-sm mx-4">
-
-        <!-- item info -->
         <div class="flex items-center justify-between mb-4">
             <h3 class="text-sm font-bold text-white" id="popup-item-name">Item Name</h3>
             <button onclick="closeItemPopup()"
                     class="text-muted hover:text-white text-lg leading-none">✕</button>
         </div>
-
         <div class="bg-content rounded-lg p-3 mb-4">
             <p class="text-xs text-muted mb-1">Item ID: <span class="text-blue font-mono" id="popup-item-id"></span></p>
             <p class="text-xs text-muted mb-3">Category: <span class="text-white" id="popup-category"></span></p>
@@ -367,8 +364,6 @@
                 </div>
             </div>
         </div>
-
-        <!-- action buttons -->
         <div class="grid grid-cols-2 gap-2 mb-2">
             <a id="btn-growing-stock" href="#"
                class="bg-teal/20 hover:bg-teal/30 border border-teal/30 text-teal text-xs font-bold px-3 py-2.5 rounded-lg transition-all text-center">
@@ -387,14 +382,81 @@
                 🥚 Add Consumption
             </a>
         </div>
-
         {% if request.user.username == 'CORONACIONR' %}
         <a id="btn-set-price" href="{% url 'stock_pricing' %}"
            class="block w-full bg-yellow-900/30 hover:bg-yellow-900/50 border border-yellow-700/30 text-yellow-400 text-xs font-bold px-3 py-2.5 rounded-lg transition-all text-center">
             💲 Set Price
         </a>
         {% endif %}
+    </div>
+</div>
 
+<!-- mortality popup -->
+<div id="mortalityPopup" class="hidden fixed inset-0 z-50 flex items-center justify-center"
+     style="background:rgba(0,0,0,0.85)">
+    <div class="bg-sidebar border border-border rounded-xl p-5 w-full max-w-sm mx-4">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-sm font-bold text-white">💀 Log Mortality</h3>
+            <button onclick="closeMortalityPopup()"
+                    class="text-muted hover:text-white text-lg leading-none">✕</button>
+        </div>
+
+        <!-- flock info -->
+        <div class="bg-content rounded-lg p-3 mb-4">
+            <p class="text-white font-bold text-sm" id="mort-batch-name"></p>
+            <p class="text-muted text-xs" id="mort-growing-house"></p>
+            <p class="text-xs text-muted mt-1">Current Count: <span class="text-green font-bold" id="mort-current-count"></span></p>
+        </div>
+
+        <!-- form -->
+        <form id="mortalityForm">
+            {% csrf_token %}
+            <input type="hidden" id="mort-flock-id" name="flock_id">
+            <div class="grid grid-cols-2 gap-3 mb-3">
+                <div class="col-span-2">
+                    <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Deaths</label>
+                    <input type="number" id="mort-count" name="count" required placeholder="0" min="1"
+                           class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500">
+                </div>
+                <div class="col-span-2">
+                    <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Cause</label>
+                    <select id="mort-cause" name="cause"
+                            class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500">
+                        <option value="">Select cause</option>
+                        {% for cause in causes %}
+                        <option value="{{ cause.name }}">{{ cause.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-span-2">
+                    <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Recorded By</label>
+                    <input type="text" id="mort-recorded-by" name="recorded_by" required
+                           placeholder="Your name"
+                           value="{{ request.user.username }}"
+                           class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500">
+                </div>
+                <div class="col-span-2">
+                    <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Date</label>
+                    <input type="date" id="mort-date" name="death_date" required
+                           class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500">
+                </div>
+                <div class="col-span-2">
+                    <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Remarks</label>
+                    <input type="text" id="mort-remarks" name="remarks" placeholder="Optional"
+                           class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500">
+                </div>
+            </div>
+            <div class="flex gap-3">
+                <button type="button" onclick="saveMortality()"
+                        class="flex-1 bg-red-700 hover:bg-red-800 text-white text-sm font-bold py-2 rounded-lg transition-all">
+                    💀 Save
+                </button>
+                <button type="button" onclick="closeMortalityPopup()"
+                        class="flex-1 bg-content hover:bg-border text-muted text-sm font-bold py-2 rounded-lg transition-all border border-border">
+                    Cancel
+                </button>
+            </div>
+        </form>
     </div>
 </div>
 
@@ -500,6 +562,20 @@
     }
 
     function lookupItem(itemId) {
+        if (itemId.startsWith('FLOCK-')) {
+            const flockPk = itemId.replace('FLOCK-', '')
+            fetch(`/flock/info/${flockPk}/`)
+                .then(r => r.json())
+                .then(data => {
+                    if (!data.found) {
+                        alert(`⚠️ Flock not found.`)
+                        return
+                    }
+                    showMortalityPopup(data)
+                })
+            return
+        }
+
         fetch(`/stock/item-info/?item_id=${itemId}`)
             .then(r => r.json())
             .then(data => {
@@ -512,23 +588,78 @@
     }
 
     function showItemPopup(data) {
-        document.getElementById('popup-item-name').textContent  = data.name
-        document.getElementById('popup-item-id').textContent    = data.item_id
-        document.getElementById('popup-category').textContent   = data.category
+        document.getElementById('popup-item-name').textContent   = data.name
+        document.getElementById('popup-item-id').textContent     = data.item_id
+        document.getElementById('popup-category').textContent    = data.category
         document.getElementById('popup-growing-qty').textContent = data.growing_qty + ' ' + data.unit
         document.getElementById('popup-laying-qty').textContent  = data.laying_qty + ' ' + data.unit
-
-        // set action button URLs
-        document.getElementById('btn-growing-stock').href       = `/stock/?scan=${data.item_id}`
-        document.getElementById('btn-growing-consumption').href = `/consumption/?scan=${data.item_id}`
-        document.getElementById('btn-laying-stock').href        = `/stock/laying/?scan=${data.item_id}`
-        document.getElementById('btn-laying-consumption').href  = `/consumption/laying/?scan=${data.item_id}`
-
+        document.getElementById('btn-growing-stock').href        = `/stock/?scan=${data.item_id}`
+        document.getElementById('btn-growing-consumption').href  = `/consumption/?scan=${data.item_id}`
+        document.getElementById('btn-laying-stock').href         = `/stock/laying/?scan=${data.item_id}`
+        document.getElementById('btn-laying-consumption').href   = `/consumption/laying/?scan=${data.item_id}`
         document.getElementById('itemPopup').classList.remove('hidden')
     }
 
     function closeItemPopup() {
         document.getElementById('itemPopup').classList.add('hidden')
+    }
+
+    function showMortalityPopup(data) {
+        document.getElementById('mort-flock-id').value          = data.flock_id
+        document.getElementById('mort-batch-name').textContent  = data.batch_name
+        document.getElementById('mort-growing-house').textContent = data.growing_house
+        document.getElementById('mort-current-count').textContent = data.current_count
+        document.getElementById('mort-count').value             = ''
+        document.getElementById('mort-remarks').value           = ''
+        document.getElementById('mort-date').value              = new Date().toISOString().split('T')[0]
+        document.getElementById('mortalityPopup').classList.remove('hidden')
+    }
+
+    function closeMortalityPopup() {
+        document.getElementById('mortalityPopup').classList.add('hidden')
+    }
+
+    function saveMortality() {
+        const flockId    = document.getElementById('mort-flock-id').value
+        const count      = document.getElementById('mort-count').value
+        const cause      = document.getElementById('mort-cause').value
+        const recordedBy = document.getElementById('mort-recorded-by').value
+        const date       = document.getElementById('mort-date').value
+        const remarks    = document.getElementById('mort-remarks').value
+        const house      = document.getElementById('mort-growing-house').textContent
+        const csrfToken  = document.querySelector('[name=csrfmiddlewaretoken]').value
+
+        if (!count || !recordedBy || !date) {
+            alert('Please fill in required fields.')
+            return
+        }
+
+        fetch('/flock/quick-mortality/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify({
+                flock_id:     flockId,
+                count:        count,
+                cause:        cause,
+                recorded_by:  recordedBy,
+                death_date:   date,
+                remarks:      remarks,
+                growing_house: house
+            })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                closeMortalityPopup()
+                alert(`✅ ${data.message}`)
+                location.reload()
+            } else {
+                alert(`⚠️ ${data.error}`)
+            }
+        })
     }
 </script>
 

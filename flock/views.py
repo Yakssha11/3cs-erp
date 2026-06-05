@@ -8,6 +8,9 @@ from datetime import date, timedelta
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment
 from django.http import HttpResponse
+from django.http import JsonResponse
+import json
+
 
 
 def auto_snapshot(flock):
@@ -297,3 +300,60 @@ def export_flock(request):
     response['Content-Disposition'] = f'attachment; filename="flock_{date.today()}.xlsx"'
     wb.save(response)
     return response
+
+def flock_info(request, pk):
+    try:
+        flock = Flock.objects.get(pk=pk)
+        return JsonResponse({
+            'found':        True,
+            'flock_id':     flock.pk,
+            'batch_name':   flock.batch_name,
+            'growing_house': flock.growing_house,
+            'current_count': flock.current_count,
+        })
+    except Flock.DoesNotExist:
+        return JsonResponse({'found': False})
+
+@login_required
+def quick_mortality(request):
+    if request.method == 'POST':
+        try:
+            data         = json.loads(request.body)
+            flock_id     = data.get('flock_id')
+            count        = int(data.get('count', 0))
+            cause        = data.get('cause', '')
+            recorded_by  = data.get('recorded_by', '')
+            death_date   = data.get('death_date')
+            remarks      = data.get('remarks', '')
+            growing_house = data.get('growing_house', '')
+
+            flock = Flock.objects.get(pk=flock_id)
+
+            if count > flock.current_count:
+                return JsonResponse({
+                    'success': False,
+                    'error': f'Death count exceeds current count ({flock.current_count})'
+                })
+
+            Mortality.objects.create(
+                flock         = flock,
+                growing_house = growing_house,
+                death_date    = death_date,
+                count         = count,
+                cause         = cause,
+                recorded_by   = recorded_by,
+                remarks       = remarks
+            )
+
+            flock.current_count -= count
+            flock.save()
+
+            return JsonResponse({
+                'success': True,
+                'message': f'{count} deaths logged. Remaining: {flock.current_count}'
+            })
+
+        except Exception as e:
+            return JsonResponse({'success': False,'error': str(e)})
+
+    return JsonResponse({'success': False,'error': 'Invalid request'})

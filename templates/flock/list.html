@@ -41,13 +41,11 @@
     <form method="POST" action="{% url 'flock_save' %}">
         {% csrf_token %}
         <div class="grid grid-cols-2 gap-4 mb-4">
-
             <div>
                 <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Batch Name</label>
                 <input type="text" name="batch_name" required placeholder="e.g. Batch 1"
                        class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-green">
             </div>
-
             <div>
                 <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Growing House</label>
                 <select name="growing_house" required
@@ -58,19 +56,16 @@
                     {% endfor %}
                 </select>
             </div>
-
             <div>
                 <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Start Count</label>
                 <input type="number" name="start_count" required placeholder="0"
                        class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-green">
             </div>
-
             <div>
                 <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Date Placed</label>
                 <input type="date" name="date_placed" required
                        class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-green">
             </div>
-
             <div>
                 <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Supplier</label>
                 <select name="supplier"
@@ -81,13 +76,11 @@
                     {% endfor %}
                 </select>
             </div>
-
             <div>
                 <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Notes</label>
                 <input type="text" name="notes" placeholder="Optional"
                        class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-green">
             </div>
-
         </div>
         <div class="flex gap-3">
             <button type="submit"
@@ -123,7 +116,7 @@
                 <th class="px-4 py-3 text-left">Start</th>
                 <th class="px-4 py-3 text-left">Current</th>
                 <th class="px-4 py-3 text-left">Age</th>
-                <th class="px-4 py-3 text-left">Date Placed</th>
+                <th class="px-4 py-3 text-left">Date Palced</th>
                 <th class="px-4 py-3 text-left">Supplier</th>
                 <th class="px-4 py-3 text-left">Status</th>
                 <th class="px-4 py-3 text-left">Actions</th>
@@ -160,6 +153,11 @@
                            class="text-blue hover:text-blue-300 text-xs font-bold transition-all leading-none">
                             Edit
                         </a>
+                        <span class="text-border">|</span>
+                        <button onclick="showFlockBarcode('FLOCK-{{ flock.pk }}', '{{ flock.batch_name }}', '{{ flock.growing_house }}')"
+                                class="text-teal hover:text-teal-300 text-xs font-bold transition-all leading-none">
+                            🏷️ Barcode
+                        </button>
                         <span class="text-border">|</span>
                         {% if flock.growing_house == 'Growing House 2' %}
                         <form method="POST" action="{% url 'flock_transfer' flock.pk %}"
@@ -322,7 +320,6 @@
     <form method="POST" action="{% url 'mortality_save' %}">
         {% csrf_token %}
         <div class="grid grid-cols-2 gap-4 mb-4">
-
             <div>
                 <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Batch</label>
                 <select name="flock_id" required
@@ -333,7 +330,6 @@
                     {% endfor %}
                 </select>
             </div>
-
             <div>
                 <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Growing House</label>
                 <select name="growing_house" required
@@ -344,19 +340,16 @@
                     {% endfor %}
                 </select>
             </div>
-
             <div>
                 <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Date</label>
                 <input type="date" name="death_date" required
                        class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500">
             </div>
-
             <div>
                 <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Deaths</label>
                 <input type="number" name="count" required placeholder="0"
                        class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500">
             </div>
-
             <div>
                 <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Cause</label>
                 <select name="cause"
@@ -367,19 +360,16 @@
                     {% endfor %}
                 </select>
             </div>
-
             <div>
                 <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Recorded By</label>
                 <input type="text" name="recorded_by" required placeholder="Your name"
                        class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500">
             </div>
-
             <div class="col-span-2">
                 <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Remarks</label>
                 <input type="text" name="remarks" placeholder="Optional notes"
                        class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500">
             </div>
-
         </div>
         <div class="flex gap-3">
             <button type="submit"
@@ -496,6 +486,36 @@
 </div>
 {% endif %}
 
+<!-- flock barcode modal -->
+<div id="flockBarcodeModal" class="hidden fixed inset-0 z-50 flex items-center justify-center"
+     style="background:rgba(0,0,0,0.85)">
+    <div class="bg-sidebar border border-border rounded-xl p-6 w-full max-w-sm mx-4">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-sm font-bold text-white">🏷️ Flock Barcode</h3>
+            <button onclick="closeFlockBarcode()"
+                    class="text-muted hover:text-white text-lg leading-none">✕</button>
+        </div>
+        <div class="bg-white rounded-lg p-4 text-center mb-4">
+            <p id="flock-barcode-name" class="text-gray-800 text-xs font-bold mb-1"></p>
+            <p id="flock-barcode-house" class="text-gray-500 text-xs mb-2"></p>
+            <svg id="flock-barcode-svg"></svg>
+            <p id="flock-barcode-id" class="text-gray-600 text-xs mt-2 font-mono"></p>
+        </div>
+        <div class="flex gap-3">
+            <button onclick="printFlockBarcode()"
+                    class="flex-1 bg-[#1A8FD1] hover:bg-[#157AB0] text-white text-sm font-bold py-2 rounded-lg transition-all">
+                🖨️ Print
+            </button>
+            <button onclick="closeFlockBarcode()"
+                    class="flex-1 bg-content hover:bg-border text-muted text-sm font-bold py-2 rounded-lg transition-all border border-border">
+                Close
+            </button>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.11.6/JsBarcode.all.min.js"></script>
+
 <script>
     function filterFlock() {
         const input = document.getElementById('flockSearch').value.toLowerCase()
@@ -527,6 +547,48 @@
         rows.forEach(row => {
             row.style.display = row.textContent.toLowerCase().includes(input) ? '' : 'none'
         })
+    }
+    function showFlockBarcode(barcodeId, batchName, growingHouse) {
+        document.getElementById('flock-barcode-name').textContent  = batchName
+        document.getElementById('flock-barcode-house').textContent = growingHouse
+        document.getElementById('flock-barcode-id').textContent    = barcodeId
+        JsBarcode('#flock-barcode-svg', barcodeId, {
+            format:       'CODE128',
+            width:        2,
+            height:       60,
+            displayValue: false,
+            margin:       10,
+        })
+        document.getElementById('flockBarcodeModal').classList.remove('hidden')
+    }
+    function closeFlockBarcode() {
+        document.getElementById('flockBarcodeModal').classList.add('hidden')
+    }
+    function printFlockBarcode() {
+        const name    = document.getElementById('flock-barcode-name').textContent
+        const house   = document.getElementById('flock-barcode-house').textContent
+        const id      = document.getElementById('flock-barcode-id').textContent
+        const svgEl   = document.getElementById('flock-barcode-svg')
+        const svgData = new XMLSerializer().serializeToString(svgEl)
+        const win     = window.open('', '_blank')
+        win.document.write(`
+            <html><head><title>Flock Barcode - ${id}</title>
+            <style>
+                body { display:flex; flex-direction:column; align-items:center;
+                       justify-content:center; height:100vh; margin:0; font-family:sans-serif; }
+                p { margin: 4px 0; font-size: 13px; }
+                .id { font-family: monospace; font-size: 12px; color: #555; }
+                .house { font-size: 11px; color: #888; }
+            </style></head>
+            <body>
+                <p><strong>${name}</strong></p>
+                <p class="house">${house}</p>
+                ${svgData}
+                <p class="id">${id}</p>
+                <script>window.onload = () => { window.print(); window.close(); }<\/script>
+            </body></html>
+        `)
+        win.document.close()
     }
 </script>
 
