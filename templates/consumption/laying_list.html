@@ -128,10 +128,15 @@
 </div>
 
 <!-- search -->
-<div class="mb-4">
+<div class="mb-4 flex gap-2">
     <input type="text" id="searchInput" onkeyup="filterTable()"
-           placeholder="🔍  Search by item, building, category..."
-           class="w-full bg-sidebar border border-border rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-amber">
+           placeholder="🔍  Search by item, house, category..."
+           class="flex-1 bg-sidebar border border-border rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-teal">
+    <button onclick="openSearchScanner()"
+            class="bg-[#17A98A] hover:bg-[#129070] text-white font-bold px-2 sm:px-3 py-2 rounded-lg transition-all flex-shrink-0 text-sm">
+        <span class="hidden sm:inline">📷 Scan</span>
+        <span class="sm:hidden">📷</span>
+    </button>
 </div>
 
 <!-- table -->
@@ -413,6 +418,30 @@
         const dateInput = document.querySelector('input[name="date_consumed"]')
         if (dateInput) dateInput.value = today
     })
+
+    function openSearchScanner() {
+        document.getElementById('scannerModal').classList.remove('hidden')
+        document.getElementById('scanner-status').textContent = 'Point camera at a barcode...'
+        document.getElementById('scanner-result').textContent = ''
+        startSearchScanner()
+    }
+
+    function startSearchScanner() {
+        if (typeof ZXing === 'undefined') {
+            document.getElementById('scanner-status').textContent = 'Scanner library not loaded.'
+            return
+        }
+        codeReader = new ZXing.BrowserMultiFormatReader()
+        codeReader.decodeFromVideoDevice(null, 'scanner-video', (result, err) => {
+            if (result) {
+                const code = result.getText()
+                closeScanner()
+                document.getElementById('searchInput').value = code
+                filterTable()
+            }
+        })
+    }
+
 </script>
 
 {% endblock %}
