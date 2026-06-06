@@ -115,11 +115,12 @@ def consumption_save(request):
         from decimal import Decimal
 
         # UoM conversion
-        consumed_unit = request.POST.get('consumed_unit', unit)
+        consumed_unit     = request.POST.get('consumed_unit', unit)
+        original_quantity = quantity
+        original_unit     = consumed_unit
         try:
             material = Material.objects.get(item_id=item_id)
             if material.stock_unit and material.conversion_factor and consumed_unit == material.stock_unit:
-                # staff entered in stock units — convert to base units
                 quantity = float(Decimal(str(quantity)) * Decimal(str(material.conversion_factor)))
                 unit     = material.base_unit or unit
         except Material.DoesNotExist:
@@ -149,7 +150,9 @@ def consumption_save(request):
             unit          = unit,
             remarks       = remarks,
             recorded_by   = recorded,
-            date_consumed = date_consumed
+            date_consumed = date_consumed,
+            original_quantity = original_quantity,
+            original_unit     = original_unit,
         )
 
         remaining = quantity
@@ -377,7 +380,9 @@ def laying_consumption_save(request):
             unit          = unit,
             remarks       = remarks,
             recorded_by   = recorded,
-            date_consumed = date_consumed
+            date_consumed = date_consumed,
+            original_quantity = original_quantity,
+            original_unit     = original_unit,
         )
 
         remaining = quantity

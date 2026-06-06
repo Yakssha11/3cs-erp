@@ -159,7 +159,8 @@
                 <th class="px-4 py-3 text-left">Growing House</th>
                 <th class="px-4 py-3 text-left">Category</th>
                 <th class="px-4 py-3 text-left">Item</th>
-                <th class="px-4 py-3 text-left">Quantity</th>
+                <th class="px-4 py-3 text-left">Consumed</th>
+                <th class="px-4 py-3 text-left">Conv Qty</th>
                 <th class="px-4 py-3 text-left">Unit</th>
                 <th class="px-4 py-3 text-left">Recorded By</th>
                 <th class="px-4 py-3 text-left">Remarks</th>
@@ -180,7 +181,14 @@
                     </span>
                 </td>
                 <td class="px-4 py-3 text-white font-semibold">{{ c.item_name }}</td>
-                <td class="px-4 py-3 text-teal font-bold">{{ c.quantity }}</td>
+                <td class="px-4 py-3 text-teal font-bold">
+                    {% if c.original_quantity and c.original_unit %}
+                        {{ c.original_quantity|floatformat:2 }} {{ c.original_unit }}
+                    {% else %}
+                        —
+                    {% endif %}
+                </td>
+                <td class="px-4 py-3 text-teal font-bold">{{ c.quantity }} {{ c.unit }}</td>
                 <td class="px-4 py-3 text-muted">{{ c.unit }}</td>
                 <td class="px-4 py-3 text-muted">{{ c.recorded_by }}</td>
                 <td class="px-4 py-3 text-muted text-xs">{{ c.remarks }}</td>
