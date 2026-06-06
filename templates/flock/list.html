@@ -116,7 +116,7 @@
                 <th class="px-4 py-3 text-left">Start</th>
                 <th class="px-4 py-3 text-left">Current</th>
                 <th class="px-4 py-3 text-left">Age</th>
-                <th class="px-4 py-3 text-left">Date Palced</th>
+                <th class="px-4 py-3 text-left">Date Placed</th>
                 <th class="px-4 py-3 text-left">Supplier</th>
                 <th class="px-4 py-3 text-left">Status</th>
                 <th class="px-4 py-3 text-left">Actions</th>
@@ -314,6 +314,18 @@
     </button>
 </div>
 
+<!-- mortality tabs -->
+<div class="flex gap-2 mb-4">
+    <button onclick="switchMortTab('active')" id="tab-active"
+            class="px-4 py-2 rounded-lg text-xs font-bold transition-all border bg-teal text-white border-teal">
+        🌱 Active Flocks
+    </button>
+    <button onclick="switchMortTab('previous')" id="tab-previous"
+            class="px-4 py-2 rounded-lg text-xs font-bold transition-all border bg-sidebar text-muted border-border hover:border-red-500">
+        📦 Previous Batches
+    </button>
+</div>
+
 <!-- log death form -->
 <div id="mortForm" class="hidden bg-sidebar border border-border rounded-xl p-6 mb-6">
     <h2 class="text-sm font-bold text-muted uppercase tracking-wider mb-4">Log Mortality</h2>
@@ -384,15 +396,34 @@
     </form>
 </div>
 
-<!-- mortality search -->
-<div class="mb-4">
+<!-- active mortality search -->
+<div id="active-mort-search" class="mb-4">
     <input type="text" id="mortSearch" onkeyup="filterMort()"
            placeholder="🔍  Search mortality by batch, cause..."
            class="w-full bg-sidebar border border-border rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-red-500">
 </div>
 
-<!-- mortality table -->
-<div class="bg-sidebar border border-border rounded-xl">
+<!-- previous batch search -->
+<div id="previous-mort-search" class="mb-4 hidden">
+    <div class="relative">
+        <input type="text" id="prevMortSearch" onkeyup="filterPrevMort()" autocomplete="off"
+               placeholder="🔍  Search previous batch by name..."
+               class="w-full bg-sidebar border border-border rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-red-500">
+        <div id="batchSuggestions" class="hidden absolute z-10 w-full bg-sidebar border border-border rounded-lg mt-1 max-h-48 overflow-y-auto">
+            {% for flock in sold_flocks %}
+            <div onclick="selectBatch('{{ flock.batch_name }}')"
+                 class="px-4 py-2.5 text-sm text-white hover:bg-content cursor-pointer border-b border-border">
+                {{ flock.batch_name }} — {{ flock.growing_house }}
+            </div>
+            {% empty %}
+            <div class="px-4 py-2.5 text-sm text-muted">No sold batches yet</div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- active mortality table -->
+<div id="active-mort-table" class="bg-sidebar border border-border rounded-xl">
     <div class="overflow-x-auto">
     <table class="w-full text-sm whitespace-nowrap" id="mortTable">
         <thead>
@@ -454,7 +485,7 @@
 
 <!-- mortality pagination -->
 {% if mortalities.has_other_pages %}
-<div class="flex items-center justify-between mt-4">
+<div id="active-mort-pagination" class="flex items-center justify-between mt-4">
     <p class="text-xs text-muted">
         Page {{ mortalities.number }} of {{ mortalities.paginator.num_pages }}
         — {{ mortalities.paginator.count }} total records
@@ -485,6 +516,47 @@
     </div>
 </div>
 {% endif %}
+
+<!-- previous batches mortality table -->
+<div id="previous-mort-table" class="bg-sidebar border border-border rounded-xl hidden">
+    <div class="overflow-x-auto">
+    <table class="w-full text-sm whitespace-nowrap" id="prevMortTable">
+        <thead>
+            <tr class="border-b border-border text-muted text-xs uppercase tracking-wider">
+                <th class="px-4 py-3 text-left">Date</th>
+                <th class="px-4 py-3 text-left">Batch</th>
+                <th class="px-4 py-3 text-left">Growing House</th>
+                <th class="px-4 py-3 text-left">Deaths</th>
+                <th class="px-4 py-3 text-left">Cause</th>
+                <th class="px-4 py-3 text-left">Recorded By</th>
+                <th class="px-4 py-3 text-left">Remarks</th>
+            </tr>
+        </thead>
+        <tbody id="prevMortBody">
+            {% for m in sold_mortalities %}
+            <tr class="border-b border-border hover:bg-content transition-all"
+                data-batch="{{ m.flock.batch_name }}">
+                <td class="px-4 py-3 text-muted text-xs">{{ m.death_date }}</td>
+                <td class="px-4 py-3 text-white font-semibold">{{ m.flock.batch_name }}</td>
+                <td class="px-4 py-3 text-muted">{{ m.growing_house }}</td>
+                <td class="px-4 py-3">
+                    <span class="text-red-400 font-bold">{{ m.count }}</span>
+                </td>
+                <td class="px-4 py-3 text-muted">{{ m.cause }}</td>
+                <td class="px-4 py-3 text-muted">{{ m.recorded_by }}</td>
+                <td class="px-4 py-3 text-muted text-xs">{{ m.remarks }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="7" class="px-4 py-8 text-center text-muted">
+                    No previous batch mortality records yet.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</div>
 
 <!-- flock barcode modal -->
 <div id="flockBarcodeModal" class="hidden fixed inset-0 z-50 flex items-center justify-center"
@@ -590,6 +662,43 @@
         `)
         win.document.close()
     }
+    function switchMortTab(tab) {
+        const isActive = tab === 'active'
+        document.getElementById('active-mort-search').classList.toggle('hidden', !isActive)
+        document.getElementById('active-mort-table').classList.toggle('hidden', !isActive)
+        document.getElementById('previous-mort-search').classList.toggle('hidden', isActive)
+        document.getElementById('previous-mort-table').classList.toggle('hidden', isActive)
+        {% if mortalities.has_other_pages %}
+        document.getElementById('active-mort-pagination').classList.toggle('hidden', !isActive)
+        {% endif %}
+        document.getElementById('tab-active').className = isActive
+            ? 'px-4 py-2 rounded-lg text-xs font-bold transition-all border bg-teal text-white border-teal'
+            : 'px-4 py-2 rounded-lg text-xs font-bold transition-all border bg-sidebar text-muted border-border hover:border-teal'
+        document.getElementById('tab-previous').className = !isActive
+            ? 'px-4 py-2 rounded-lg text-xs font-bold transition-all border bg-red-700 text-white border-red-700'
+            : 'px-4 py-2 rounded-lg text-xs font-bold transition-all border bg-sidebar text-muted border-border hover:border-red-500'
+    }
+    function filterPrevMort() {
+        const input       = document.getElementById('prevMortSearch').value.toLowerCase()
+        const suggestions = document.getElementById('batchSuggestions')
+        if (input.length > 0) {
+            suggestions.classList.remove('hidden')
+            const items = suggestions.querySelectorAll('div[onclick]')
+            items.forEach(item => {
+                item.style.display = item.textContent.toLowerCase().includes(input) ? '' : 'none'
+            })
+        } else {
+            suggestions.classList.add('hidden')
+            document.querySelectorAll('#prevMortBody tr').forEach(row => row.style.display = '')
+        }
+    }
+    function selectBatch(batchName) {
+        document.getElementById('prevMortSearch').value = batchName
+        document.getElementById('batchSuggestions').classList.add('hidden')
+        document.querySelectorAll('#prevMortBody tr[data-batch]').forEach(row => {
+            row.style.display = row.getAttribute('data-batch') === batchName ? '' : 'none'
+        })
+    }
 </script>
 
-{% endblock %} 
+{% endblock %}

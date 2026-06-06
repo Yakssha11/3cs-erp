@@ -1,3 +1,5 @@
+from urllib import request
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -57,8 +59,10 @@ def auto_snapshot(flock):
 def flock_list(request):
     from erp_config.models import Building, Cause
     from master_data.models import Supplier
-    flocks_all  = Flock.objects.all().order_by('-Date')
-    mort_all    = Mortality.objects.all().order_by('-death_date')
+    flocks_all  = Flock.objects.exclude(status='Sold').order_by('-Date')
+    mort_all    = Mortality.objects.filter(flock__status__in=['Active', 'Transferred']).order_by('-death_date')
+    sold_flocks    = Flock.objects.filter(status='Sold').order_by('-Date')
+    sold_mortalities = Mortality.objects.filter(flock__status='Sold').order_by('-death_date')
     pag_flock   = Paginator(flocks_all, 10)
     pag_mort    = Paginator(mort_all, 10)
     flock_page  = request.GET.get('flock_page')
@@ -81,12 +85,14 @@ def flock_list(request):
     causes     = Cause.objects.all()
     suppliers  = Supplier.objects.all()
     return render(request, 'flock/list.html', {
-        'flocks':      flocks,
-        'mortalities': mortalities,
-        'snapshots':   snapshots,
-        'buildings':   buildings,
-        'causes':      causes,
-        'suppliers':   suppliers,
+        'flocks':           flocks,
+        'mortalities':      mortalities,
+        'snapshots':        snapshots,
+        'buildings':        buildings,
+        'causes':           causes,
+        'suppliers':        suppliers,
+        'sold_flocks':      sold_flocks,
+        'sold_mortalities': sold_mortalities,
     })
 
 @login_required
@@ -304,10 +310,17 @@ def export_flock(request):
 def flock_info(request, pk):
     try:
         flock = Flock.objects.get(pk=pk)
+        if flock.status == 'Sold':
+            return JsonResponse({
+                'found':  True,
+                'sold':   True,
+                'batch_name': flock.batch_name,
+            })
         return JsonResponse({
-            'found':        True,
-            'flock_id':     flock.pk,
-            'batch_name':   flock.batch_name,
+            'found':         True,
+            'sold':          False,
+            'flock_id':      flock.pk,
+            'batch_name':    flock.batch_name,
             'growing_house': flock.growing_house,
             'current_count': flock.current_count,
         })

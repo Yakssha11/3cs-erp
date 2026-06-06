@@ -71,8 +71,11 @@ def chicken_production_save(request):
             remarks         = remarks
         )
 
-        # deduct from flock
+# deduct from flock
         flock.current_count -= total_harvested
+        if flock.current_count <= 0:
+            flock.current_count = 0
+            flock.status = 'Sold'
         flock.save()
 
         messages.success(request, f'Harvest logged! Revenue: ₱{total_revenue}')

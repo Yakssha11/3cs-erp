@@ -586,6 +586,10 @@
                         alert(`⚠️ Flock not found.`)
                         return
                     }
+                    if (data.sold) {
+                        alert(`⚠️ ${data.batch_name} has already been sold.`)
+                        return
+                    }
                     showMortalityPopup(data, 'growing')
                 })
             return
