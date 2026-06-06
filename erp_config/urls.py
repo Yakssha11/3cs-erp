@@ -32,4 +32,5 @@ urlpatterns = [
     # uom conversions
     path('uom/save/',               views.uom_save,          name='uom_save'),
     path('uom/delete/<int:pk>/',    views.uom_delete,        name='uom_delete'),
+    path('uom/update/<int:pk>/',    views.uom_update,        name='uom_update'),
 ]

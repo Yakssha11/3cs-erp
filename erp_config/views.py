@@ -195,3 +195,21 @@ def uom_delete(request, pk):
     uom.delete()
     messages.success(request, f'Conversion "{uom.from_unit} → {uom.to_unit}" deleted!')
     return redirect('/config/?tab=uom')
+
+@login_required
+def uom_update(request, pk):
+    from .models import UoMConversion
+    uom = get_object_or_404(UoMConversion, pk=pk)
+    if request.method == 'POST':
+        from_unit = request.POST.get('from_unit', '').strip()
+        to_unit   = request.POST.get('to_unit', '').strip()
+        notes     = request.POST.get('notes', '').strip()
+        if from_unit and to_unit:
+            uom.from_unit = from_unit
+            uom.to_unit   = to_unit
+            uom.notes     = notes
+            uom.save()
+            messages.success(request, f'Conversion updated!')
+        else:
+            messages.error(request, 'Both units are required.')
+    return redirect('/config/?tab=uom')

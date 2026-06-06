@@ -630,15 +630,23 @@
                     <td class="px-4 py-3 text-blue font-semibold">{{ uom.to_unit }}</td>
                     <td class="px-4 py-3 text-muted text-xs">{{ uom.notes|default:"—" }}</td>
                     <td class="px-4 py-3">
-                        <form method="POST" action="{% url 'uom_delete' uom.pk %}"
-                              onsubmit="return confirm('Delete {{ uom.from_unit }} → {{ uom.to_unit }}?')"
-                              style="margin:0;padding:0;display:inline;">
-                            {% csrf_token %}
-                            <button type="submit"
-                                    class="text-red-400 hover:text-red-300 text-xs font-bold transition-all">
-                                Delete
+                        <div class="flex items-center gap-3">
+                            <button onclick="openUomEdit({{ uom.pk }}, '{{ uom.from_unit }}', '{{ uom.to_unit }}', '{{ uom.notes }}')"
+                                    class="text-blue hover:text-blue-300 text-xs font-bold transition-all leading-none">
+                                Edit
                             </button>
-                        </form>
+                            <span class="text-border">|</span>
+                            <form method="POST" action="{% url 'uom_delete' uom.pk %}"
+                                  onsubmit="return confirm('Delete {{ uom.from_unit }} → {{ uom.to_unit }}?')"
+                                  style="margin:0;padding:0;display:inline;line-height:1">
+                                {% csrf_token %}
+                                <button type="submit"
+                                        style="margin:0;padding:0;line-height:1"
+                                        class="text-red-400 hover:text-red-300 text-xs font-bold transition-all">
+                                    Delete
+                                </button>
+                            </form>
+                        </div>
                     </td>
                 </tr>
                 {% empty %}
@@ -651,6 +659,48 @@
             </tbody>
         </table>
         </div>
+    </div>
+</div>
+
+<!-- UoM edit modal -->
+<div id="uomEditModal" class="hidden fixed inset-0 z-50 flex items-center justify-center"
+     style="background:rgba(0,0,0,0.85)">
+    <div class="bg-sidebar border border-border rounded-xl p-6 w-full max-w-sm mx-4">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-sm font-bold text-white">📐 Edit UoM Conversion</h3>
+            <button onclick="closeUomEdit()"
+                    class="text-muted hover:text-white text-lg leading-none">✕</button>
+        </div>
+        <form id="uomEditForm" method="POST">
+            {% csrf_token %}
+            <div class="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                    <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">From Unit</label>
+                    <input type="text" name="from_unit" id="edit-from-unit" required
+                           class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue">
+                </div>
+                <div>
+                    <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">To Unit</label>
+                    <input type="text" name="to_unit" id="edit-to-unit" required
+                           class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue">
+                </div>
+                <div class="col-span-2">
+                    <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Notes</label>
+                    <input type="text" name="notes" id="edit-notes"
+                           class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue">
+                </div>
+            </div>
+            <div class="flex gap-3">
+                <button type="submit"
+                        class="flex-1 bg-blue hover:bg-[#157AB0] text-white text-sm font-bold py-2 rounded-lg transition-all">
+                    Save
+                </button>
+                <button type="button" onclick="closeUomEdit()"
+                        class="flex-1 bg-content hover:bg-border text-muted text-sm font-bold py-2 rounded-lg transition-all border border-border">
+                    Cancel
+                </button>
+            </div>
+        </form>
     </div>
 </div>
 
@@ -691,6 +741,19 @@
             div.style.opacity = '1'
         }
     }
+
+    function openUomEdit(pk, fromUnit, toUnit, notes) {
+        document.getElementById('uomEditForm').action = `/config/uom/update/${pk}/`
+        document.getElementById('edit-from-unit').value = fromUnit
+        document.getElementById('edit-to-unit').value   = toUnit
+        document.getElementById('edit-notes').value     = notes
+        document.getElementById('uomEditModal').classList.remove('hidden')
+    }
+
+    function closeUomEdit() {
+        document.getElementById('uomEditModal').classList.add('hidden')
+    }
+    
 </script>
 
 {% endblock %}
