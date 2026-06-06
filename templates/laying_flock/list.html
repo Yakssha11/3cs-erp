@@ -147,6 +147,11 @@
                             Edit
                         </a>
                         <span class="text-border">|</span>
+                        <button onclick="showLayingFlockBarcode('LAYING_FLOCK-{{ flock.pk }}', '{{ flock.batch_name }}', '{{ flock.building }}')"
+                                class="text-amber hover:text-amber-300 text-xs font-bold transition-all leading-none">
+                            🏷️ Barcode
+                        </button>
+                        <span class="text-border">|</span>
                         <form method="POST" action="{% url 'laying_flock_delete' flock.pk %}"
                               onsubmit="return confirm('Delete {{ flock.batch_name }}?')"
                               style="margin:0;padding:0;display:inline;line-height:1">
@@ -210,6 +215,7 @@
                     <option value="{{ building.name }}">{{ building.name }}</option>
                     {% endfor %}
                 </select>
+            </div>
             <div>
                 <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Date</label>
                 <input type="date" name="death_date" required
@@ -323,6 +329,36 @@
     </div>
 </div>
 
+<!-- laying flock barcode modal -->
+<div id="layingFlockBarcodeModal" class="hidden fixed inset-0 z-50 flex items-center justify-center"
+     style="background:rgba(0,0,0,0.85)">
+    <div class="bg-sidebar border border-border rounded-xl p-6 w-full max-w-sm mx-4">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-sm font-bold text-white">🏷️ Flock Barcode</h3>
+            <button onclick="closeLayingFlockBarcode()"
+                    class="text-muted hover:text-white text-lg leading-none">✕</button>
+        </div>
+        <div class="bg-white rounded-lg p-4 text-center mb-4">
+            <p id="laying-barcode-name" class="text-gray-800 text-xs font-bold mb-1"></p>
+            <p id="laying-barcode-house" class="text-gray-500 text-xs mb-2"></p>
+            <svg id="laying-barcode-svg"></svg>
+            <p id="laying-barcode-id" class="text-gray-600 text-xs mt-2 font-mono"></p>
+        </div>
+        <div class="flex gap-3">
+            <button onclick="printLayingFlockBarcode()"
+                    class="flex-1 bg-[#D4880A] hover:bg-[#B5720A] text-white text-sm font-bold py-2 rounded-lg transition-all">
+                🖨️ Print
+            </button>
+            <button onclick="closeLayingFlockBarcode()"
+                    class="flex-1 bg-content hover:bg-border text-muted text-sm font-bold py-2 rounded-lg transition-all border border-border">
+                Close
+            </button>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.11.6/JsBarcode.all.min.js"></script>
+
 <script>
     function toggleFlockForm() {
         document.getElementById('flockForm').classList.toggle('hidden')
@@ -348,6 +384,48 @@
         const today = new Date().toISOString().split('T')[0]
         document.querySelectorAll('input[type="date"]').forEach(i => i.value = today)
     })
+    function showLayingFlockBarcode(barcodeId, batchName, building) {
+        document.getElementById('laying-barcode-name').textContent  = batchName
+        document.getElementById('laying-barcode-house').textContent = building
+        document.getElementById('laying-barcode-id').textContent    = barcodeId
+        JsBarcode('#laying-barcode-svg', barcodeId, {
+            format:       'CODE128',
+            width:        2,
+            height:       60,
+            displayValue: false,
+            margin:       10,
+        })
+        document.getElementById('layingFlockBarcodeModal').classList.remove('hidden')
+    }
+    function closeLayingFlockBarcode() {
+        document.getElementById('layingFlockBarcodeModal').classList.add('hidden')
+    }
+    function printLayingFlockBarcode() {
+        const name    = document.getElementById('laying-barcode-name').textContent
+        const house   = document.getElementById('laying-barcode-house').textContent
+        const id      = document.getElementById('laying-barcode-id').textContent
+        const svgEl   = document.getElementById('laying-barcode-svg')
+        const svgData = new XMLSerializer().serializeToString(svgEl)
+        const win     = window.open('', '_blank')
+        win.document.write(`
+            <html><head><title>Flock Barcode - ${id}</title>
+            <style>
+                body { display:flex; flex-direction:column; align-items:center;
+                       justify-content:center; height:100vh; margin:0; font-family:sans-serif; }
+                p { margin: 4px 0; font-size: 13px; }
+                .id { font-family: monospace; font-size: 12px; color: #555; }
+                .house { font-size: 11px; color: #888; }
+            </style></head>
+            <body>
+                <p><strong>${name}</strong></p>
+                <p class="house">${house}</p>
+                ${svgData}
+                <p class="id">${id}</p>
+                <script>window.onload = () => { window.print(); window.close(); }<\/script>
+            </body></html>
+        `)
+        win.document.close()
+    }
 </script>
 
 {% endblock %}

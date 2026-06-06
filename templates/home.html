@@ -396,7 +396,7 @@
      style="background:rgba(0,0,0,0.85)">
     <div class="bg-sidebar border border-border rounded-xl p-5 w-full max-w-sm mx-4">
         <div class="flex items-center justify-between mb-4">
-            <h3 class="text-sm font-bold text-white">💀 Log Mortality</h3>
+            <h3 class="text-sm font-bold text-white" id="mort-popup-title">💀 Log Mortality</h3>
             <button onclick="closeMortalityPopup()"
                     class="text-muted hover:text-white text-lg leading-none">✕</button>
         </div>
@@ -412,6 +412,7 @@
         <form id="mortalityForm">
             {% csrf_token %}
             <input type="hidden" id="mort-flock-id" name="flock_id">
+            <input type="hidden" id="mort-flock-type" value="growing">
             <div class="grid grid-cols-2 gap-3 mb-3">
                 <div class="col-span-2">
                     <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Deaths</label>
@@ -562,6 +563,20 @@
     }
 
     function lookupItem(itemId) {
+        if (itemId.startsWith('LAYING_FLOCK-')) {
+            const flockPk = itemId.replace('LAYING_FLOCK-', '')
+            fetch(`/laying/flock/info/${flockPk}/`)
+                .then(r => r.json())
+                .then(data => {
+                    if (!data.found) {
+                        alert(`⚠️ Laying flock not found.`)
+                        return
+                    }
+                    showMortalityPopup(data, 'laying')
+                })
+            return
+        }
+
         if (itemId.startsWith('FLOCK-')) {
             const flockPk = itemId.replace('FLOCK-', '')
             fetch(`/flock/info/${flockPk}/`)
@@ -571,7 +586,7 @@
                         alert(`⚠️ Flock not found.`)
                         return
                     }
-                    showMortalityPopup(data)
+                    showMortalityPopup(data, 'growing')
                 })
             return
         }
@@ -604,14 +619,18 @@
         document.getElementById('itemPopup').classList.add('hidden')
     }
 
-    function showMortalityPopup(data) {
-        document.getElementById('mort-flock-id').value          = data.flock_id
-        document.getElementById('mort-batch-name').textContent  = data.batch_name
-        document.getElementById('mort-growing-house').textContent = data.growing_house
-        document.getElementById('mort-current-count').textContent = data.current_count
-        document.getElementById('mort-count').value             = ''
-        document.getElementById('mort-remarks').value           = ''
-        document.getElementById('mort-date').value              = new Date().toISOString().split('T')[0]
+    function showMortalityPopup(data, flockType) {
+        document.getElementById('mort-flock-type').value           = flockType || 'growing'
+        document.getElementById('mort-flock-id').value             = data.flock_id
+        document.getElementById('mort-batch-name').textContent     = data.batch_name
+        document.getElementById('mort-growing-house').textContent  = data.growing_house
+        document.getElementById('mort-current-count').textContent  = data.current_count
+        document.getElementById('mort-count').value                = ''
+        document.getElementById('mort-remarks').value              = ''
+        document.getElementById('mort-date').value                 = new Date().toISOString().split('T')[0]
+        document.getElementById('mort-popup-title').textContent    = flockType === 'laying'
+            ? '💀 Log Mortality (RTL)'
+            : '💀 Log Mortality (Growing)'
         document.getElementById('mortalityPopup').classList.remove('hidden')
     }
 
@@ -628,25 +647,30 @@
         const remarks    = document.getElementById('mort-remarks').value
         const house      = document.getElementById('mort-growing-house').textContent
         const csrfToken  = document.querySelector('[name=csrfmiddlewaretoken]').value
+        const flockType  = document.getElementById('mort-flock-type').value
 
         if (!count || !recordedBy || !date) {
             alert('Please fill in required fields.')
             return
         }
 
-        fetch('/flock/quick-mortality/', {
+        const url = flockType === 'laying'
+            ? '/laying/flock/quick-mortality/'
+            : '/flock/quick-mortality/'
+
+        fetch(url, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRFToken': csrfToken
             },
             body: JSON.stringify({
-                flock_id:     flockId,
-                count:        count,
-                cause:        cause,
-                recorded_by:  recordedBy,
-                death_date:   date,
-                remarks:      remarks,
+                flock_id:      flockId,
+                count:         count,
+                cause:         cause,
+                recorded_by:   recordedBy,
+                death_date:    date,
+                remarks:       remarks,
                 growing_house: house
             })
         })
