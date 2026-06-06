@@ -8,6 +8,8 @@ class Consumption(models.Model):
     item_name     = models.CharField(max_length=100)
     quantity      = models.DecimalField(max_digits=10, decimal_places=2)
     unit          = models.CharField(max_length=20)
+    original_quantity = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    original_unit     = models.CharField(max_length=20, blank=True, null=True)
     remarks       = models.CharField(max_length=255, blank=True)
     recorded_by   = models.CharField(max_length=100)
     date_consumed = models.DateField()
