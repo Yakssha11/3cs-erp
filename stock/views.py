@@ -196,7 +196,6 @@ def stock_update(request, pk):
     stock = get_object_or_404(Stock, pk=pk)
     if request.method == 'POST':
         stock.quantity      = request.POST['quantity']
-        stock.unit_quantity = request.POST.get('unit_quantity', '')
         stock.batch         = request.POST.get('batch', '')
         stock.expiry_date   = request.POST.get('expiry_date') or None
         stock.growing_house = request.POST.get('growing_house', '')
@@ -205,12 +204,7 @@ def stock_update(request, pk):
         if request.POST.get('next') == 'laying':
             return redirect('laying_stock')
         return redirect('stock_list')
-    buildings = Building.objects.filter(type='Growing') | Building.objects.filter(type='Laying')
-    return render(request, 'stock/edit.html', {
-        'stock':     stock,
-        'buildings': buildings,
-        'next':      request.GET.get('next', ''),
-    })
+    return redirect('stock_list')
 
 @login_required
 def laying_stock(request):

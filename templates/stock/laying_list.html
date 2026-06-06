@@ -235,10 +235,10 @@
                     <td class="px-4 py-3 text-muted">{{ batch.growing_house|default:"—" }}</td>
                     <td class="px-4 py-3">
                         {% if request.user|has_group:'admin' %}
-                        <a href="{% url 'stock_update' batch.pk %}?next=laying"
-                           class="text-blue hover:text-blue-300 text-xs font-bold transition-all leading-none">
+                        <button onclick="openStockEdit({{ batch.pk }}, '{{ batch.batch }}', {{ batch.quantity }}, '{{ batch.expiry_date|default:'' }}', '{{ batch.growing_house }}')"
+                                class="text-blue hover:text-blue-300 text-xs font-bold transition-all leading-none">
                             Edit
-                        </a>
+                        </button>
                         <span class="text-border">|</span>
                         <form method="POST" action="{% url 'stock_delete' batch.pk %}?next=laying"
                               onsubmit="return confirm('Delete {{ batch.name }} Batch {{ batch.batch }}?')"
@@ -263,6 +263,59 @@
             {% endfor %}
         </tbody>
     </table>
+    </div>
+</div>
+
+<!-- stock edit modal -->
+<div id="stockEditModal" class="hidden fixed inset-0 z-50 flex items-center justify-center"
+     style="background:rgba(0,0,0,0.85)">
+    <div class="bg-sidebar border border-border rounded-xl p-5 w-full max-w-sm mx-4">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-sm font-bold text-white">✏️ Edit Stock</h3>
+            <button onclick="closeStockEdit()"
+                    class="text-muted hover:text-white text-lg leading-none">✕</button>
+        </div>
+        <form id="stockEditForm" method="POST">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="laying">
+            <div class="grid grid-cols-2 gap-3 mb-4">
+                <div>
+                    <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Batch</label>
+                    <input type="text" name="batch" id="edit-stock-batch"
+                           class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue">
+                </div>
+                <div>
+                    <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Quantity</label>
+                    <input type="number" name="quantity" id="edit-stock-qty" required
+                           class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue">
+                </div>
+                <div>
+                    <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Building</label>
+                    <select name="growing_house" id="edit-stock-house"
+                            class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue">
+                        <option value="">Select building</option>
+                        {% for building in buildings %}
+                        <option value="{{ building.name }}">{{ building.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Expiry Date</label>
+                    <input type="date" name="expiry_date" id="edit-stock-expiry"
+                           class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue">
+                </div>
+            </div>
+            <div class="flex gap-3">
+                <button type="submit"
+                        class="flex-1 bg-[#1A8FD1] hover:bg-[#157AB0] text-white text-sm font-bold py-2 rounded-lg transition-all">
+                    Save
+                </button>
+                <button type="button" onclick="closeStockEdit()"
+                        class="flex-1 bg-content hover:bg-border text-muted text-sm font-bold py-2 rounded-lg transition-all border border-border">
+                    Cancel
+                </button>
+            </div>
+        </form>
     </div>
 </div>
 
@@ -398,6 +451,25 @@
         }
     })
     
+    function openStockEdit(pk, batch, qty, expiry, house) {
+        document.getElementById('stockEditForm').action = `/stock/edit/${pk}/`
+        document.getElementById('edit-stock-batch').value  = batch
+        document.getElementById('edit-stock-qty').value    = qty
+        document.getElementById('edit-stock-expiry').value = expiry
+        const houseSelect = document.getElementById('edit-stock-house')
+        for (let i = 0; i < houseSelect.options.length; i++) {
+            if (houseSelect.options[i].value === house) {
+                houseSelect.selectedIndex = i
+                break
+            }
+        }
+        document.getElementById('stockEditModal').classList.remove('hidden')
+    }
+
+    function closeStockEdit() {
+        document.getElementById('stockEditModal').classList.add('hidden')
+    }
+
 </script>
 
 {% endblock %}
