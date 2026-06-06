@@ -343,23 +343,21 @@
     const dateTh = document.querySelector('#financeTable thead th:first-child')
     dateTh.style.cursor = 'pointer'
     dateTh.setAttribute('data-order', 'none')
-    
-    // store original row order
-    const tbody      = document.querySelector('#financeTable tbody')
-    const origRows   = Array.from(tbody.querySelectorAll('tr')).map(r => r.cloneNode(true))
+
+    const tbody    = document.querySelector('#financeTable tbody')
+    const origRows = Array.from(tbody.querySelectorAll('tr')).map(r => r.cloneNode(true))
 
     dateTh.addEventListener('click', function() {
         const order = this.getAttribute('data-order')
-        if (order === 'none' || order === 'desc') {
-            sortTable(0, 'asc')
+        if (order === 'none') {
+            sortTable('asc')
             this.setAttribute('data-order', 'asc')
             this.textContent = 'Date ↑'
         } else if (order === 'asc') {
-            sortTable(0, 'desc')
+            sortTable('desc')
             this.setAttribute('data-order', 'desc')
             this.textContent = 'Date ↓'
-        } else if (order === 'desc') {
-            // reset to original
+        } else {
             tbody.innerHTML = ''
             origRows.forEach(row => tbody.appendChild(row.cloneNode(true)))
             this.setAttribute('data-order', 'none')
@@ -367,18 +365,17 @@
         }
     })
 
-    function sortTable(colIndex, order) {
+    function sortTable(order) {
         const rows = Array.from(tbody.querySelectorAll('tr'))
         rows.sort((a, b) => {
-            const aText = a.cells[colIndex]?.textContent.trim() || ''
-            const bText = b.cells[colIndex]?.textContent.trim() || ''
+            const aText = a.cells[0]?.textContent.trim() || ''
+            const bText = b.cells[0]?.textContent.trim() || ''
             return order === 'asc'
                 ? aText.localeCompare(bText)
                 : bText.localeCompare(aText)
         })
         rows.forEach(row => tbody.appendChild(row))
     }
-    
 </script>
 
 {% endblock %}
