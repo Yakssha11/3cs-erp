@@ -41,8 +41,6 @@
     <form method="POST" action="{% url 'consumption_save' %}">
         {% csrf_token %}
         <div class="grid grid-cols-2 gap-4 mb-4">
-
-            <!-- growing house -->
             <div>
                 <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Growing House</label>
                 <select name="growing_house" id="buildingSelect" required onchange="loadItems()"
@@ -53,8 +51,6 @@
                     {% endfor %}
                 </select>
             </div>
-
-            <!-- category -->
             <div>
                 <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Category</label>
                 <select name="category" id="categorySelect" required onchange="loadItems()"
@@ -65,8 +61,6 @@
                     {% endfor %}
                 </select>
             </div>
-
-            <!-- item -->
             <div class="col-span-2">
                 <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Item</label>
                 <div class="flex gap-2">
@@ -81,13 +75,10 @@
                     </button>
                 </div>
             </div>
-
-            <!-- quantity + consumed unit -->
             <div class="col-span-2">
                 <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Quantity</label>
                 <div class="flex gap-2">
-                    <input type="number" name="quantity" step="0.01" required
-                           placeholder="0"
+                    <input type="number" name="quantity" step="0.01" required placeholder="0"
                            class="flex-1 bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-teal">
                     <select name="consumed_unit" id="consumedUnitSelect"
                             class="bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-teal">
@@ -95,35 +86,23 @@
                     </select>
                 </div>
             </div>
-
-            <!-- hidden unit for compatibility -->
             <input type="hidden" name="unit" id="unitHidden" value="">
-
-            <!-- date -->
             <div>
                 <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Date</label>
                 <input type="date" name="date_consumed" required
                        class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-teal">
             </div>
-
-            <!-- recorded by -->
             <div>
                 <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Recorded By</label>
-                <input type="text" name="recorded_by" required
-                       placeholder="Your name"
+                <input type="text" name="recorded_by" required placeholder="Your name"
                        class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-teal">
             </div>
-
-            <!-- remarks -->
             <div class="col-span-2">
                 <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Remarks</label>
-                <input type="text" name="remarks"
-                       placeholder="Optional notes"
+                <input type="text" name="remarks" placeholder="Optional notes"
                        class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-teal">
             </div>
-
         </div>
-
         <div class="flex gap-3">
             <button type="submit"
                     class="bg-[#17A98A] hover:bg-[#129070] text-white text-sm font-bold px-6 py-2 rounded-lg transition-all">
@@ -137,17 +116,61 @@
     </form>
 </div>
 
-<!-- search -->
-<div class="mb-4 flex gap-2">
-    <input type="text" id="searchInput" onkeyup="filterTable()"
-           placeholder="🔍  Search by item, house, category..."
-           class="flex-1 bg-sidebar border border-border rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-teal">
-    <button onclick="openSearchScanner()"
-            class="bg-[#17A98A] hover:bg-[#129070] text-white font-bold px-2 sm:px-3 py-2 rounded-lg transition-all flex-shrink-0 text-sm">
-        <span class="hidden sm:inline">📷 Scan</span>
-        <span class="sm:hidden">📷</span>
-    </button>
-</div>
+<!-- filters -->
+<form method="GET" action="" id="filterForm">
+    <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 mb-3">
+        <div class="sm:col-span-2 flex gap-2">
+            <input type="text" name="search" value="{{ search }}"
+                   placeholder="🔍  Search item, person, remarks..."
+                   class="flex-1 bg-sidebar border border-border rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-teal">
+            <button type="button" onclick="openSearchScanner()"
+                    class="bg-[#17A98A] hover:bg-[#129070] text-white font-bold px-3 py-2 rounded-lg transition-all flex-shrink-0 text-sm">
+                📷
+            </button>
+        </div>
+        <div>
+            <select name="building" onchange="document.getElementById('filterForm').submit()"
+                    class="w-full bg-sidebar border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-teal
+                           {% if building_filter %}text-white{% else %}text-muted{% endif %}">
+                <option value="">All Buildings</option>
+                {% for building in buildings %}
+                <option value="{{ building.name }}" {% if building_filter == building.name %}selected{% endif %}>
+                    {{ building.name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <select name="category_filter" onchange="document.getElementById('filterForm').submit()"
+                    class="w-full bg-sidebar border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-teal
+                           {% if category_filter %}text-white{% else %}text-muted{% endif %}">
+                <option value="">All Categories</option>
+                {% for category in categories %}
+                <option value="{{ category.name }}" {% if category_filter == category.name %}selected{% endif %}>
+                    {{ category.name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+    <div class="flex gap-2 items-center mb-4">
+        <input type="date" name="date_from" value="{{ date_from }}"
+               class="bg-sidebar border border-border rounded-lg px-3 py-2 text-white text-xs focus:outline-none focus:border-teal">
+        <span class="text-muted text-xs">to</span>
+        <input type="date" name="date_to" value="{{ date_to }}"
+               class="bg-sidebar border border-border rounded-lg px-3 py-2 text-white text-xs focus:outline-none focus:border-teal">
+        <button type="submit"
+                class="bg-teal hover:bg-[#129070] text-white text-xs font-bold px-4 py-2 rounded-lg transition-all">
+            🔍 Search
+        </button>
+        {% if search or building_filter or category_filter or date_from or date_to %}
+        <a href="?"
+           class="bg-content hover:bg-border text-muted text-xs font-bold px-4 py-2 rounded-lg transition-all border border-border">
+            ✕ Clear
+        </a>
+        {% endif %}
+    </div>
+</form>
 
 <!-- table -->
 <div class="bg-sidebar border border-border rounded-xl">
@@ -216,7 +239,7 @@
             </tr>
             {% empty %}
             <tr>
-                <td colspan="9" class="px-4 py-8 text-center text-muted">
+                <td colspan="10" class="px-4 py-8 text-center text-muted">
                     No consumption records yet. Click "+ Log Consumption" to get started.
                 </td>
             </tr>
@@ -227,7 +250,7 @@
 </div>
 
 <div class="mt-4 text-xs text-muted">
-    Total records: <strong class="text-white">{{ consumptions.count }}</strong>
+    Total records: <strong class="text-white">{{ consumptions.paginator.count }}</strong>
 </div>
 
 <!-- pagination -->
@@ -239,7 +262,7 @@
     </p>
     <div class="flex gap-2">
         {% if consumptions.has_previous %}
-        <a href="?page={{ consumptions.previous_page_number }}"
+        <a href="?page={{ consumptions.previous_page_number }}&search={{ search }}&building={{ building_filter }}&category_filter={{ category_filter }}&date_from={{ date_from }}&date_to={{ date_to }}"
            class="px-3 py-1.5 rounded-lg text-xs font-bold bg-sidebar border border-border text-muted hover:border-teal hover:text-white transition-all">
             ← Prev
         </a>
@@ -248,14 +271,14 @@
             {% if consumptions.number == num %}
             <span class="px-3 py-1.5 rounded-lg text-xs font-bold bg-teal text-white">{{ num }}</span>
             {% elif num > consumptions.number|add:'-3' and num < consumptions.number|add:'3' %}
-            <a href="?page={{ num }}"
+            <a href="?page={{ num }}&search={{ search }}&building={{ building_filter }}&category_filter={{ category_filter }}&date_from={{ date_from }}&date_to={{ date_to }}"
                class="px-3 py-1.5 rounded-lg text-xs font-bold bg-sidebar border border-border text-muted hover:border-teal hover:text-white transition-all">
                 {{ num }}
             </a>
             {% endif %}
         {% endfor %}
         {% if consumptions.has_next %}
-        <a href="?page={{ consumptions.next_page_number }}"
+        <a href="?page={{ consumptions.next_page_number }}&search={{ search }}&building={{ building_filter }}&category_filter={{ category_filter }}&date_from={{ date_from }}&date_to={{ date_to }}"
            class="px-3 py-1.5 rounded-lg text-xs font-bold bg-sidebar border border-border text-muted hover:border-teal hover:text-white transition-all">
             Next →
         </a>
@@ -381,7 +404,6 @@
         document.getElementById('addForm').classList.toggle('hidden')
     }
 
-    // material UoM data
     const materialUoM = {
         {% for material in materials %}
         '{{ material.item_id }}': {
@@ -396,12 +418,10 @@
         const building = document.getElementById('buildingSelect').value
         const select   = document.getElementById('itemSelect')
         select.innerHTML = '<option value="">Loading...</option>'
-
         if (!category) {
             select.innerHTML = '<option value="">Select category first</option>'
             return
         }
-
         fetch(`{% url 'get_items' %}?category=${category}&building=${building}`)
             .then(r => r.json())
             .then(data => {
@@ -424,10 +444,7 @@
         const itemId       = option.value
         const consumedUnit = document.getElementById('consumedUnitSelect')
         const unitHidden   = document.getElementById('unitHidden')
-
         if (unit) unitHidden.value = unit
-
-        // populate consumed unit dropdown
         consumedUnit.innerHTML = ''
         const uom = materialUoM[itemId]
         if (uom && uom.stock_unit && uom.base_unit) {
@@ -436,14 +453,6 @@
         } else if (unit) {
             consumedUnit.innerHTML += `<option value="${unit}">${unit}</option>`
         }
-    }
-
-    function filterTable() {
-        const input = document.getElementById('searchInput').value.toLowerCase()
-        const rows  = document.querySelectorAll('#consumptionTable tbody tr')
-        rows.forEach(row => {
-            row.style.display = row.textContent.toLowerCase().includes(input) ? '' : 'none'
-        })
     }
 
     function openScanner() {
@@ -491,10 +500,8 @@
                 break
             }
         }
-
         if (matched) {
             closeScanner()
-            document.getElementById('scanner-result').textContent = '✅ Item found!'
         } else {
             const building = document.getElementById('buildingSelect').value
             fetch(`{% url 'get_items' %}?building=${building}`)
@@ -534,6 +541,60 @@
                     }
                 })
         }
+    }
+
+    function openSearchScanner() {
+        document.getElementById('scannerModal').classList.remove('hidden')
+        document.getElementById('scanner-status').textContent = 'Point camera at a barcode...'
+        document.getElementById('scanner-result').textContent = ''
+        startSearchScanner()
+    }
+
+    function startSearchScanner() {
+        if (typeof ZXing === 'undefined') {
+            document.getElementById('scanner-status').textContent = 'Scanner library not loaded.'
+            return
+        }
+        codeReader = new ZXing.BrowserMultiFormatReader()
+        codeReader.decodeFromVideoDevice(null, 'scanner-video', (result, err) => {
+            if (result) {
+                const code = result.getText()
+                closeScanner()
+                const searchInput = document.querySelector('input[name="search"]')
+                if (searchInput) {
+                    searchInput.value = code
+                    document.getElementById('filterForm').submit()
+                }
+            }
+        })
+    }
+
+    function openConsumptionEdit(pk, house, category, itemId, itemName, qty, unit, dateConsumed, recordedBy, remarks) {
+        document.getElementById('consumptionEditForm').action = `/consumption/update/${pk}/`
+        document.getElementById('edit-c-item-id').value      = itemId
+        document.getElementById('edit-c-item-name').value    = itemName
+        document.getElementById('edit-c-item-display').value = itemName
+        document.getElementById('edit-c-qty').value          = qty
+        document.getElementById('edit-c-date').value         = dateConsumed
+        document.getElementById('edit-c-recorded').value     = recordedBy
+        document.getElementById('edit-c-remarks').value      = remarks
+        const houseSelect = document.getElementById('edit-c-house')
+        for (let i = 0; i < houseSelect.options.length; i++) {
+            if (houseSelect.options[i].value === house) { houseSelect.selectedIndex = i; break }
+        }
+        const catSelect = document.getElementById('edit-c-category')
+        for (let i = 0; i < catSelect.options.length; i++) {
+            if (catSelect.options[i].value === category) { catSelect.selectedIndex = i; break }
+        }
+        const unitSelect = document.getElementById('edit-c-unit')
+        for (let i = 0; i < unitSelect.options.length; i++) {
+            if (unitSelect.options[i].value === unit) { unitSelect.selectedIndex = i; break }
+        }
+        document.getElementById('consumptionEditModal').classList.remove('hidden')
+    }
+
+    function closeConsumptionEdit() {
+        document.getElementById('consumptionEditModal').classList.add('hidden')
     }
 
     document.addEventListener('DOMContentLoaded', function() {
@@ -580,60 +641,15 @@
                     }
                 })
         }
+
+        // submit search on Enter
+        const searchInput = document.querySelector('input[name="search"]')
+        if (searchInput) {
+            searchInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') document.getElementById('filterForm').submit()
+            })
+        }
     })
-
-    function openSearchScanner() {
-        document.getElementById('scannerModal').classList.remove('hidden')
-        document.getElementById('scanner-status').textContent = 'Point camera at a barcode...'
-        document.getElementById('scanner-result').textContent = ''
-        startSearchScanner()
-    }
-
-    function startSearchScanner() {
-        if (typeof ZXing === 'undefined') {
-            document.getElementById('scanner-status').textContent = 'Scanner library not loaded.'
-            return
-        }
-        codeReader = new ZXing.BrowserMultiFormatReader()
-        codeReader.decodeFromVideoDevice(null, 'scanner-video', (result, err) => {
-            if (result) {
-                const code = result.getText()
-                closeScanner()
-                document.getElementById('searchInput').value = code
-                filterTable()
-            }
-        })
-    }
-
-function openConsumptionEdit(pk, house, category, itemId, itemName, qty, unit, dateConsumed, recordedBy, remarks) {
-        document.getElementById('consumptionEditForm').action = `/consumption/update/${pk}/`
-        document.getElementById('edit-c-item-id').value      = itemId
-        document.getElementById('edit-c-item-name').value    = itemName
-        document.getElementById('edit-c-item-display').value = itemName
-        document.getElementById('edit-c-qty').value          = qty
-        document.getElementById('edit-c-date').value         = dateConsumed
-        document.getElementById('edit-c-recorded').value     = recordedBy
-        document.getElementById('edit-c-remarks').value      = remarks
-
-        const houseSelect = document.getElementById('edit-c-house')
-        for (let i = 0; i < houseSelect.options.length; i++) {
-            if (houseSelect.options[i].value === house) { houseSelect.selectedIndex = i; break }
-        }
-        const catSelect = document.getElementById('edit-c-category')
-        for (let i = 0; i < catSelect.options.length; i++) {
-            if (catSelect.options[i].value === category) { catSelect.selectedIndex = i; break }
-        }
-        const unitSelect = document.getElementById('edit-c-unit')
-        for (let i = 0; i < unitSelect.options.length; i++) {
-            if (unitSelect.options[i].value === unit) { unitSelect.selectedIndex = i; break }
-        }
-        document.getElementById('consumptionEditModal').classList.remove('hidden')
-    }
-
-    function closeConsumptionEdit() {
-        document.getElementById('consumptionEditModal').classList.add('hidden')
-    }
-    
 </script>
 
 {% endblock %}
