@@ -1,3 +1,5 @@
+from urllib import request
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -18,19 +20,21 @@ def generate_material_id():
 
 @login_required
 def master_data_view(request):
-    from erp_config.models import Category, Unit
-    customers  = Customer.objects.all()
-    suppliers  = Supplier.objects.all()
-    materials  = Material.objects.all()
-    categories = Category.objects.all()
-    units      = Unit.objects.all()
+    from erp_config.models import Category, Unit, UoMConversion
+    customers       = Customer.objects.all()
+    suppliers       = Supplier.objects.all()
+    materials       = Material.objects.all()
+    categories      = Category.objects.all()
+    units           = Unit.objects.all()
+    uom_conversions = UoMConversion.objects.all()
     return render(request, 'master_data/master_data.html', {
-        'customers':  customers,
-        'suppliers':  suppliers,
-        'materials':  materials,
-        'categories': categories,
-        'units':      units,
-        'active_tab': request.GET.get('tab', 'customers'),
+        'customers':       customers,
+        'suppliers':       suppliers,
+        'materials':       materials,
+        'categories':      categories,
+        'units':           units,
+        'uom_conversions': uom_conversions,
+        'active_tab':      request.GET.get('tab', 'customers'),
     })
 
 # ── Customers ─────────────────────────────────────────────
@@ -109,14 +113,22 @@ def material_save(request):
                 messages.error(request, f'Item ID {item_id} already exists!')
                 return redirect('/masterdata/?tab=materials')
 
+            stock_unit        = request.POST.get('stock_unit', '').strip() or None
+            base_unit         = request.POST.get('base_unit', '').strip() or None
+            conversion_factor = request.POST.get('conversion_factor', '').strip() or None
+
             Material.objects.create(
-                item_id     = item_id,
-                name        = name,
-                category    = category,
-                unit        = unit,
-                price       = price,
-                description = description,
+                item_id           = item_id,
+                name              = name,
+                category          = category,
+                unit              = unit,
+                price             = price,
+                description       = description,
+                stock_unit        = stock_unit,
+                base_unit         = base_unit,
+                conversion_factor = conversion_factor,
             )
+            
             messages.success(request, f'Material "{name}" added with ID {item_id}!')
         else:
             messages.error(request, 'Material name is required.')
@@ -258,3 +270,19 @@ def master_data_records(request):
         'active_tab':    active_tab,
         'search':        search,
     })
+
+@login_required
+def material_update(request, pk):
+    material = get_object_or_404(Material, pk=pk)
+    if request.method == 'POST':
+        material.name              = request.POST.get('name', '').strip()
+        material.category          = request.POST.get('category', '')
+        material.unit              = request.POST.get('unit', '')
+        material.price             = request.POST.get('price', '0')
+        material.description       = request.POST.get('description', '')
+        material.stock_unit        = request.POST.get('stock_unit', '').strip() or None
+        material.base_unit         = request.POST.get('base_unit', '').strip() or None
+        material.conversion_factor = request.POST.get('conversion_factor', '').strip() or None
+        material.save()
+        messages.success(request, f'Material "{material.name}" updated!')
+    return redirect('/masterdata/?tab=materials')
