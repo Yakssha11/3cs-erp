@@ -82,19 +82,34 @@ def stock_save(request):
                 return redirect('laying_stock')
             return redirect('stock_list')
 
+        from decimal import Decimal
+
+        # UoM conversion
+        stock_unit_qty = quantity  # original entered quantity
+        base_quantity  = quantity  # default — no conversion
+
+        if material.stock_unit and material.conversion_factor:
+            base_quantity = int(Decimal(str(quantity)) * Decimal(str(material.conversion_factor)))
+            unit          = material.base_unit or material.unit
+        else:
+            unit = material.unit
+
         Stock.objects.create(
-            item_id       = item_id,
-            name          = material.name,
-            price         = material.price,
-            quantity      = quantity,
-            unit_quantity = unit_quantity,
-            category      = material.category,
-            growing_house = growing_house,
-            unit          = material.unit,
-            batch         = batch,
-            expiry_date   = expiry_date,
+            item_id        = item_id,
+            name           = material.name,
+            price          = material.price,
+            quantity       = base_quantity,
+            unit_quantity  = f"{stock_unit_qty} {material.stock_unit}" if material.stock_unit else unit_quantity,
+            category       = material.category,
+            growing_house  = growing_house,
+            unit           = unit,
+            batch          = batch,
+            expiry_date    = expiry_date,
         )
-        messages.success(request, f'Stock "{material.name}" — Batch {batch} added!')
+        if material.stock_unit:
+            messages.success(request, f'Stock "{material.name}" — {stock_unit_qty} {material.stock_unit} ({base_quantity} {unit}) added!')
+        else:
+            messages.success(request, f'Stock "{material.name}" — Batch {batch} added!')
     if request.GET.get('next') == 'laying':
         return redirect('laying_stock')
     return redirect('stock_list')
