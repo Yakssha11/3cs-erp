@@ -47,9 +47,17 @@ def stock_list(request):
         if stock.unit_quantity:
             try:
                 parts = stock.unit_quantity.split()
-                uq = float(parts[0])
-                grouped[stock.item_id]['total_unit_qty'] = grouped[stock.item_id].get('total_unit_qty', 0) + uq
-                grouped[stock.item_id]['stock_unit'] = parts[1] if len(parts) > 1 else ''
+                stock_unit = parts[1] if len(parts) > 1 else ''
+                grouped[stock.item_id]['stock_unit'] = stock_unit
+                # calculate remaining stock units from base qty and conversion factor
+                from master_data.models import Material
+                material = Material.objects.filter(item_id=stock.item_id).first()
+                if material and material.conversion_factor and float(material.conversion_factor) > 0:
+                    remaining_units = float(stock.quantity) / float(material.conversion_factor)
+                    grouped[stock.item_id]['total_unit_qty'] = grouped[stock.item_id].get('total_unit_qty', 0) + remaining_units
+                else:
+                    uq = float(parts[0])
+                    grouped[stock.item_id]['total_unit_qty'] = grouped[stock.item_id].get('total_unit_qty', 0) + uq
             except:
                 pass
         if stock.expiry_date:
@@ -242,9 +250,17 @@ def laying_stock(request):
         if stock.unit_quantity:
             try:
                 parts = stock.unit_quantity.split()
-                uq = float(parts[0])
-                grouped[stock.item_id]['total_unit_qty'] = grouped[stock.item_id].get('total_unit_qty', 0) + uq
-                grouped[stock.item_id]['stock_unit'] = parts[1] if len(parts) > 1 else ''
+                stock_unit = parts[1] if len(parts) > 1 else ''
+                grouped[stock.item_id]['stock_unit'] = stock_unit
+                # calculate remaining stock units from base qty and conversion factor
+                from master_data.models import Material
+                material = Material.objects.filter(item_id=stock.item_id).first()
+                if material and material.conversion_factor and float(material.conversion_factor) > 0:
+                    remaining_units = float(stock.quantity) / float(material.conversion_factor)
+                    grouped[stock.item_id]['total_unit_qty'] = grouped[stock.item_id].get('total_unit_qty', 0) + remaining_units
+                else:
+                    uq = float(parts[0])
+                    grouped[stock.item_id]['total_unit_qty'] = grouped[stock.item_id].get('total_unit_qty', 0) + uq
             except:
                 pass
         if stock.expiry_date:
