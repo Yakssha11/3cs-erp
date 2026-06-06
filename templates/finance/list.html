@@ -322,6 +322,40 @@
             })
         }
     })
+
+// column sort
+    document.querySelectorAll('#financeTable thead th').forEach((th, index) => {
+        th.style.cursor = 'pointer'
+        th.setAttribute('data-order', 'asc')
+        th.addEventListener('click', function() {
+            const order = this.getAttribute('data-order')
+            sortTable(index, order)
+            this.setAttribute('data-order', order === 'asc' ? 'desc' : 'asc')
+            // update arrow indicator
+            document.querySelectorAll('#financeTable thead th').forEach(t => {
+                t.textContent = t.textContent.replace(' ↑', '').replace(' ↓', '')
+            })
+            this.textContent += order === 'asc' ? ' ↑' : ' ↓'
+        })
+    })
+
+    function sortTable(colIndex, order) {
+        const tbody = document.querySelector('#financeTable tbody')
+        const rows  = Array.from(tbody.querySelectorAll('tr'))
+        rows.sort((a, b) => {
+            const aText = a.cells[colIndex]?.textContent.trim() || ''
+            const bText = b.cells[colIndex]?.textContent.trim() || ''
+            const aNum  = parseFloat(aText.replace('₱', '').replace(',', ''))
+            const bNum  = parseFloat(bText.replace('₱', '').replace(',', ''))
+            if (!isNaN(aNum) && !isNaN(bNum)) {
+                return order === 'asc' ? aNum - bNum : bNum - aNum
+            }
+            return order === 'asc'
+                ? aText.localeCompare(bText)
+                : bText.localeCompare(aText)
+        })
+        rows.forEach(row => tbody.appendChild(row))
+    }
 </script>
 
 {% endblock %}
