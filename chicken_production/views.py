@@ -57,18 +57,18 @@ def chicken_production_save(request):
         total_revenue = round(good_chickens * float(price_chicken), 2)
 
         ChickenProduction.objects.create(
-            flock_id        = flock_id,
-            growing_house   = growing_house,
-            harvest_date    = harvest_date,
-            total_harvested = total_harvested,
-            good_chickens   = good_chickens,
-            rejected        = rejected,
-            flock_count     = flock_count,
-            harvest_rate    = harvest_rate,
-            price_chicken   = price_chicken,
-            total_revenue   = total_revenue,
-            recorded_by     = recorded_by,
-            remarks         = remarks
+            flock_id          = flock_id,
+            growing_house     = growing_house,
+            harvest_date      = harvest_date,
+            total_harvested   = total_harvested,
+            good_chickens     = good_chickens,
+            rejected          = rejected,
+            flock_count       = flock_count,
+            harvest_rate      = harvest_rate,
+            price_per_chicken = price_chicken,
+            total_revenue     = total_revenue,
+            recorded_by       = recorded_by,
+            remarks           = remarks
         )
 
 # deduct from flock
