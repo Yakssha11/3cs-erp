@@ -87,12 +87,15 @@ def consumption_list(request):
     stock_items     = Stock.objects.filter(quantity__gt=0).order_by('item_id').values(
                         'item_id', 'name', 'category', 'unit'
                       ).distinct()
+    from master_data.models import Material
+    materials = Material.objects.all()
     return render(request, 'consumption/list.html', {
         'consumptions': consumptions,
         'categories':   categories,
         'units':        units,
         'buildings':    buildings,
         'stock_items':  stock_items,
+        'materials':    materials,
     })
 
 @login_required
@@ -108,6 +111,20 @@ def consumption_save(request):
         recorded      = request.POST['recorded_by']
         date_consumed = request.POST['date_consumed']
 
+        from master_data.models import Material
+        from decimal import Decimal
+
+        # UoM conversion
+        consumed_unit = request.POST.get('consumed_unit', unit)
+        try:
+            material = Material.objects.get(item_id=item_id)
+            if material.stock_unit and material.conversion_factor and consumed_unit == material.stock_unit:
+                # staff entered in stock units — convert to base units
+                quantity = float(Decimal(str(quantity)) * Decimal(str(material.conversion_factor)))
+                unit     = material.base_unit or unit
+        except Material.DoesNotExist:
+            pass
+
         batches = Stock.objects.filter(
             item_id=item_id, quantity__gt=0
         ).order_by(F('expiry_date').asc(nulls_last=True), 'date')
@@ -120,7 +137,7 @@ def consumption_save(request):
         total_available = sum(int(b.quantity) for b in batches)
 
         if quantity > total_available:
-            messages.error(request, f'Not enough stock! Available: {total_available}')
+            messages.error(request, f'Not enough stock! Available: {total_available} {unit}')
             return redirect('consumption_list')
 
         consumption = Consumption.objects.create(
@@ -322,6 +339,20 @@ def laying_consumption_save(request):
         recorded      = request.POST['recorded_by']
         date_consumed = request.POST['date_consumed']
 
+        from master_data.models import Material
+        from decimal import Decimal
+
+        # UoM conversion
+        consumed_unit = request.POST.get('consumed_unit', unit)
+        try:
+            material = Material.objects.get(item_id=item_id)
+            if material.stock_unit and material.conversion_factor and consumed_unit == material.stock_unit:
+                # staff entered in stock units — convert to base units
+                quantity = float(Decimal(str(quantity)) * Decimal(str(material.conversion_factor)))
+                unit     = material.base_unit or unit
+        except Material.DoesNotExist:
+            pass
+
         batches = Stock.objects.filter(
             item_id=item_id, quantity__gt=0
         ).order_by(F('expiry_date').asc(nulls_last=True), 'date')
@@ -334,7 +365,7 @@ def laying_consumption_save(request):
         total_available = sum(int(b.quantity) for b in batches)
 
         if quantity > total_available:
-            messages.error(request, f'Not enough stock! Available: {total_available}')
+            messages.error(request, f'Not enough stock! Available: {total_available} {unit}')
             return redirect('laying_consumption_list')
 
         consumption = Consumption.objects.create(

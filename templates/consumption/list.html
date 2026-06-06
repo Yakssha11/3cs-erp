@@ -82,25 +82,22 @@
                 </div>
             </div>
 
-            <!-- quantity -->
-            <div>
+            <!-- quantity + consumed unit -->
+            <div class="col-span-2">
                 <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Quantity</label>
-                <input type="number" name="quantity" step="0.01" required
-                       placeholder="0"
-                       class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-teal">
+                <div class="flex gap-2">
+                    <input type="number" name="quantity" step="0.01" required
+                           placeholder="0"
+                           class="flex-1 bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-teal">
+                    <select name="consumed_unit" id="consumedUnitSelect"
+                            class="bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-teal">
+                        <option value="">— unit —</option>
+                    </select>
+                </div>
             </div>
 
-            <!-- unit -->
-            <div>
-                <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Unit</label>
-                <select name="unit" id="unitSelect" required
-                        class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-teal">
-                    <option value="">Select unit</option>
-                    {% for unit in units %}
-                    <option value="{{ unit.name }}">{{ unit.name }}</option>
-                    {% endfor %}
-                </select>
-            </div>
+            <!-- hidden unit for compatibility -->
+            <input type="hidden" name="unit" id="unitHidden" value="">
 
             <!-- date -->
             <div>
@@ -118,7 +115,7 @@
             </div>
 
             <!-- remarks -->
-            <div>
+            <div class="col-span-2">
                 <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Remarks</label>
                 <input type="text" name="remarks"
                        placeholder="Optional notes"
@@ -292,6 +289,16 @@
         document.getElementById('addForm').classList.toggle('hidden')
     }
 
+    // material UoM data
+    const materialUoM = {
+        {% for material in materials %}
+        '{{ material.item_id }}': {
+            stock_unit: '{{ material.stock_unit|default:"" }}',
+            base_unit:  '{{ material.base_unit|default:"" }}',
+        },
+        {% endfor %}
+    }
+
     function loadItems() {
         const category = document.getElementById('categorySelect').value
         const building = document.getElementById('buildingSelect').value
@@ -319,17 +326,23 @@
     }
 
     function fillUnit() {
-        const itemSelect = document.getElementById('itemSelect')
-        const option     = itemSelect.options[itemSelect.selectedIndex]
-        const unit       = option.getAttribute('data-unit')
-        if (unit) {
-            const unitSelect = document.getElementById('unitSelect')
-            for (let i = 0; i < unitSelect.options.length; i++) {
-                if (unitSelect.options[i].value === unit) {
-                    unitSelect.selectedIndex = i
-                    break
-                }
-            }
+        const itemSelect   = document.getElementById('itemSelect')
+        const option       = itemSelect.options[itemSelect.selectedIndex]
+        const unit         = option.getAttribute('data-unit')
+        const itemId       = option.value
+        const consumedUnit = document.getElementById('consumedUnitSelect')
+        const unitHidden   = document.getElementById('unitHidden')
+
+        if (unit) unitHidden.value = unit
+
+        // populate consumed unit dropdown
+        consumedUnit.innerHTML = ''
+        const uom = materialUoM[itemId]
+        if (uom && uom.stock_unit && uom.base_unit) {
+            consumedUnit.innerHTML += `<option value="${uom.stock_unit}">${uom.stock_unit}</option>`
+            consumedUnit.innerHTML += `<option value="${uom.base_unit}">${uom.base_unit}</option>`
+        } else if (unit) {
+            consumedUnit.innerHTML += `<option value="${unit}">${unit}</option>`
         }
     }
 
@@ -376,7 +389,6 @@
     }
 
     function handleScanResult(code) {
-        // try to find item in dropdown
         const select  = document.getElementById('itemSelect')
         let   matched = false
         for (let i = 0; i < select.options.length; i++) {
@@ -392,14 +404,12 @@
             closeScanner()
             document.getElementById('scanner-result').textContent = '✅ Item found!'
         } else {
-            // item not in dropdown yet — try loading all items by item_id
             const building = document.getElementById('buildingSelect').value
             fetch(`{% url 'get_items' %}?building=${building}`)
                 .then(r => r.json())
                 .then(data => {
                     const item = data.items.find(i => i.item_id === code)
                     if (item) {
-                        // set category first
                         const catSelect = document.getElementById('categorySelect')
                         for (let i = 0; i < catSelect.options.length; i++) {
                             if (catSelect.options[i].value === item.category) {
@@ -407,7 +417,6 @@
                                 break
                             }
                         }
-                        // load items for that category then select
                         fetch(`{% url 'get_items' %}?category=${item.category}&building=${building}`)
                             .then(r => r.json())
                             .then(data2 => {
@@ -418,7 +427,6 @@
                                         ${i.name} (${i.item_id}) — Stock: ${i.quantity}
                                     </option>`
                                 })
-                                // select the scanned item
                                 for (let i = 0; i < itemSelect.options.length; i++) {
                                     if (itemSelect.options[i].value === code) {
                                         itemSelect.selectedIndex = i
@@ -441,7 +449,6 @@
         const dateInput = document.querySelector('input[name="date_consumed"]')
         if (dateInput) dateInput.value = today
 
-        // handle scan from home page
         const params = new URLSearchParams(window.location.search)
         const scanId = params.get('scan')
         if (scanId) {
@@ -505,7 +512,6 @@
             }
         })
     }
-
 </script>
 
 {% endblock %}

@@ -78,22 +78,21 @@
                 </div>
             </div>
 
-            <div>
+            <!-- quantity + consumed unit -->
+            <div class="col-span-2">
                 <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Quantity</label>
-                <input type="number" name="quantity" step="0.01" required placeholder="0"
-                       class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber">
+                <div class="flex gap-2">
+                    <input type="number" name="quantity" step="0.01" required placeholder="0"
+                           class="flex-1 bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber">
+                    <select name="consumed_unit" id="consumedUnitSelect"
+                            class="bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber">
+                        <option value="">— unit —</option>
+                    </select>
+                </div>
             </div>
 
-            <div>
-                <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Unit</label>
-                <select name="unit" id="unitSelect" required
-                        class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber">
-                    <option value="">Select unit</option>
-                    {% for unit in units %}
-                    <option value="{{ unit.name }}">{{ unit.name }}</option>
-                    {% endfor %}
-                </select>
-            </div>
+            <!-- hidden unit field for compatibility -->
+            <input type="hidden" name="unit" id="unitHidden" value="">
 
             <div>
                 <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Date</label>
@@ -107,7 +106,7 @@
                        class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber">
             </div>
 
-            <div>
+            <div class="col-span-2">
                 <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Remarks</label>
                 <input type="text" name="remarks" placeholder="Optional notes"
                        class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber">
@@ -130,10 +129,10 @@
 <!-- search -->
 <div class="mb-4 flex gap-2">
     <input type="text" id="searchInput" onkeyup="filterTable()"
-           placeholder="🔍  Search by item, house, category..."
-           class="flex-1 bg-sidebar border border-border rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-teal">
+           placeholder="🔍  Search by item, building, category..."
+           class="flex-1 bg-sidebar border border-border rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-amber">
     <button onclick="openSearchScanner()"
-            class="bg-[#17A98A] hover:bg-[#129070] text-white font-bold px-2 sm:px-3 py-2 rounded-lg transition-all flex-shrink-0 text-sm">
+            class="bg-amber hover:bg-[#B5720A] text-white font-bold px-2 sm:px-3 py-2 rounded-lg transition-all flex-shrink-0 text-sm">
         <span class="hidden sm:inline">📷 Scan</span>
         <span class="sm:hidden">📷</span>
     </button>
@@ -271,6 +270,16 @@
 <script>
     let codeReader = null
 
+    // material UoM data
+    const materialUoM = {
+        {% for material in materials %}
+        '{{ material.item_id }}': {
+            stock_unit: '{{ material.stock_unit|default:"" }}',
+            base_unit:  '{{ material.base_unit|default:"" }}',
+        },
+        {% endfor %}
+    }
+
     function toggleForm() {
         document.getElementById('addForm').classList.toggle('hidden')
     }
@@ -302,17 +311,23 @@
     }
 
     function fillUnit() {
-        const itemSelect = document.getElementById('itemSelect')
-        const option     = itemSelect.options[itemSelect.selectedIndex]
-        const unit       = option.getAttribute('data-unit')
-        if (unit) {
-            const unitSelect = document.getElementById('unitSelect')
-            for (let i = 0; i < unitSelect.options.length; i++) {
-                if (unitSelect.options[i].value === unit) {
-                    unitSelect.selectedIndex = i
-                    break
-                }
-            }
+        const itemSelect   = document.getElementById('itemSelect')
+        const option       = itemSelect.options[itemSelect.selectedIndex]
+        const unit         = option.getAttribute('data-unit')
+        const itemId       = option.value
+        const consumedUnit = document.getElementById('consumedUnitSelect')
+        const unitHidden   = document.getElementById('unitHidden')
+
+        if (unit) unitHidden.value = unit
+
+        // populate consumed unit dropdown
+        consumedUnit.innerHTML = ''
+        const uom = materialUoM[itemId]
+        if (uom && uom.stock_unit && uom.base_unit) {
+            consumedUnit.innerHTML += `<option value="${uom.stock_unit}">${uom.stock_unit}</option>`
+            consumedUnit.innerHTML += `<option value="${uom.base_unit}">${uom.base_unit}</option>`
+        } else if (unit) {
+            consumedUnit.innerHTML += `<option value="${unit}">${unit}</option>`
         }
     }
 
@@ -369,7 +384,6 @@
                 break
             }
         }
-
         if (matched) {
             closeScanner()
         } else {
@@ -418,7 +432,6 @@
         const dateInput = document.querySelector('input[name="date_consumed"]')
         if (dateInput) dateInput.value = today
 
-        // handle scan from home page
         const params = new URLSearchParams(window.location.search)
         const scanId = params.get('scan')
         if (scanId) {
@@ -482,7 +495,6 @@
             }
         })
     }
-
 </script>
 
 {% endblock %}
