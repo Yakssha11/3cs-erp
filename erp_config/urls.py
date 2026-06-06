@@ -23,7 +23,13 @@ urlpatterns = [
     path('cause/delete/<int:pk>/',  views.cause_delete,      name='cause_delete'),
 
     # sales targets
-    path('target/save/',              views.target_save,        name='target_save'),
-    path('target/delete/<int:pk>/',   views.target_delete,      name='target_delete'),
-    path('chicken-price/save/', views.chicken_price_save, name='chicken_price_save'),
+    path('target/save/',            views.target_save,       name='target_save'),
+    path('target/delete/<int:pk>/', views.target_delete,     name='target_delete'),
+
+    # chicken price
+    path('chicken-price/save/',     views.chicken_price_save, name='chicken_price_save'),
+
+    # uom conversions
+    path('uom/save/',               views.uom_save,          name='uom_save'),
+    path('uom/delete/<int:pk>/',    views.uom_delete,        name='uom_delete'),
 ]

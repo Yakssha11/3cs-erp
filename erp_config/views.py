@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from .models import EggPriceConfig, Building, Category, Unit, Cause, SalesTarget, ChickenPriceConfig
+from .models import EggPriceConfig, Building, Category, Unit, Cause, SalesTarget, ChickenPriceConfig, UoMConversion
 
 @login_required
 def config_view(request):
@@ -14,7 +14,7 @@ def config_view(request):
     targets       = SalesTarget.objects.all()
     current_chicken_price = ChickenPriceConfig.objects.first()
     chicken_price_history = ChickenPriceConfig.objects.all().order_by('-effective_date')
-
+    uom_conversions = UoMConversion.objects.all()
     return render(request, 'erp_config/config.html', {
         'current_price':        current_price,
         'price_history':        price_history,
@@ -26,6 +26,7 @@ def config_view(request):
         'current_chicken_price': current_chicken_price,
         'chicken_price_history': chicken_price_history,
         'active_tab':           request.GET.get('tab', 'price'),
+        'uom_conversions': uom_conversions,
     })
 
 @login_required
@@ -167,3 +168,30 @@ def chicken_price_save(request):
         )
         messages.success(request, 'Chicken price updated!')
     return redirect('/config/?tab=chicken_price')
+
+# ── UoM Conversions ───────────────────────────────────────
+@login_required
+def uom_save(request):
+    if request.method == 'POST':
+        from .models import UoMConversion
+        from_unit = request.POST.get('from_unit', '').strip()
+        to_unit   = request.POST.get('to_unit', '').strip()
+        notes     = request.POST.get('notes', '').strip()
+        if from_unit and to_unit:
+            UoMConversion.objects.get_or_create(
+                from_unit = from_unit,
+                to_unit   = to_unit,
+                defaults  = {'notes': notes}
+            )
+            messages.success(request, f'Conversion "{from_unit} → {to_unit}" added!')
+        else:
+            messages.error(request, 'Both units are required.')
+    return redirect('/config/?tab=uom')
+
+@login_required
+def uom_delete(request, pk):
+    from .models import UoMConversion
+    uom = get_object_or_404(UoMConversion, pk=pk)
+    uom.delete()
+    messages.success(request, f'Conversion "{uom.from_unit} → {uom.to_unit}" deleted!')
+    return redirect('/config/?tab=uom')

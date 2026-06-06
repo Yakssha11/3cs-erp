@@ -51,6 +51,10 @@
             class="tab-btn px-4 py-2 rounded-lg text-xs font-bold transition-all border">
         🐔 Chicken Price
     </button>
+    <button onclick="showTab('uom')" id="btn-uom"
+            class="tab-btn px-4 py-2 rounded-lg text-xs font-bold transition-all border">
+        📐 UoM Conversion
+    </button>
 </div>
 
 <!-- ── EGG PRICE TAB ──────────────────────────────────── -->
@@ -575,8 +579,83 @@
     </div>
 </div>
 
+<!-- ── UoM CONVERSION TAB ─────────────────────────────── -->
+<div id="tab-uom" class="tab-content hidden">
+    <div class="bg-sidebar border border-border rounded-xl p-6 mb-6">
+        <h2 class="text-sm font-bold text-muted uppercase tracking-wider mb-4">Add Unit Conversion</h2>
+        <form method="POST" action="{% url 'uom_save' %}">
+            {% csrf_token %}
+            <div class="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                    <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">From Unit</label>
+                    <input type="text" name="from_unit" required placeholder="e.g. sack"
+                           class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue">
+                </div>
+                <div>
+                    <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">To Unit</label>
+                    <input type="text" name="to_unit" required placeholder="e.g. kg"
+                           class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue">
+                </div>
+                <div class="col-span-2">
+                    <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Notes <span class="text-muted normal-case">(optional)</span></label>
+                    <input type="text" name="notes" placeholder="e.g. 1 sack = 50kg"
+                           class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue">
+                </div>
+            </div>
+            <button type="submit"
+                    class="bg-blue hover:bg-[#157AB0] text-white text-sm font-bold px-6 py-2 rounded-lg transition-all">
+                + Add Conversion
+            </button>
+        </form>
+    </div>
+
+    <div class="bg-sidebar border border-border rounded-xl">
+        <div class="px-4 py-3 border-b border-border">
+            <h2 class="text-sm font-bold text-white">📐 UoM Conversions</h2>
+        </div>
+        <div class="overflow-x-auto">
+        <table class="w-full text-sm whitespace-nowrap">
+            <thead>
+                <tr class="border-b border-border text-muted text-xs uppercase tracking-wider">
+                    <th class="px-4 py-3 text-left">From Unit</th>
+                    <th class="px-4 py-3 text-left">To Unit</th>
+                    <th class="px-4 py-3 text-left">Notes</th>
+                    <th class="px-4 py-3 text-left">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for uom in uom_conversions %}
+                <tr class="border-b border-border hover:bg-content transition-all">
+                    <td class="px-4 py-3 text-white font-semibold">{{ uom.from_unit }}</td>
+                    <td class="px-4 py-3 text-blue font-semibold">{{ uom.to_unit }}</td>
+                    <td class="px-4 py-3 text-muted text-xs">{{ uom.notes|default:"—" }}</td>
+                    <td class="px-4 py-3">
+                        <form method="POST" action="{% url 'uom_delete' uom.pk %}"
+                              onsubmit="return confirm('Delete {{ uom.from_unit }} → {{ uom.to_unit }}?')"
+                              style="margin:0;padding:0;display:inline;">
+                            {% csrf_token %}
+                            <button type="submit"
+                                    class="text-red-400 hover:text-red-300 text-xs font-bold transition-all">
+                                Delete
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" class="px-4 py-8 text-center text-muted">
+                        No conversions yet. Add one above.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+</div>
+
 <script>
-    const tabs = ['price', 'buildings', 'categories', 'units', 'causes', 'targets', 'chicken_price']
+    const tabs = ['price', 'buildings', 'categories', 'units', 'causes', 'targets', 'chicken_price', 'uom']
 
     function showTab(name) {
         tabs.forEach(t => {
