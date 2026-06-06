@@ -383,7 +383,7 @@ def laying_consumption_list(request):
             Q(remarks__icontains=search)
         )
     if building:
-        consumption_all = consumption_all.filter(growing_house=building)
+        consumption_all = consumption_all.filter(laying_buildings=building)
     if category:
         consumption_all = consumption_all.filter(category=category)
     if date_from:
