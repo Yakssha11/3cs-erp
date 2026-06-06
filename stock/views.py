@@ -43,7 +43,15 @@ def stock_list(request):
                 'has_expiring': False,
                 'has_expired':  False,
             }
-        grouped[stock.item_id]['total_qty'] += int(stock.quantity)
+        # track total stock unit qty
+        if stock.unit_quantity:
+            try:
+                parts = stock.unit_quantity.split()
+                uq = float(parts[0])
+                grouped[stock.item_id]['total_unit_qty'] = grouped[stock.item_id].get('total_unit_qty', 0) + uq
+                grouped[stock.item_id]['stock_unit'] = parts[1] if len(parts) > 1 else ''
+            except:
+                pass
         if stock.expiry_date:
             if stock.expiry_date < today:
                 grouped[stock.item_id]['has_expired'] = True
@@ -236,7 +244,15 @@ def laying_stock(request):
                 'has_expiring':  False,
                 'has_expired':   False,
             }
-        grouped[stock.item_id]['total_qty'] += int(stock.quantity)
+        # track total stock unit qty
+        if stock.unit_quantity:
+            try:
+                parts = stock.unit_quantity.split()
+                uq = float(parts[0])
+                grouped[stock.item_id]['total_unit_qty'] = grouped[stock.item_id].get('total_unit_qty', 0) + uq
+                grouped[stock.item_id]['stock_unit'] = parts[1] if len(parts) > 1 else ''
+            except:
+                pass
         if stock.expiry_date:
             if stock.expiry_date < today:
                 grouped[stock.item_id]['has_expired'] = True
