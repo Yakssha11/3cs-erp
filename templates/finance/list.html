@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% load auth_extras %}
+{% load auth_extras humanize %}
 
 {% block page_title %}Finance{% endblock %}
 
@@ -139,19 +139,19 @@
 </div>
 
 <!-- KPI bar -->
-<div class="bg-[#01415A] border border-border rounded-xl px-6 py-4 mb-4 grid grid-cols-3 gap-4 text-center">
-    <div>
-        <p class="text-muted text-xs uppercase tracking-wider mb-1">Total Expenses</p>
-        <p class="text-xl font-bold text-red-400">₱{{ total_expenses|floatformat:2 }}</p>
+<div class="bg-[#01415A] border border-border rounded-xl px-4 py-4 mb-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
+    <div class="flex items-center justify-between sm:block sm:text-center border-b border-border/30 pb-3 sm:pb-0 sm:border-0">
+        <p class="text-muted text-xs uppercase tracking-wider">Total Expenses</p>
+        <p class="text-base sm:text-xl font-bold text-red-400 mt-0 sm:mt-1">₱{{ total_expenses|floatformat:2|intcomma }}</p>
     </div>
-    <div>
-        <p class="text-muted text-xs uppercase tracking-wider mb-1">Chicken Revenue</p>
-        <p class="text-xl font-bold text-green">₱{{ chicken_revenue|floatformat:2 }}</p>
+    <div class="flex items-center justify-between sm:block sm:text-center border-b border-border/30 pb-3 sm:pb-0 sm:border-0">
+        <p class="text-muted text-xs uppercase tracking-wider">Chicken Revenue</p>
+        <p class="text-base sm:text-xl font-bold text-green mt-0 sm:mt-1">₱{{ chicken_revenue|floatformat:2|intcomma }}</p>
     </div>
-    <div>
-        <p class="text-muted text-xs uppercase tracking-wider mb-1">Net Profit</p>
-        <p class="text-xl font-bold {% if net_profit >= 0 %}text-green{% else %}text-red-400{% endif %}">
-            ₱{{ net_profit|floatformat:2 }}
+    <div class="flex items-center justify-between sm:block sm:text-center">
+        <p class="text-muted text-xs uppercase tracking-wider">Net Profit</p>
+        <p class="text-base sm:text-xl font-bold mt-0 sm:mt-1 {% if net_profit >= 0 %}text-green{% else %}text-red-400{% endif %}">
+            ₱{{ net_profit|floatformat:2|intcomma }}
         </p>
     </div>
 </div>
@@ -234,7 +234,7 @@
                     </span>
                 </td>
                 <td class="px-4 py-3 text-muted">{{ f.building }}</td>
-                <td class="px-4 py-3 text-amber font-bold">₱{{ f.amount }}</td>
+                <td class="px-4 py-3 text-amber font-bold">₱{{ f.amount|floatformat:2|intcomma }}</td>
                 <td class="px-4 py-3 text-muted">{{ f.person }}</td>
                 <td class="px-4 py-3 text-muted text-xs">{{ f.remarks }}</td>
                 <td class="px-4 py-3">
@@ -323,8 +323,8 @@
         }
 
         // sort by date only
-        const dateTh  = document.querySelector('#financeTable thead th:first-child')
-        const tbody   = document.querySelector('#financeTable tbody')
+        const dateTh   = document.querySelector('#financeTable thead th:first-child')
+        const tbody    = document.querySelector('#financeTable tbody')
         const origRows = Array.from(tbody.querySelectorAll('tr')).map(r => r.cloneNode(true))
 
         dateTh.style.cursor = 'pointer'
