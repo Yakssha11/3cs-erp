@@ -59,6 +59,8 @@ INSTALLED_APPS = [
 
     # Sales module
     'sales',
+
+    'django.contrib.humanize',
 ]
 
 MIDDLEWARE = [
