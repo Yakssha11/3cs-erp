@@ -88,6 +88,8 @@ def chicken_production_delete(request, pk):
     flock = production.flock
     if flock:
         flock.current_count += production.total_harvested
+        if flock.current_count > 0:
+            flock.status = 'Active'
         flock.save()
     production.delete()
     messages.success(request, 'Record deleted and flock count restored!')
