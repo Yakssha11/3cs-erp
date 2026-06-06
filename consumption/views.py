@@ -75,22 +75,13 @@ def fifo_restore(consumption):
 def consumption_list(request):
     from erp_config.models import Category, Unit, Building
     from master_data.models import Material
+    from django.db.models import Q
+
     growing_buildings = Building.objects.filter(type='Growing').values_list('name', flat=True)
-    search   = request.GET.get('search', '')
-    building = request.GET.get('building', '')
-    category = request.GET.get('category_filter', '')
-    date_from = request.GET.get('date_from', '')
-    date_to   = request.GET.get('date_to', '')
 
-    search   = request.GET.get('search', '')
-    building = request.GET.get('building', '')
-    category = request.GET.get('category_filter', '')
-    date_from = request.GET.get('date_from', '')
-    date_to   = request.GET.get('date_to', '')
-
-    search   = request.GET.get('search', '')
-    building = request.GET.get('building', '')
-    category = request.GET.get('category_filter', '')
+    search    = request.GET.get('search', '')
+    building  = request.GET.get('building', '')
+    category  = request.GET.get('category_filter', '')
     date_from = request.GET.get('date_from', '')
     date_to   = request.GET.get('date_to', '')
 
@@ -99,7 +90,6 @@ def consumption_list(request):
                       ).order_by('-date_consumed')
 
     if search:
-        from django.db.models import Q
         consumption_all = consumption_all.filter(
             Q(item_name__icontains=search) |
             Q(recorded_by__icontains=search) |
@@ -114,59 +104,29 @@ def consumption_list(request):
     if date_to:
         consumption_all = consumption_all.filter(date_consumed__lte=date_to)
 
-    if search:
-        from django.db.models import Q
-        consumption_all = consumption_all.filter(
-            Q(item_name__icontains=search) |
-            Q(recorded_by__icontains=search) |
-            Q(remarks__icontains=search)
-        )
-    if building:
-        consumption_all = consumption_all.filter(growing_house=building)
-    if category:
-        consumption_all = consumption_all.filter(category=category)
-    if date_from:
-        consumption_all = consumption_all.filter(date_consumed__gte=date_from)
-    if date_to:
-        consumption_all = consumption_all.filter(date_consumed__lte=date_to)
+    paginator    = Paginator(consumption_all, 10)
+    page         = request.GET.get('page')
+    consumptions = paginator.get_page(page)
+    categories   = Category.objects.all()
+    units        = Unit.objects.all()
+    buildings    = Building.objects.filter(type='Growing')
+    stock_items  = Stock.objects.filter(quantity__gt=0).order_by('item_id').values(
+                     'item_id', 'name', 'category', 'unit'
+                   ).distinct()
+    materials    = Material.objects.all()
 
-    if search:
-        from django.db.models import Q
-        consumption_all = consumption_all.filter(
-            Q(item_name__icontains=search) |
-            Q(recorded_by__icontains=search) |
-            Q(remarks__icontains=search)
-        )
-    if building:
-        consumption_all = consumption_all.filter(growing_house=building)
-    if category:
-        consumption_all = consumption_all.filter(category=category)
-    if date_from:
-        consumption_all = consumption_all.filter(date_consumed__gte=date_from)
-    if date_to:
-        consumption_all = consumption_all.filter(date_consumed__lte=date_to)
-    paginator       = Paginator(consumption_all, 10)
-    page            = request.GET.get('page')
-    consumptions    = paginator.get_page(page)
-    categories      = Category.objects.all()
-    units           = Unit.objects.all()
-    buildings       = Building.objects.filter(type='Growing')
-    stock_items     = Stock.objects.filter(quantity__gt=0).order_by('item_id').values(
-                        'item_id', 'name', 'category', 'unit'
-                      ).distinct()
-    materials       = Material.objects.all()
     return render(request, 'consumption/list.html', {
-        'consumptions': consumptions,
-        'categories':   categories,
-        'units':        units,
-        'buildings':    buildings,
-        'stock_items':  stock_items,
-        'materials':    materials,
-        'search':        search,
+        'consumptions':    consumptions,
+        'categories':      categories,
+        'units':           units,
+        'buildings':       buildings,
+        'stock_items':     stock_items,
+        'materials':       materials,
+        'search':          search,
         'building_filter': building,
         'category_filter': category,
-        'date_from':     date_from,
-        'date_to':       date_to,
+        'date_from':       date_from,
+        'date_to':         date_to,
     })
 
 @login_required
@@ -185,7 +145,6 @@ def consumption_save(request):
         recorded      = request.POST['recorded_by']
         date_consumed = request.POST['date_consumed']
 
-        # UoM conversion
         consumed_unit     = request.POST.get('consumed_unit', unit)
         original_quantity = quantity
         original_unit     = consumed_unit
@@ -364,32 +323,35 @@ def export_consumption(request):
 def laying_consumption_list(request):
     from erp_config.models import Category, Unit, Building
     from master_data.models import Material
+    from django.db.models import Q
+
     laying_buildings = Building.objects.filter(type='Laying').values_list('name', flat=True)
-    search   = request.GET.get('search', '')
-    building = request.GET.get('building', '')
-    category = request.GET.get('category_filter', '')
+
+    search    = request.GET.get('search', '')
+    building  = request.GET.get('building', '')
+    category  = request.GET.get('category_filter', '')
     date_from = request.GET.get('date_from', '')
     date_to   = request.GET.get('date_to', '')
 
     consumption_all = Consumption.objects.filter(
-                        growing_house__in=growing_buildings
+                        growing_house__in=laying_buildings
                       ).order_by('-date_consumed')
 
     if search:
-        from django.db.models import Q
         consumption_all = consumption_all.filter(
             Q(item_name__icontains=search) |
             Q(recorded_by__icontains=search) |
             Q(remarks__icontains=search)
         )
     if building:
-        consumption_all = consumption_all.filter(laying_buildings=building)
+        consumption_all = consumption_all.filter(growing_house=building)
     if category:
         consumption_all = consumption_all.filter(category=category)
     if date_from:
         consumption_all = consumption_all.filter(date_consumed__gte=date_from)
     if date_to:
         consumption_all = consumption_all.filter(date_consumed__lte=date_to)
+
     paginator    = Paginator(consumption_all, 10)
     page         = request.GET.get('page')
     consumptions = paginator.get_page(page)
@@ -397,21 +359,22 @@ def laying_consumption_list(request):
     units        = Unit.objects.all()
     buildings    = Building.objects.filter(type='Laying')
     stock_items  = Stock.objects.filter(quantity__gt=0).order_by('item_id').values(
-                    'item_id', 'name', 'category', 'unit'
+                     'item_id', 'name', 'category', 'unit'
                    ).distinct()
     materials    = Material.objects.all()
+
     return render(request, 'consumption/laying_list.html', {
-        'consumptions': consumptions,
-        'categories':   categories,
-        'units':        units,
-        'buildings':    buildings,
-        'stock_items':  stock_items,
-        'materials':    materials,
-        'search':        search,
+        'consumptions':    consumptions,
+        'categories':      categories,
+        'units':           units,
+        'buildings':       buildings,
+        'stock_items':     stock_items,
+        'materials':       materials,
+        'search':          search,
         'building_filter': building,
         'category_filter': category,
-        'date_from':     date_from,
-        'date_to':       date_to,
+        'date_from':       date_from,
+        'date_to':         date_to,
     })
 
 @login_required
@@ -430,7 +393,6 @@ def laying_consumption_save(request):
         recorded      = request.POST['recorded_by']
         date_consumed = request.POST['date_consumed']
 
-        # UoM conversion
         consumed_unit     = request.POST.get('consumed_unit', unit)
         original_quantity = quantity
         original_unit     = consumed_unit
