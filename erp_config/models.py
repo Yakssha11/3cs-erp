@@ -98,3 +98,17 @@ class ChickenPriceConfig(models.Model):
 
     def __str__(self):
         return f"₱{self.price_chicken} — {self.effective_date}"
+    
+class UoMConversion(models.Model):
+    from_unit = models.CharField(max_length=50)
+    to_unit   = models.CharField(max_length=50)
+    notes     = models.CharField(max_length=255, blank=True)
+    Date      = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'config_uom_conversions'
+        ordering = ['from_unit']
+        unique_together = ['from_unit', 'to_unit']
+
+    def __str__(self):
+        return f"{self.from_unit} → {self.to_unit}"
