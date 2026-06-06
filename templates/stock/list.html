@@ -39,8 +39,6 @@
     <form method="POST" action="{% url 'stock_save' %}">
         {% csrf_token %}
         <div class="grid grid-cols-2 gap-4 mb-4">
-
-            <!-- material -->
             <div class="col-span-2">
                 <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Material</label>
                 <div class="flex gap-2">
@@ -64,41 +62,32 @@
                     </button>
                 </div>
             </div>
-
-            <!-- auto-filled fields (readonly) -->
             <div>
                 <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Item ID</label>
                 <input type="text" id="display_item_id" readonly
                        class="w-full bg-content/50 border border-border rounded-lg px-3 py-2 text-muted text-sm cursor-not-allowed">
             </div>
-
             <div>
                 <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Name</label>
                 <input type="text" id="display_name" readonly
                        class="w-full bg-content/50 border border-border rounded-lg px-3 py-2 text-muted text-sm cursor-not-allowed">
             </div>
-
             <div>
                 <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Category</label>
                 <input type="text" id="display_category" readonly
                        class="w-full bg-content/50 border border-border rounded-lg px-3 py-2 text-muted text-sm cursor-not-allowed">
             </div>
-
             <div>
                 <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Unit</label>
                 <input type="text" id="display_unit" readonly
                        class="w-full bg-content/50 border border-border rounded-lg px-3 py-2 text-muted text-sm cursor-not-allowed">
             </div>
-
-            <!-- manual fields -->
             <div>
                 <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Quantity</label>
                 <input type="number" name="quantity" required placeholder="0"
                        class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue">
             </div>
-
             <input type="hidden" name="unit_quantity" value="">
-
             <div>
                 <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Growing House</label>
                 <select name="growing_house"
@@ -109,19 +98,16 @@
                     {% endfor %}
                 </select>
             </div>
-
             <div>
                 <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Batch</label>
                 <input type="text" name="batch" placeholder="e.g. Batch 001"
                        class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue">
             </div>
-
             <div>
                 <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Expiry Date</label>
                 <input type="date" name="expiry_date"
                        class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue">
             </div>
-
         </div>
         <div class="flex gap-3">
             <button type="submit"
@@ -136,17 +122,58 @@
     </form>
 </div>
 
-<!-- search -->
-<div class="mb-4 flex gap-2">
-    <input type="text" id="searchInput" onkeyup="filterTable()"
-           placeholder="🔍  Search by name, category or item ID..."
-           class="flex-1 bg-sidebar border border-border rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-blue">
-    <button onclick="openScanner('search')"
-            class="bg-[#1A8FD1] hover:bg-[#157AB0] text-white font-bold px-2 sm:px-3 py-2 rounded-lg transition-all flex-shrink-0 text-sm">
-        <span class="hidden sm:inline">📷 Scan</span>
-        <span class="sm:hidden">📷</span>
-    </button>
-</div>
+<!-- filters -->
+<form method="GET" action="" id="filterForm">
+    <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 mb-3">
+        <div class="sm:col-span-2 flex gap-2">
+            <input type="text" name="search" value="{{ search }}"
+                   placeholder="🔍  Search by name, category or item ID..."
+                   class="flex-1 bg-sidebar border border-border rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-blue">
+            <button type="button" onclick="openScanner('search')"
+                    class="bg-[#1A8FD1] hover:bg-[#157AB0] text-white font-bold px-3 py-2 rounded-lg transition-all flex-shrink-0 text-sm">
+                📷
+            </button>
+        </div>
+        <div>
+            <select name="building" onchange="document.getElementById('filterForm').submit()"
+                    class="w-full bg-sidebar border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-blue
+                           {% if building_filter %}text-white{% else %}text-muted{% endif %}">
+                <option value="">All Buildings</option>
+                {% for building in buildings %}
+                <option value="{{ building.name }}" {% if building_filter == building.name %}selected{% endif %}>
+                    {{ building.name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <select name="category" onchange="document.getElementById('filterForm').submit()"
+                    class="w-full bg-sidebar border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-blue
+                           {% if category_filter %}text-white{% else %}text-muted{% endif %}">
+                <option value="">All Categories</option>
+                {% for material in materials %}
+                    {% if material.category not in category_list %}
+                    <option value="{{ material.category }}" {% if category_filter == material.category %}selected{% endif %}>
+                        {{ material.category }}
+                    </option>
+                    {% endif %}
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+    <div class="flex gap-2 mb-4">
+        <button type="submit"
+                class="bg-[#1A8FD1] hover:bg-[#157AB0] text-white text-xs font-bold px-4 py-2 rounded-lg transition-all">
+            🔍 Search
+        </button>
+        {% if search or building_filter or category_filter %}
+        <a href="?"
+           class="bg-content hover:bg-border text-muted text-xs font-bold px-4 py-2 rounded-lg transition-all border border-border">
+            ✕ Clear
+        </a>
+        {% endif %}
+    </div>
+</form>
 
 <!-- stock table -->
 <div class="bg-sidebar border border-border rounded-xl">
@@ -176,7 +203,6 @@
                 <tr class="border-b border-border hover:bg-content transition-all
                     {% if batch.expiry_date and batch.expiry_date < today %}bg-red-900/10
                     {% elif batch.expiry_date and batch.expiry_date <= soon %}bg-yellow-900/10{% endif %}">
-
                     <td class="px-4 py-3 font-mono text-blue text-xs">
                         {% if forloop.first %}{{ group.item_id }}{% endif %}
                     </td>
@@ -361,14 +387,6 @@
         document.getElementById('display_unit').value     = option.getAttribute('data-unit') || ''
     }
 
-    function filterTable() {
-        const input = document.getElementById('searchInput').value.toLowerCase()
-        const rows  = document.querySelectorAll('#stockTable tbody tr')
-        rows.forEach(row => {
-            row.style.display = row.textContent.toLowerCase().includes(input) ? '' : 'none'
-        })
-    }
-
     function openScanner(mode) {
         scannerMode = mode
         document.getElementById('scannerModal').classList.remove('hidden')
@@ -425,30 +443,14 @@
             }
         } else {
             closeScanner()
-            const searchInput = document.getElementById('searchInput')
-            searchInput.value = code
-            filterTable()
+            const searchInput = document.querySelector('input[name="search"]')
+            if (searchInput) {
+                searchInput.value = code
+                document.getElementById('filterForm').submit()
+            }
         }
     }
 
-    document.addEventListener('DOMContentLoaded', function() {
-        const params = new URLSearchParams(window.location.search)
-        const scanId = params.get('scan')
-        if (scanId) {
-            document.getElementById('addForm').classList.remove('hidden')
-            const select = document.getElementById('materialSelect')
-            for (let i = 0; i < select.options.length; i++) {
-                if (select.options[i].value === scanId) {
-                    select.selectedIndex = i
-                    fillMaterial()
-                    break
-                }
-            }
-            // scroll to form
-            document.getElementById('addForm').scrollIntoView({ behavior: 'smooth' })
-        }
-    })
-    
     function openStockEdit(pk, batch, qty, expiry, house) {
         document.getElementById('stockEditForm').action = `/stock/edit/${pk}/`
         document.getElementById('edit-stock-batch').value  = batch
@@ -468,6 +470,30 @@
         document.getElementById('stockEditModal').classList.add('hidden')
     }
 
+    document.addEventListener('DOMContentLoaded', function() {
+        const params = new URLSearchParams(window.location.search)
+        const scanId = params.get('scan')
+        if (scanId) {
+            document.getElementById('addForm').classList.remove('hidden')
+            const select = document.getElementById('materialSelect')
+            for (let i = 0; i < select.options.length; i++) {
+                if (select.options[i].value === scanId) {
+                    select.selectedIndex = i
+                    fillMaterial()
+                    break
+                }
+            }
+            document.getElementById('addForm').scrollIntoView({ behavior: 'smooth' })
+        }
+
+        // submit search on Enter
+        const searchInput = document.querySelector('input[name="search"]')
+        if (searchInput) {
+            searchInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') document.getElementById('filterForm').submit()
+            })
+        }
+    })
 </script>
 
 {% endblock %}

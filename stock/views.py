@@ -22,9 +22,26 @@ def stock_list(request):
     materials = Material.objects.all()
 
     growing_building_names = Building.objects.filter(type='Growing').values_list('name', flat=True)
-    stocks_raw = Stock.objects.filter(
+    search          = request.GET.get('search', '')
+    building_filter = request.GET.get('building', '')
+    category_filter = request.GET.get('category', '')
+
+    stock_query = Stock.objects.filter(
         growing_house__in=growing_building_names
-    ).order_by('item_id', F('expiry_date').asc(nulls_last=True), 'date')
+    )
+    if search:
+        from django.db.models import Q
+        stock_query = stock_query.filter(
+            Q(name__icontains=search) |
+            Q(item_id__icontains=search) |
+            Q(category__icontains=search)
+        )
+    if building_filter:
+        stock_query = stock_query.filter(growing_house=building_filter)
+    if category_filter:
+        stock_query = stock_query.filter(category=category_filter)
+
+    stocks_raw = stock_query.order_by('item_id', F('expiry_date').asc(nulls_last=True), 'date')
     grouped    = {}
     today      = date.today()
     soon       = today + timedelta(days=30)
@@ -77,6 +94,9 @@ def stock_list(request):
         'today':          today,
         'soon':           soon,
         'is_owner':       is_owner,
+        'search':          search,
+        'building_filter': building_filter,
+        'category_filter': category_filter,
     })
 
 @login_required
@@ -224,9 +244,26 @@ def laying_stock(request):
 
     laying_building_names = buildings.values_list('name', flat=True)
 
-    stocks_raw = Stock.objects.filter(
+    search          = request.GET.get('search', '')
+    building_filter = request.GET.get('building', '')
+    category_filter = request.GET.get('category', '')
+
+    stock_query = Stock.objects.filter(
         growing_house__in=laying_building_names
-    ).order_by('item_id', F('expiry_date').asc(nulls_last=True), 'date')
+    )
+    if search:
+        from django.db.models import Q
+        stock_query = stock_query.filter(
+            Q(name__icontains=search) |
+            Q(item_id__icontains=search) |
+            Q(category__icontains=search)
+        )
+    if building_filter:
+        stock_query = stock_query.filter(growing_house=building_filter)
+    if category_filter:
+        stock_query = stock_query.filter(category=category_filter)
+
+    stocks_raw = stock_query.order_by('item_id', F('expiry_date').asc(nulls_last=True), 'date')
 
     grouped = {}
     today   = date.today()
@@ -280,6 +317,9 @@ def laying_stock(request):
         'today':          today,
         'soon':           soon,
         'is_owner':       is_owner,
+        'search':          search,
+        'building_filter': building_filter,
+        'category_filter': category_filter,
     })
 
 @login_required
