@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% load auth_extras %}
+{% load auth_extras humanize %}
 
 {% block page_title %}Laying Finance{% endblock %}
 
@@ -40,13 +40,11 @@
     <form method="POST" action="{% url 'laying_finance_save' %}">
         {% csrf_token %}
         <div class="grid grid-cols-2 gap-4 mb-4">
-
             <div>
                 <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Date</label>
                 <input type="date" name="expense_date" required
                        class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber">
             </div>
-
             <div>
                 <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Nature</label>
                 <select name="nature" required
@@ -57,7 +55,6 @@
                     {% endfor %}
                 </select>
             </div>
-
             <div>
                 <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Building</label>
                 <select name="building" required
@@ -68,25 +65,21 @@
                     {% endfor %}
                 </select>
             </div>
-
             <div>
                 <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Amount (₱)</label>
                 <input type="number" name="amount" step="0.01" required placeholder="0.00"
                        class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber">
             </div>
-
             <div>
                 <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Person</label>
                 <input type="text" name="person" required placeholder="Who recorded this"
                        class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber">
             </div>
-
             <div>
                 <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Remarks</label>
                 <input type="text" name="remarks" placeholder="Optional notes"
                        class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber">
             </div>
-
         </div>
         <div class="flex gap-3">
             <button type="submit"
@@ -142,30 +135,71 @@
     </form>
 </div>
 
-<!-- summary bar -->
-<div class="bg-[#01415A] border border-border rounded-xl px-6 py-4 mb-4 grid grid-cols-3 gap-4 text-center">
-    <div>
-        <p class="text-xs text-muted mb-1">Total Expenses</p>
-        <p class="text-xl font-bold text-red-400">₱{{ total_expenses|floatformat:2 }}</p>
+<!-- KPI bar -->
+<div class="bg-[#01415A] border border-border rounded-xl px-4 py-4 mb-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
+    <div class="flex items-center justify-between sm:block sm:text-center border-b border-border/30 pb-3 sm:pb-0 sm:border-0">
+        <p class="text-muted text-xs uppercase tracking-wider">Total Expenses</p>
+        <p class="text-base sm:text-xl font-bold text-red-400 mt-0 sm:mt-1">₱{{ total_expenses|floatformat:2|intcomma }}</p>
     </div>
-    <div>
-        <p class="text-xs text-muted mb-1">Egg Revenue</p>
-        <p class="text-xl font-bold text-green">₱{{ egg_revenue|floatformat:2 }}</p>
+    <div class="flex items-center justify-between sm:block sm:text-center border-b border-border/30 pb-3 sm:pb-0 sm:border-0">
+        <p class="text-muted text-xs uppercase tracking-wider">Egg Revenue</p>
+        <p class="text-base sm:text-xl font-bold text-green mt-0 sm:mt-1">₱{{ egg_revenue|floatformat:2|intcomma }}</p>
     </div>
-    <div>
-        <p class="text-xs text-muted mb-1">Net Profit</p>
-        <p class="text-xl font-bold {% if net_profit >= 0 %}text-green{% else %}text-red-400{% endif %}">
-            ₱{{ net_profit|floatformat:2 }}
+    <div class="flex items-center justify-between sm:block sm:text-center">
+        <p class="text-muted text-xs uppercase tracking-wider">Net Profit</p>
+        <p class="text-base sm:text-xl font-bold mt-0 sm:mt-1 {% if net_profit >= 0 %}text-green{% else %}text-red-400{% endif %}">
+            ₱{{ net_profit|floatformat:2|intcomma }}
         </p>
     </div>
 </div>
 
-<!-- search -->
-<div class="mb-4">
-    <input type="text" id="searchInput" onkeyup="filterTable()"
-           placeholder="🔍  Search by nature, building, person..."
-           class="w-full bg-sidebar border border-border rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-amber">
-</div>
+<!-- search and column filters -->
+<form method="GET" action="" id="filterForm">
+    <input type="hidden" name="period" value="{{ period }}">
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+        <div class="sm:col-span-1">
+            <input type="text" name="search" value="{{ search }}"
+                   placeholder="🔍  Search nature, person, remarks..."
+                   class="w-full bg-sidebar border border-border rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-amber">
+        </div>
+        <div>
+            <select name="building" onchange="document.getElementById('filterForm').submit()"
+                    class="w-full bg-sidebar border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-amber
+                           {% if building_filter %}text-white{% else %}text-muted{% endif %}">
+                <option value="">All Buildings</option>
+                {% for b in buildings %}
+                <option value="{{ b.name }}" {% if building_filter == b.name %}selected{% endif %}>
+                    {{ b.name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <select name="nature" onchange="document.getElementById('filterForm').submit()"
+                    class="w-full bg-sidebar border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-amber
+                           {% if nature_filter %}text-white{% else %}text-muted{% endif %}">
+                <option value="">All Nature</option>
+                {% for category in categories %}
+                <option value="{{ category.name }}" {% if nature_filter == category.name %}selected{% endif %}>
+                    {{ category.name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+    <div class="flex gap-2 mb-4">
+        <button type="submit"
+                class="bg-amber hover:bg-[#B5720A] text-white text-xs font-bold px-4 py-2 rounded-lg transition-all">
+            🔍 Search
+        </button>
+        {% if search or building_filter or nature_filter %}
+        <a href="?period={{ period }}"
+           class="bg-content hover:bg-border text-muted text-xs font-bold px-4 py-2 rounded-lg transition-all border border-border">
+            ✕ Clear Filters
+        </a>
+        {% endif %}
+    </div>
+</form>
 
 <!-- table -->
 <div class="bg-sidebar border border-border rounded-xl">
@@ -197,7 +231,7 @@
                     </span>
                 </td>
                 <td class="px-4 py-3 text-muted">{{ f.building }}</td>
-                <td class="px-4 py-3 text-amber font-bold">₱{{ f.amount }}</td>
+                <td class="px-4 py-3 text-amber font-bold">₱{{ f.amount|floatformat:2|intcomma }}</td>
                 <td class="px-4 py-3 text-muted">{{ f.person }}</td>
                 <td class="px-4 py-3 text-muted text-xs">{{ f.remarks }}</td>
                 <td class="px-4 py-3">
@@ -243,7 +277,7 @@
     </p>
     <div class="flex gap-2">
         {% if finances.has_previous %}
-        <a href="?period={{ period }}&page={{ finances.previous_page_number }}"
+        <a href="?period={{ period }}&search={{ search }}&building={{ building_filter }}&nature={{ nature_filter }}&page={{ finances.previous_page_number }}"
            class="px-3 py-1.5 rounded-lg text-xs font-bold bg-sidebar border border-border text-muted hover:border-amber hover:text-white transition-all">
             ← Prev
         </a>
@@ -252,14 +286,14 @@
             {% if finances.number == num %}
             <span class="px-3 py-1.5 rounded-lg text-xs font-bold bg-amber text-white">{{ num }}</span>
             {% elif num > finances.number|add:'-3' and num < finances.number|add:'3' %}
-            <a href="?period={{ period }}&page={{ num }}"
+            <a href="?period={{ period }}&search={{ search }}&building={{ building_filter }}&nature={{ nature_filter }}&page={{ num }}"
                class="px-3 py-1.5 rounded-lg text-xs font-bold bg-sidebar border border-border text-muted hover:border-amber hover:text-white transition-all">
                 {{ num }}
             </a>
             {% endif %}
         {% endfor %}
         {% if finances.has_next %}
-        <a href="?period={{ period }}&page={{ finances.next_page_number }}"
+        <a href="?period={{ period }}&search={{ search }}&building={{ building_filter }}&nature={{ nature_filter }}&page={{ finances.next_page_number }}"
            class="px-3 py-1.5 rounded-lg text-xs font-bold bg-sidebar border border-border text-muted hover:border-amber hover:text-white transition-all">
             Next →
         </a>
@@ -272,17 +306,57 @@
     function toggleForm() {
         document.getElementById('addForm').classList.toggle('hidden')
     }
-    function filterTable() {
-        const input = document.getElementById('searchInput').value.toLowerCase()
-        const rows  = document.querySelectorAll('#financeTable tbody tr')
-        rows.forEach(row => {
-            row.style.display = row.textContent.toLowerCase().includes(input) ? '' : 'none'
-        })
-    }
+
     document.addEventListener('DOMContentLoaded', function() {
         const today = new Date().toISOString().split('T')[0]
         const dateInput = document.querySelector('input[name="expense_date"]')
         if (dateInput) dateInput.value = today
+
+        // submit search on Enter
+        const searchInput = document.querySelector('input[name="search"]')
+        if (searchInput) {
+            searchInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') document.getElementById('filterForm').submit()
+            })
+        }
+
+        // sort by date only
+        const dateTh   = document.querySelector('#financeTable thead th:first-child')
+        const tbody    = document.querySelector('#financeTable tbody')
+        const origRows = Array.from(tbody.querySelectorAll('tr')).map(r => r.cloneNode(true))
+
+        dateTh.style.cursor = 'pointer'
+        dateTh.setAttribute('data-order', 'none')
+
+        dateTh.addEventListener('click', function() {
+            const order = this.getAttribute('data-order')
+            if (order === 'none') {
+                sortByDate('asc')
+                this.setAttribute('data-order', 'asc')
+                this.textContent = 'Date ↑'
+            } else if (order === 'asc') {
+                sortByDate('desc')
+                this.setAttribute('data-order', 'desc')
+                this.textContent = 'Date ↓'
+            } else {
+                tbody.innerHTML = ''
+                origRows.forEach(row => tbody.appendChild(row.cloneNode(true)))
+                this.setAttribute('data-order', 'none')
+                this.textContent = 'Date'
+            }
+        })
+
+        function sortByDate(order) {
+            const rows = Array.from(tbody.querySelectorAll('tr'))
+            rows.sort((a, b) => {
+                const aText = a.cells[0]?.textContent.trim() || ''
+                const bText = b.cells[0]?.textContent.trim() || ''
+                return order === 'asc'
+                    ? aText.localeCompare(bText)
+                    : bText.localeCompare(aText)
+            })
+            rows.forEach(row => tbody.appendChild(row))
+        }
     })
 </script>
 

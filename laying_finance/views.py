@@ -17,6 +17,24 @@ def laying_finance_list(request):
     finances = LayingFinance.objects.all().order_by('-expense_date')
     today    = date.today()
 
+    # column filters
+    search   = request.GET.get('search', '')
+    building = request.GET.get('building', '')
+    nature   = request.GET.get('nature', '')
+
+    if search:
+        from django.db.models import Q
+        finances = finances.filter(
+            Q(nature__icontains=search) |
+            Q(building__icontains=search) |
+            Q(remarks__icontains=search) |
+            Q(person__icontains=search)
+        )
+    if building:
+        finances = finances.filter(building=building)
+    if nature:
+        finances = finances.filter(nature=nature)
+
     if period == 'today':
         finances = finances.filter(expense_date=today)
     elif period == 'week':
@@ -52,6 +70,9 @@ def laying_finance_list(request):
         'period':         period,
         'buildings':      buildings,
         'categories':     categories,
+        'search':          search,
+        'building_filter': building,
+        'nature_filter':   nature,
     })
 
 @login_required
