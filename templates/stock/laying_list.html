@@ -210,7 +210,7 @@
                         {% if forloop.first %}
                         <span class="text-white font-bold">
                             {% if group.total_unit_qty %}
-                                {{ group.total_unit_qty|floatformat:0 }} {{ group.stock_unit }}
+                                {{ group.total_unit_qty|floatformat:2 }} {{ group.stock_unit }}
                             {% else %}
                                 {{ group.total_qty }} {{ group.unit }}
                             {% endif %}

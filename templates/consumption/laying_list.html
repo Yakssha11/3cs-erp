@@ -184,10 +184,10 @@
                 <td class="px-4 py-3">
                     <div class="flex items-center gap-3">
                         {% if request.user|has_group:'admin' %}
-                        <a href="{% url 'laying_consumption_update' c.pk %}"
-                           class="text-blue hover:text-blue-300 text-xs font-bold transition-all leading-none">
+                        <button onclick="openConsumptionEdit({{ c.pk }}, '{{ c.growing_house }}', '{{ c.category }}', '{{ c.item_id }}', '{{ c.item_name }}', '{{ c.quantity }}', '{{ c.unit }}', '{{ c.date_consumed }}', '{{ c.recorded_by }}', '{{ c.remarks }}')"
+                                class="text-blue hover:text-blue-300 text-xs font-bold transition-all leading-none">
                             Edit
-                        </a>
+                        </button>
                         <span class="text-border">|</span>
                         <form method="POST" action="{% url 'laying_consumption_delete' c.pk %}"
                               onsubmit="return confirm('Delete this record? Stock will be restored.')"
@@ -248,6 +248,90 @@
     </div>
 </div>
 {% endif %}
+
+<!-- consumption edit modal -->
+<div id="consumptionEditModal" class="hidden fixed inset-0 z-50 flex items-center justify-center"
+     style="background:rgba(0,0,0,0.85)">
+    <div class="bg-sidebar border border-border rounded-xl p-5 w-full max-w-md mx-4 max-h-screen overflow-y-auto">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-sm font-bold text-white">✏️ Edit Consumption</h3>
+            <button onclick="closeConsumptionEdit()"
+                    class="text-muted hover:text-white text-lg leading-none">✕</button>
+        </div>
+        <form id="consumptionEditForm" method="POST">
+            {% csrf_token %}
+            <input type="hidden" name="item_id" id="edit-c-item-id">
+            <input type="hidden" name="item_name" id="edit-c-item-name">
+            <div class="grid grid-cols-2 gap-3 mb-4">
+                <div>
+                    <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Growing House</label>
+                    <select name="growing_house" id="edit-c-house" required
+                            class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-teal">
+                        <option value="">Select house</option>
+                        {% for building in buildings %}
+                        <option value="{{ building.name }}">{{ building.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Category</label>
+                    <select name="category" id="edit-c-category" required
+                            class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-teal">
+                        <option value="">Select category</option>
+                        {% for category in categories %}
+                        <option value="{{ category.name }}">{{ category.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-span-2">
+                    <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Item</label>
+                    <input type="text" id="edit-c-item-display" readonly
+                           class="w-full bg-content/50 border border-border rounded-lg px-3 py-2 text-muted text-sm cursor-not-allowed">
+                </div>
+                <div>
+                    <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Quantity</label>
+                    <input type="number" name="quantity" id="edit-c-qty" step="0.01" required
+                           class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-teal">
+                </div>
+                <div>
+                    <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Unit</label>
+                    <select name="unit" id="edit-c-unit" required
+                            class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-teal">
+                        <option value="">Select unit</option>
+                        {% for unit in units %}
+                        <option value="{{ unit.name }}">{{ unit.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Date</label>
+                    <input type="date" name="date_consumed" id="edit-c-date" required
+                           class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-teal">
+                </div>
+                <div>
+                    <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Recorded By</label>
+                    <input type="text" name="recorded_by" id="edit-c-recorded" required
+                           class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-teal">
+                </div>
+                <div class="col-span-2">
+                    <label class="text-xs text-muted font-bold uppercase tracking-wider block mb-1">Remarks</label>
+                    <input type="text" name="remarks" id="edit-c-remarks"
+                           class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-teal">
+                </div>
+            </div>
+            <div class="flex gap-3">
+                <button type="submit"
+                        class="flex-1 bg-[#17A98A] hover:bg-[#129070] text-white text-sm font-bold py-2 rounded-lg transition-all">
+                    Save
+                </button>
+                <button type="button" onclick="closeConsumptionEdit()"
+                        class="flex-1 bg-content hover:bg-border text-muted text-sm font-bold py-2 rounded-lg transition-all border border-border">
+                    Cancel
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
 
 <!-- barcode scanner modal -->
 <div id="scannerModal" class="hidden fixed inset-0 z-50 flex items-center justify-center"
@@ -503,6 +587,36 @@
             }
         })
     }
+
+function openConsumptionEdit(pk, house, category, itemId, itemName, qty, unit, dateConsumed, recordedBy, remarks) {
+        document.getElementById('consumptionEditForm').action = `/consumption/laying-update/${pk}/`
+        document.getElementById('edit-c-item-id').value      = itemId
+        document.getElementById('edit-c-item-name').value    = itemName
+        document.getElementById('edit-c-item-display').value = itemName
+        document.getElementById('edit-c-qty').value          = qty
+        document.getElementById('edit-c-date').value         = dateConsumed
+        document.getElementById('edit-c-recorded').value     = recordedBy
+        document.getElementById('edit-c-remarks').value      = remarks
+
+        const houseSelect = document.getElementById('edit-c-house')
+        for (let i = 0; i < houseSelect.options.length; i++) {
+            if (houseSelect.options[i].value === house) { houseSelect.selectedIndex = i; break }
+        }
+        const catSelect = document.getElementById('edit-c-category')
+        for (let i = 0; i < catSelect.options.length; i++) {
+            if (catSelect.options[i].value === category) { catSelect.selectedIndex = i; break }
+        }
+        const unitSelect = document.getElementById('edit-c-unit')
+        for (let i = 0; i < unitSelect.options.length; i++) {
+            if (unitSelect.options[i].value === unit) { unitSelect.selectedIndex = i; break }
+        }
+        document.getElementById('consumptionEditModal').classList.remove('hidden')
+    }
+
+    function closeConsumptionEdit() {
+        document.getElementById('consumptionEditModal').classList.add('hidden')
+    }
+
 </script>
 
 {% endblock %}

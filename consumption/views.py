@@ -74,6 +74,7 @@ def fifo_restore(consumption):
 @login_required
 def consumption_list(request):
     from erp_config.models import Category, Unit, Building
+    from master_data.models import Material
     growing_buildings = Building.objects.filter(type='Growing').values_list('name', flat=True)
     consumption_all = Consumption.objects.filter(
                         growing_house__in=growing_buildings
@@ -87,8 +88,7 @@ def consumption_list(request):
     stock_items     = Stock.objects.filter(quantity__gt=0).order_by('item_id').values(
                         'item_id', 'name', 'category', 'unit'
                       ).distinct()
-    from master_data.models import Material
-    materials = Material.objects.all()
+    materials       = Material.objects.all()
     return render(request, 'consumption/list.html', {
         'consumptions': consumptions,
         'categories':   categories,
@@ -102,6 +102,9 @@ def consumption_list(request):
 def consumption_save(request):
     if request.method == 'POST':
         from .models import ConsumptionBatchDeduction
+        from master_data.models import Material
+        from decimal import Decimal
+
         item_id       = request.POST['item_id']
         house         = request.POST['growing_house']
         category      = request.POST['category']
@@ -110,9 +113,6 @@ def consumption_save(request):
         remarks       = request.POST.get('remarks', '')
         recorded      = request.POST['recorded_by']
         date_consumed = request.POST['date_consumed']
-
-        from master_data.models import Material
-        from decimal import Decimal
 
         # UoM conversion
         consumed_unit     = request.POST.get('consumed_unit', unit)
@@ -142,15 +142,15 @@ def consumption_save(request):
             return redirect('consumption_list')
 
         consumption = Consumption.objects.create(
-            growing_house = house,
-            category      = category,
-            item_id       = item_id,
-            item_name     = item_name,
-            quantity      = quantity,
-            unit          = unit,
-            remarks       = remarks,
-            recorded_by   = recorded,
-            date_consumed = date_consumed,
+            growing_house     = house,
+            category          = category,
+            item_id           = item_id,
+            item_name         = item_name,
+            quantity          = quantity,
+            unit              = unit,
+            remarks           = remarks,
+            recorded_by       = recorded,
+            date_consumed     = date_consumed,
             original_quantity = original_quantity,
             original_unit     = original_unit,
         )
@@ -222,13 +222,9 @@ def get_items(request):
 
 @login_required
 def consumption_update(request, pk):
-    from erp_config.models import Category, Unit, Building
     consumption = get_object_or_404(Consumption, pk=pk)
     if request.method == 'POST':
-        # restore old stock first
         fifo_restore(consumption)
-
-        # update fields
         consumption.growing_house = request.POST['growing_house']
         consumption.category      = request.POST['category']
         consumption.item_id       = request.POST['item_id']
@@ -239,8 +235,6 @@ def consumption_update(request, pk):
         consumption.recorded_by   = request.POST['recorded_by']
         consumption.date_consumed = request.POST['date_consumed']
         consumption.save()
-
-        # re-deduct stock with FIFO
         success, remaining, item_name = fifo_deduct(
             consumption.item_id,
             consumption.quantity,
@@ -250,17 +244,7 @@ def consumption_update(request, pk):
             messages.error(request, f'Not enough stock! Available: {remaining}')
         else:
             messages.success(request, f'Record updated! Remaining {item_name}: {remaining}')
-        return redirect('consumption_list')
-
-    categories = Category.objects.all()
-    units      = Unit.objects.all()
-    buildings  = Building.objects.filter(type='Growing')
-    return render(request, 'consumption/edit.html', {
-        'consumption': consumption,
-        'categories':  categories,
-        'units':       units,
-        'buildings':   buildings,
-    })
+    return redirect('consumption_list')
 
 @login_required
 def export_consumption(request):
@@ -308,6 +292,7 @@ def export_consumption(request):
 @login_required
 def laying_consumption_list(request):
     from erp_config.models import Category, Unit, Building
+    from master_data.models import Material
     laying_buildings = Building.objects.filter(type='Laying').values_list('name', flat=True)
     consumption_all  = Consumption.objects.filter(
                         growing_house__in=laying_buildings
@@ -321,18 +306,23 @@ def laying_consumption_list(request):
     stock_items  = Stock.objects.filter(quantity__gt=0).order_by('item_id').values(
                     'item_id', 'name', 'category', 'unit'
                    ).distinct()
+    materials    = Material.objects.all()
     return render(request, 'consumption/laying_list.html', {
         'consumptions': consumptions,
         'categories':   categories,
         'units':        units,
         'buildings':    buildings,
         'stock_items':  stock_items,
+        'materials':    materials,
     })
 
 @login_required
 def laying_consumption_save(request):
     if request.method == 'POST':
         from .models import ConsumptionBatchDeduction
+        from master_data.models import Material
+        from decimal import Decimal
+
         item_id       = request.POST['item_id']
         house         = request.POST['growing_house']
         category      = request.POST['category']
@@ -342,15 +332,13 @@ def laying_consumption_save(request):
         recorded      = request.POST['recorded_by']
         date_consumed = request.POST['date_consumed']
 
-        from master_data.models import Material
-        from decimal import Decimal
-
         # UoM conversion
-        consumed_unit = request.POST.get('consumed_unit', unit)
+        consumed_unit     = request.POST.get('consumed_unit', unit)
+        original_quantity = quantity
+        original_unit     = consumed_unit
         try:
             material = Material.objects.get(item_id=item_id)
             if material.stock_unit and material.conversion_factor and consumed_unit == material.stock_unit:
-                # staff entered in stock units — convert to base units
                 quantity = float(Decimal(str(quantity)) * Decimal(str(material.conversion_factor)))
                 unit     = material.base_unit or unit
         except Material.DoesNotExist:
@@ -372,15 +360,15 @@ def laying_consumption_save(request):
             return redirect('laying_consumption_list')
 
         consumption = Consumption.objects.create(
-            growing_house = house,
-            category      = category,
-            item_id       = item_id,
-            item_name     = item_name,
-            quantity      = quantity,
-            unit          = unit,
-            remarks       = remarks,
-            recorded_by   = recorded,
-            date_consumed = date_consumed,
+            growing_house     = house,
+            category          = category,
+            item_id           = item_id,
+            item_name         = item_name,
+            quantity          = quantity,
+            unit              = unit,
+            remarks           = remarks,
+            recorded_by       = recorded,
+            date_consumed     = date_consumed,
             original_quantity = original_quantity,
             original_unit     = original_unit,
         )
@@ -464,13 +452,9 @@ def laying_consumption_delete(request, pk):
 
 @login_required
 def laying_consumption_update(request, pk):
-    from erp_config.models import Category, Unit, Building
     consumption = get_object_or_404(Consumption, pk=pk)
     if request.method == 'POST':
-        # restore old stock first
         fifo_restore(consumption)
-
-        # update fields
         consumption.growing_house = request.POST['growing_house']
         consumption.category      = request.POST['category']
         consumption.item_id       = request.POST['item_id']
@@ -481,8 +465,6 @@ def laying_consumption_update(request, pk):
         consumption.recorded_by   = request.POST['recorded_by']
         consumption.date_consumed = request.POST['date_consumed']
         consumption.save()
-
-        # re-deduct stock with FIFO
         success, remaining, item_name = fifo_deduct(
             consumption.item_id,
             consumption.quantity,
@@ -492,14 +474,4 @@ def laying_consumption_update(request, pk):
             messages.error(request, f'Not enough stock! Available: {remaining}')
         else:
             messages.success(request, f'Record updated! Remaining {item_name}: {remaining}')
-        return redirect('laying_consumption_list')
-
-    categories = Category.objects.all()
-    units      = Unit.objects.all()
-    buildings  = Building.objects.filter(type='Laying')
-    return render(request, 'consumption/laying_edit.html', {
-        'consumption': consumption,
-        'categories':  categories,
-        'units':       units,
-        'buildings':   buildings,
-    })
+    return redirect('laying_consumption_list')
