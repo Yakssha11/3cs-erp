@@ -563,8 +563,8 @@
     }
 
     function lookupItem(itemId) {
-        if (itemId.startsWith('LAYING_FLOCK-')) {
-            const flockPk = itemId.replace('LAYING_FLOCK-', '')
+        if (itemId.startsWith('LFLOCK-')) {
+            const flockPk = itemId.replace('LFLOCK-', '')
             fetch(`/laying/flock/info/${flockPk}/`)
                 .then(r => r.json())
                 .then(data => {
