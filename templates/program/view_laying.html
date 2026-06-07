@@ -54,6 +54,7 @@
                 <th class="px-4 py-3 text-left">Unit</th>
                 <th class="px-4 py-3 text-left">Per</th>
                 <th class="px-4 py-3 text-left">Method</th>
+                <th class="px-4 py-3 text-left">Feed Name</th>
                 <th class="px-4 py-3 text-left">Feed Rate/Bird</th>
                 <th class="px-4 py-3 text-left">Feed Unit</th>
                 <th class="px-4 py-3 text-left">Remarks</th>
@@ -84,13 +85,14 @@
                     </span>
                     {% else %}—{% endif %}
                 </td>
+                <td class="px-4 py-3 text-white">{{ step.feed|default:"—" }}</td>
                 <td class="px-4 py-3 text-muted">{{ step.feed_rate_per_bird|default:"—" }}</td>
                 <td class="px-4 py-3 text-muted">{{ step.feed_unit|default:"—" }}</td>
                 <td class="px-4 py-3 text-muted text-xs">{{ step.remarks|default:"—" }}</td>
             </tr>
             {% empty %}
             <tr>
-                <td colspan="11" class="px-4 py-6 text-center text-muted text-xs">
+                <td colspan="12" class="px-4 py-6 text-center text-muted text-xs">
                     No steps defined yet.
                 </td>
             </tr>

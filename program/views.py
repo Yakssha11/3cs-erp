@@ -64,6 +64,7 @@ def step_save(request, program_pk):
             dose_per           = request.POST.get('dose_per', ''),
             method             = request.POST.get('method', ''),
             remarks            = request.POST.get('remarks', ''),
+            feed               = request.POST.get('feed', ''),        # new
             feed_rate_per_bird = request.POST.get('feed_rate_per_bird') or None,
             feed_unit          = request.POST.get('feed_unit', ''),
         )
@@ -95,6 +96,7 @@ def step_update(request, pk):
         step.dose_per           = request.POST.get('dose_per', '')
         step.method             = request.POST.get('method', '')
         step.remarks            = request.POST.get('remarks', '')
+        step.feed               = request.POST.get('feed', '')
         step.feed_rate_per_bird = request.POST.get('feed_rate_per_bird') or None
         step.feed_unit          = request.POST.get('feed_unit', '')
         step.save()
