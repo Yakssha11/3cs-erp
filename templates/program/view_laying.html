@@ -74,7 +74,7 @@
                     </span>
                 </td>
                 <td class="px-4 py-3 text-white font-bold">Day {{ step.day }}</td>
-                <td class="px-4 py-3 text-white">{{ step.medicine|default:"—" }}</td>
+                <td class="px-4 py-3 text-white">{{ step.medicine_name }}</td>
                 <td class="px-4 py-3 text-muted">{{ step.dose_amount|default:"—" }}</td>
                 <td class="px-4 py-3 text-muted">{{ step.dose_unit|default:"—" }}</td>
                 <td class="px-4 py-3 text-muted">{{ step.dose_per|default:"—" }}</td>
@@ -85,7 +85,7 @@
                     </span>
                     {% else %}—{% endif %}
                 </td>
-                <td class="px-4 py-3 text-white">{{ step.feed|default:"—" }}</td>
+                <td class="px-4 py-3 text-white">{{ step.feed_name }}</td>
                 <td class="px-4 py-3 text-muted">{{ step.feed_rate_per_bird|default:"—" }}</td>
                 <td class="px-4 py-3 text-muted">{{ step.feed_unit|default:"—" }}</td>
                 <td class="px-4 py-3 text-muted text-xs">{{ step.remarks|default:"—" }}</td>

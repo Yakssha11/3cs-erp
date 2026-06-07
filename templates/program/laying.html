@@ -136,7 +136,7 @@
                     </span>
                 </td>
                 <td class="px-4 py-3 text-white font-bold">Day {{ step.day }}</td>
-                <td class="px-4 py-3 text-white">{{ step.medicine|default:"—" }}</td>
+                <td class="px-4 py-3 text-white">{{ step.medicine_name }}</td>
                 <td class="px-4 py-3 text-muted">{{ step.dose_amount|default:"—" }}</td>
                 <td class="px-4 py-3 text-muted">{{ step.dose_unit|default:"—" }}</td>
                 <td class="px-4 py-3 text-muted">{{ step.dose_per|default:"—" }}</td>
@@ -147,7 +147,7 @@
                     </span>
                     {% else %}—{% endif %}
                 </td>
-                <td class="px-4 py-3 text-white">{{ step.feed|default:"—" }}</td>
+                <td class="px-4 py-3 text-white">{{ step.feed_name }}</td>
                 <td class="px-4 py-3 text-muted">{{ step.feed_rate_per_bird|default:"—" }}</td>
                 <td class="px-4 py-3 text-muted">{{ step.feed_unit|default:"—" }}</td>
                 <td class="px-4 py-3 text-muted text-xs">{{ step.remarks|default:"—" }}</td>
@@ -232,8 +232,8 @@
                     <select name="medicine"
                             class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber">
                         <option value="">— None —</option>
-                        {% for item in stock_items %}
-                        <option value="{{ item.name }}">{{ item.name }}</option>
+                        {% for m in materials %}
+                        <option value="{{ m.item_id }}">{{ m.item_id }} — {{ m.name }}</option>
                         {% endfor %}
                     </select>
                 </div>
@@ -278,8 +278,8 @@
                     <select name="feed"
                             class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber">
                         <option value="">— None —</option>
-                        {% for item in stock_items %}
-                        <option value="{{ item.name }}">{{ item.name }}</option>
+                        {% for m in materials %}
+                        <option value="{{ m.item_id }}">{{ m.item_id }} — {{ m.name }}</option>
                         {% endfor %}
                     </select>
                 </div>
@@ -348,8 +348,8 @@
                     <select name="medicine" id="edit_medicine"
                             class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber">
                         <option value="">— None —</option>
-                        {% for item in stock_items %}
-                        <option value="{{ item.name }}">{{ item.name }}</option>
+                        {% for m in materials %}
+                        <option value="{{ m.item_id }}">{{ m.item_id }} — {{ m.name }}</option>
                         {% endfor %}
                     </select>
                 </div>
@@ -394,8 +394,8 @@
                     <select name="feed" id="edit_feed"
                             class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber">
                         <option value="">— None —</option>
-                        {% for item in stock_items %}
-                        <option value="{{ item.name }}">{{ item.name }}</option>
+                        {% for m in materials %}
+                        <option value="{{ m.item_id }}">{{ m.item_id }} — {{ m.name }}</option>
                         {% endfor %}
                     </select>
                 </div>
