@@ -66,7 +66,7 @@ def step_save(request, program_pk):
             dose_per           = request.POST.get('dose_per', ''),
             method             = request.POST.get('method', ''),
             remarks            = request.POST.get('remarks', ''),
-            feed               = request.POST.get('feed', ''),        # new
+            feed               = request.POST.get('feed', ''),
             feed_rate_per_bird = request.POST.get('feed_rate_per_bird') or None,
             feed_unit          = request.POST.get('feed_unit', ''),
         )
@@ -112,13 +112,13 @@ def export_program(request, pk):
     import openpyxl
     from openpyxl.styles import Font, PatternFill, Alignment
     from django.http import HttpResponse
+    from master_data.models import Material
     from flock.models import Flock
     from laying_flock.models import LayingFlock
     from django.db.models import Sum
 
     program = get_object_or_404(Program, pk=pk)
 
-    # get population from active flock
     if program.type == 'Growing':
         total_birds = Flock.objects.filter(status='Active').aggregate(
             Sum('current_count'))['current_count__sum'] or 0
@@ -126,89 +126,82 @@ def export_program(request, pk):
         total_birds = LayingFlock.objects.filter(status='Active').aggregate(
             Sum('current_count'))['current_count__sum'] or 0
 
+    material_map = {m.item_id: m.name for m in Material.objects.all()}
+
     wb = openpyxl.Workbook()
     ws = wb.active
-    ws.title = program.name[:31]  # excel sheet name max 31 chars
+    ws.title = program.name[:31]
 
-    # ── styles ──────────────────────────────────────────
-    header_font     = Font(bold=True, color='FFFFFF', size=10)
-    subheader_font  = Font(bold=True, color='FFFFFF', size=10)
-    center          = Alignment(horizontal='center', vertical='center')
-    left            = Alignment(horizontal='left',   vertical='center')
+    header_font = Font(bold=True, color='FFFFFF', size=10)
+    center      = Alignment(horizontal='center', vertical='center')
+    left        = Alignment(horizontal='left',   vertical='center')
 
-    # column header colors (matching your Excel screenshot)
-    blue_fill    = PatternFill(fill_type='solid', fgColor='2E75B6')
-    purple_fill  = PatternFill(fill_type='solid', fgColor='7030A0')
-    teal_fill    = PatternFill(fill_type='solid', fgColor='17A98A')
-    orange_fill  = PatternFill(fill_type='solid', fgColor='C55A11')
-    green_fill   = PatternFill(fill_type='solid', fgColor='375623')
-    amber_fill   = PatternFill(fill_type='solid', fgColor='C9A227')
+    blue_fill   = PatternFill(fill_type='solid', fgColor='2E75B6')
+    purple_fill = PatternFill(fill_type='solid', fgColor='7030A0')
+    orange_fill = PatternFill(fill_type='solid', fgColor='C55A11')
+    green_fill  = PatternFill(fill_type='solid', fgColor='375623')
 
-    # ── column headers (row 1) ───────────────────────────
+    # col[0..13] — must match import indices exactly
     headers = [
-        ('Cycle #',               blue_fill),
-        ('Age Display',           blue_fill),
-        ('Population',            blue_fill),
-        ('Medicine Name',         purple_fill),
-        ('UoM',                   purple_fill),
-        ('Dosage Rate (per Bird)', purple_fill),
-        ('Total Dosage',          purple_fill),
-        ('Feed Rate (g/bird)',    orange_fill),
-        ('Total Feed',            orange_fill),
-        ('House Pen',             teal_fill),
-        ('Remarks',               green_fill),
+        ('Cycle #',                blue_fill),    # 0
+        ('Age Display',            blue_fill),    # 1
+        ('Population',             blue_fill),    # 2
+        ('Medicine Name',          purple_fill),  # 3  display only
+        ('Medicine Item ID',       purple_fill),  # 4  used by import
+        ('UoM',                    purple_fill),  # 5
+        ('Dosage Rate (per Bird)', purple_fill),  # 6
+        ('Total Dosage',           purple_fill),  # 7  computed, skip on import
+        ('Feed Name',              orange_fill),  # 8  display only
+        ('Feed Item ID',           orange_fill),  # 9  used by import
+        ('Feed Rate (per Bird)',   orange_fill),  # 10
+        ('Total Feed',             orange_fill),  # 11 computed, skip on import
+        ('Feed Unit',              orange_fill),  # 12
+        ('Remarks',                green_fill),   # 13
     ]
 
     for col, (header, fill) in enumerate(headers, 1):
-        cell            = ws.cell(row=1, column=col, value=header)
-        cell.font       = header_font
-        cell.fill       = fill
-        cell.alignment  = center
+        cell           = ws.cell(row=1, column=col, value=header)
+        cell.font      = header_font
+        cell.fill      = fill
+        cell.alignment = center
 
-    # ── column widths ────────────────────────────────────
-    col_widths = [10, 16, 12, 20, 8, 22, 14, 20, 12, 18, 20]
+    col_widths = [10, 16, 12, 22, 16, 8, 22, 14, 22, 16, 20, 14, 12, 20]
     for col, width in enumerate(col_widths, 1):
         ws.column_dimensions[openpyxl.utils.get_column_letter(col)].width = width
 
-    # ── data rows ────────────────────────────────────────
-    steps = program.steps.all()  # already ordered by cycle, week, day
-
-    for row_num, step in enumerate(steps, 2):
-        # age display logic
-        if step.week == 0:
-            age_display = f'Day {step.day}'
-        else:
-            age_display = f'Week {step.week}-Day {step.day}'
-
-        # computed totals
-        total_dosage = float(step.dose_amount) * total_birds if step.dose_amount else ''
-        total_feed   = float(step.feed_rate_per_bird) * total_birds if step.feed_rate_per_bird else ''
+    for row_num, step in enumerate(program.steps.all(), 2):
+        age_display   = f'Day {step.day}' if step.week == 0 else f'Week {step.week}-Day {step.day}'
+        medicine_name = material_map.get(step.medicine, step.medicine)
+        feed_name     = material_map.get(step.feed, step.feed)
+        total_dosage  = float(step.dose_amount) * total_birds if step.dose_amount else ''
+        total_feed    = float(step.feed_rate_per_bird) * total_birds if step.feed_rate_per_bird else ''
 
         row_data = [
-            step.cycle,
-            age_display,
-            total_birds,
-            step.medicine or '',
-            step.dose_unit or '',
-            float(step.dose_amount) if step.dose_amount else '',
-            total_dosage,
-            float(step.feed_rate_per_bird) if step.feed_rate_per_bird else '',
-            total_feed,
-            '',   # house pen — blank on template, filled per batch
-            step.remarks or '',
+            step.cycle,                                               # 0
+            age_display,                                              # 1
+            total_birds,                                              # 2
+            medicine_name,                                            # 3
+            step.medicine or '',                                      # 4
+            step.dose_unit or '',                                     # 5
+            float(step.dose_amount) if step.dose_amount else '',     # 6
+            total_dosage,                                             # 7
+            feed_name,                                                # 8
+            step.feed or '',                                          # 9
+            float(step.feed_rate_per_bird) if step.feed_rate_per_bird else '',  # 10
+            total_feed,                                               # 11
+            step.feed_unit or '',                                     # 12
+            step.remarks or '',                                       # 13
         ]
 
         for col, value in enumerate(row_data, 1):
             cell           = ws.cell(row=row_num, column=col, value=value)
             cell.alignment = left
 
-        # alternate row shading for readability
         if row_num % 2 == 0:
             light_fill = PatternFill(fill_type='solid', fgColor='EBF3FB')
             for col in range(1, len(headers) + 1):
                 ws.cell(row=row_num, column=col).fill = light_fill
 
-    # freeze top row
     ws.freeze_panes = 'A2'
 
     response = HttpResponse(
@@ -219,10 +212,98 @@ def export_program(request, pk):
     return response
 
 @login_required
+def import_program(request, pk):
+    import openpyxl
+    from master_data.models import Material
+
+    program = get_object_or_404(Program, pk=pk)
+
+    if request.method == 'POST' and request.FILES.get('excel_file'):
+        file = request.FILES['excel_file']
+        wb   = openpyxl.load_workbook(file)
+        ws   = wb.active
+
+        valid_ids = set(Material.objects.values_list('item_id', flat=True))
+
+        program.steps.all().delete()
+
+        imported = 0
+        errors   = []
+
+        for row_num, row in enumerate(ws.iter_rows(min_row=2, values_only=True), start=2):
+            if not any(row):
+                continue
+
+            try:
+                cycle       = row[0]
+                age_display = str(row[1]).strip() if row[1] not in (None, '') else ''
+                # row[2] = Population — skip
+                # row[3] = Medicine Name (display) — skip
+                medicine_id = str(row[4]).strip() if row[4] not in (None, '') else ''
+                dose_unit   = str(row[5]).strip() if row[5] not in (None, '') else ''
+                dose_amount = row[6]
+                # row[7] = Total Dosage (computed) — skip
+                # row[8] = Feed Name (display) — skip
+                feed_id     = str(row[9]).strip() if row[9] not in (None, '') else ''
+                feed_rate   = row[10]
+                # row[11] = Total Feed (computed) — skip
+                feed_unit   = str(row[12]).strip() if row[12] not in (None, '') else ''
+                remarks     = str(row[13]).strip() if row[13] not in (None, '') else ''
+
+                # validate item IDs
+                if medicine_id and medicine_id not in valid_ids:
+                    errors.append(f'Row {row_num}: Medicine "{medicine_id}" not found in materials — skipped')
+                    continue
+                if feed_id and feed_id not in valid_ids:
+                    errors.append(f'Row {row_num}: Feed "{feed_id}" not found in materials — skipped')
+                    continue
+
+                # parse age display → week + day
+                week = 0
+                day  = 1
+                if age_display.startswith('Week'):
+                    parts = age_display.replace('Week ', '').split('-Day ')
+                    week  = int(parts[0].strip())
+                    day   = int(parts[1].strip())
+                elif age_display.startswith('Day'):
+                    day  = int(age_display.replace('Day ', '').strip())
+                    week = 0
+
+                ProgramStep.objects.create(
+                    program            = program,
+                    cycle              = int(cycle) if cycle else 1,
+                    week               = week,
+                    day                = day,
+                    medicine           = medicine_id,
+                    dose_amount        = dose_amount if dose_amount not in (None, '') else None,
+                    dose_unit          = dose_unit,
+                    dose_per           = 'chick',
+                    method             = '',
+                    remarks            = remarks,
+                    feed               = feed_id,
+                    feed_rate_per_bird = feed_rate if feed_rate not in (None, '') else None,
+                    feed_unit          = feed_unit,
+                )
+                imported += 1
+
+            except Exception as e:
+                errors.append(f'Row {row_num}: {str(e)}')
+
+        if errors:
+            messages.warning(request, f'Imported {imported} steps with {len(errors)} errors: {"; ".join(errors[:3])}')
+        else:
+            messages.success(request, f'Successfully imported {imported} steps!')
+
+    if program.type == 'Laying':
+        return redirect('program_laying')
+    return redirect('program_growing')
+
+@login_required
 def view_growing(request):
     from flock.models import Flock
     from consumption.models import Consumption
     from erp_config.models import Building
+    from master_data.models import Material
     from django.db.models import Sum
 
     programs     = Program.objects.filter(type='Growing').prefetch_related('steps')
@@ -230,6 +311,7 @@ def view_growing(request):
                     Sum('current_count'))['current_count__sum'] or 0
 
     growing_buildings = Building.objects.filter(type='Growing').values_list('name', flat=True)
+    material_map      = {m.item_id: m.name for m in Material.objects.all()}
 
     consumption_totals = {}
     consumptions = Consumption.objects.filter(
@@ -245,14 +327,15 @@ def view_growing(request):
             med = step.medicine
             if not med:
                 continue
+            med_name = material_map.get(med, med)
             if med not in medicine_map:
                 medicine_map[med] = {
-                    'medicine':    med,
+                    'medicine':    med_name,
                     'dose_amount': float(step.dose_amount) if step.dose_amount else 0,
                     'dose_unit':   step.dose_unit,
                     'dose_per':    step.dose_per,
                     'required':    float(step.dose_amount) * total_chicks if step.dose_amount else 0,
-                    'consumed':    consumption_totals.get(med, 0),
+                    'consumed':    consumption_totals.get(med_name, 0),
                 }
             else:
                 medicine_map[med]['required'] += float(step.dose_amount) * total_chicks if step.dose_amount else 0
@@ -277,6 +360,7 @@ def view_laying(request):
     from laying_flock.models import LayingFlock
     from consumption.models import Consumption
     from erp_config.models import Building
+    from master_data.models import Material
     from django.db.models import Sum
 
     programs     = Program.objects.filter(type='Laying').prefetch_related('steps')
@@ -284,6 +368,7 @@ def view_laying(request):
                     Sum('current_count'))['current_count__sum'] or 0
 
     laying_buildings = Building.objects.filter(type='Laying').values_list('name', flat=True)
+    material_map     = {m.item_id: m.name for m in Material.objects.all()}
 
     consumption_totals = {}
     consumptions = Consumption.objects.filter(
@@ -299,14 +384,15 @@ def view_laying(request):
             med = step.medicine
             if not med:
                 continue
+            med_name = material_map.get(med, med)
             if med not in medicine_map:
                 medicine_map[med] = {
-                    'medicine':    med,
+                    'medicine':    med_name,
                     'dose_amount': float(step.dose_amount) if step.dose_amount else 0,
                     'dose_unit':   step.dose_unit,
                     'dose_per':    step.dose_per,
                     'required':    float(step.dose_amount) * total_chicks if step.dose_amount else 0,
-                    'consumed':    consumption_totals.get(med, 0),
+                    'consumed':    consumption_totals.get(med_name, 0),
                 }
             else:
                 medicine_map[med]['required'] += float(step.dose_amount) * total_chicks if step.dose_amount else 0
@@ -325,79 +411,3 @@ def view_laying(request):
         'program_summaries': program_summaries,
         'total_chicks':      total_chicks,
     })
-
-@login_required
-def import_program(request, pk):
-    import openpyxl
-    from django.http import JsonResponse
-
-    program = get_object_or_404(Program, pk=pk)
-
-    if request.method == 'POST' and request.FILES.get('excel_file'):
-        file    = request.FILES['excel_file']
-        wb      = openpyxl.load_workbook(file)
-        ws      = wb.active
-
-        # clear existing steps
-        program.steps.all().delete()
-
-        imported = 0
-        errors   = []
-
-        for row_num, row in enumerate(ws.iter_rows(min_row=2, values_only=True), start=2):
-            # skip completely empty rows
-            if not any(row):
-                continue
-
-            try:
-                cycle       = row[0]  # Cycle #
-                age_display = str(row[1]).strip() if row[1] else ''
-                medicine    = str(row[3]).strip() if row[3] else ''
-                dose_unit   = str(row[4]).strip() if row[4] else ''
-                dose_amount = row[5]  # Dosage Rate per Bird
-                feed        = str(row[7]).strip() if row[7] else ''
-                feed_rate   = row[8]  # Feed Rate per Bird
-                feed_unit   = str(row[9]).strip() if row[9] else ''
-                remarks     = str(row[10]).strip() if row[10] else ''
-
-                # parse age display → week + day
-                week = 0
-                day  = 1
-                if age_display.startswith('Week'):
-                    # format: Week X-Day Y
-                    parts = age_display.replace('Week ', '').split('-Day ')
-                    week  = int(parts[0].strip())
-                    day   = int(parts[1].strip())
-                elif age_display.startswith('Day'):
-                    # format: Day X
-                    day  = int(age_display.replace('Day ', '').strip())
-                    week = 0
-
-                ProgramStep.objects.create(
-                    program            = program,
-                    cycle              = int(cycle) if cycle else 1,
-                    week               = week,
-                    day                = day,
-                    medicine           = medicine,
-                    dose_amount        = dose_amount or None,
-                    dose_unit          = dose_unit,
-                    dose_per           = 'chick',  # default
-                    method             = '',
-                    remarks            = remarks,
-                    feed               = feed,
-                    feed_rate_per_bird = feed_rate or None,
-                    feed_unit          = feed_unit,
-                )
-                imported += 1
-
-            except Exception as e:
-                errors.append(f'Row {row_num}: {str(e)}')
-
-        if errors:
-            messages.warning(request, f'Imported {imported} steps with {len(errors)} errors: {"; ".join(errors[:3])}')
-        else:
-            messages.success(request, f'Successfully imported {imported} steps!')
-
-    if program.type == 'Laying':
-        return redirect('program_laying')
-    return redirect('program_growing')
