@@ -8,6 +8,7 @@ urlpatterns = [
     path('delete/<int:pk>/',            views.program_delete,  name='program_delete'),
     path('<int:program_pk>/step/save/', views.step_save,       name='step_save'),
     path('step/delete/<int:pk>/',       views.step_delete,     name='step_delete'),
+    path('step/update/<int:pk>/',       views.step_update,     name='step_update'),
     path('view/growing/',               views.view_growing,    name='view_growing'),
     path('view/laying/',                views.view_laying,     name='view_laying'),
 ]

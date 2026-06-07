@@ -11,7 +11,6 @@
         <h1 class="text-2xl font-bold text-white">📋 View Program — Laying</h1>
         <p class="text-muted text-sm mt-1">Medication schedule and consumption summary</p>
     </div>
-    <!-- toggle -->
     <div class="flex gap-2">
         <a href="{% url 'view_growing' %}"
            class="px-4 py-2 rounded-lg text-xs font-bold border bg-sidebar text-muted border-border hover:border-green">
@@ -47,13 +46,16 @@
     <table class="w-full text-sm whitespace-nowrap">
         <thead>
             <tr class="border-b border-border text-muted text-xs uppercase tracking-wider">
+                <th class="px-4 py-3 text-left">Cycle</th>
                 <th class="px-4 py-3 text-left">Week</th>
                 <th class="px-4 py-3 text-left">Day</th>
                 <th class="px-4 py-3 text-left">Medicine / Vaccine</th>
-                <th class="px-4 py-3 text-left">Dose</th>
+                <th class="px-4 py-3 text-left">Dose/Bird</th>
                 <th class="px-4 py-3 text-left">Unit</th>
                 <th class="px-4 py-3 text-left">Per</th>
                 <th class="px-4 py-3 text-left">Method</th>
+                <th class="px-4 py-3 text-left">Feed Rate/Bird</th>
+                <th class="px-4 py-3 text-left">Feed Unit</th>
                 <th class="px-4 py-3 text-left">Remarks</th>
             </tr>
         </thead>
@@ -61,25 +63,34 @@
             {% for step in ps.program.steps.all %}
             <tr class="border-b border-border hover:bg-content transition-all">
                 <td class="px-4 py-3">
+                    <span class="px-2 py-1 rounded text-xs font-bold bg-purple-900/40 text-purple-400">
+                        Cycle {{ step.cycle }}
+                    </span>
+                </td>
+                <td class="px-4 py-3">
                     <span class="px-2 py-1 rounded text-xs font-bold bg-amber/20 text-amber">
                         Week {{ step.week }}
                     </span>
                 </td>
                 <td class="px-4 py-3 text-white font-bold">Day {{ step.day }}</td>
-                <td class="px-4 py-3 text-white">{{ step.medicine }}</td>
-                <td class="px-4 py-3 text-muted">{{ step.dose_amount }}</td>
-                <td class="px-4 py-3 text-muted">{{ step.dose_unit }}</td>
-                <td class="px-4 py-3 text-muted">{{ step.dose_per }}</td>
+                <td class="px-4 py-3 text-white">{{ step.medicine|default:"—" }}</td>
+                <td class="px-4 py-3 text-muted">{{ step.dose_amount|default:"—" }}</td>
+                <td class="px-4 py-3 text-muted">{{ step.dose_unit|default:"—" }}</td>
+                <td class="px-4 py-3 text-muted">{{ step.dose_per|default:"—" }}</td>
                 <td class="px-4 py-3">
+                    {% if step.method %}
                     <span class="px-2 py-1 rounded text-xs font-bold bg-blue-900/40 text-blue-400">
                         {{ step.method }}
                     </span>
+                    {% else %}—{% endif %}
                 </td>
-                <td class="px-4 py-3 text-muted text-xs">{{ step.remarks }}</td>
+                <td class="px-4 py-3 text-muted">{{ step.feed_rate_per_bird|default:"—" }}</td>
+                <td class="px-4 py-3 text-muted">{{ step.feed_unit|default:"—" }}</td>
+                <td class="px-4 py-3 text-muted text-xs">{{ step.remarks|default:"—" }}</td>
             </tr>
             {% empty %}
             <tr>
-                <td colspan="8" class="px-4 py-6 text-center text-muted text-xs">
+                <td colspan="11" class="px-4 py-6 text-center text-muted text-xs">
                     No steps defined yet.
                 </td>
             </tr>

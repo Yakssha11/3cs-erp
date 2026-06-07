@@ -21,8 +21,6 @@
         <h1 class="text-2xl font-bold text-white">💉 Program — Laying</h1>
         <p class="text-muted text-sm mt-1">Medication and vaccination schedule for laying chicks</p>
     </div>
-
-    <!-- toggle -->
     <div class="flex gap-2">
         <a href="{% url 'program_growing' %}"
            class="px-4 py-2 rounded-lg text-xs font-bold border bg-sidebar text-muted border-border hover:border-green">
@@ -75,17 +73,23 @@
             <p class="text-xs text-muted mt-0.5">{{ program.description }}</p>
             {% endif %}
         </div>
-        {% if request.user|has_group:'admin' %}
-        <form method="POST" action="{% url 'program_delete' program.pk %}"
-              onsubmit="return confirm('Delete {{ program.name }} and all its steps?')"
-              style="margin:0;padding:0">
-            {% csrf_token %}
-            <button type="submit"
-                    class="text-red-400 hover:text-red-300 text-xs font-bold transition-all">
-                Delete Program
+        <div class="flex items-center gap-3">
+            {% if request.user|has_group:'admin' %}
+            <button onclick="openAddStepModal({{ program.pk }})"
+                    class="bg-amber hover:bg-[#B5720A] text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-all">
+                + Add Step
             </button>
-        </form>
-        {% endif %}
+            <form method="POST" action="{% url 'program_delete' program.pk %}"
+                  onsubmit="return confirm('Delete {{ program.name }} and all its steps?')"
+                  style="margin:0;padding:0">
+                {% csrf_token %}
+                <button type="submit"
+                        class="text-red-400 hover:text-red-300 text-xs font-bold transition-all">
+                    Delete Program
+                </button>
+            </form>
+            {% endif %}
+        </div>
     </div>
 
     <!-- steps table -->
@@ -93,13 +97,16 @@
     <table class="w-full text-sm whitespace-nowrap">
         <thead>
             <tr class="border-b border-border text-muted text-xs uppercase tracking-wider">
+                <th class="px-4 py-3 text-left">Cycle</th>
                 <th class="px-4 py-3 text-left">Week</th>
                 <th class="px-4 py-3 text-left">Day</th>
                 <th class="px-4 py-3 text-left">Medicine / Vaccine</th>
-                <th class="px-4 py-3 text-left">Dose</th>
+                <th class="px-4 py-3 text-left">Dose/Bird</th>
                 <th class="px-4 py-3 text-left">Unit</th>
                 <th class="px-4 py-3 text-left">Per</th>
                 <th class="px-4 py-3 text-left">Method</th>
+                <th class="px-4 py-3 text-left">Feed Rate/Bird</th>
+                <th class="px-4 py-3 text-left">Feed Unit</th>
                 <th class="px-4 py-3 text-left">Remarks</th>
                 {% if request.user|has_group:'admin' %}
                 <th class="px-4 py-3 text-left">Action</th>
@@ -110,95 +117,135 @@
             {% for step in program.steps.all %}
             <tr class="border-b border-border hover:bg-content transition-all">
                 <td class="px-4 py-3">
+                    <span class="px-2 py-1 rounded text-xs font-bold bg-purple-900/40 text-purple-400">
+                        Cycle {{ step.cycle }}
+                    </span>
+                </td>
+                <td class="px-4 py-3">
                     <span class="px-2 py-1 rounded text-xs font-bold bg-amber/20 text-amber">
                         Week {{ step.week }}
                     </span>
                 </td>
                 <td class="px-4 py-3 text-white font-bold">Day {{ step.day }}</td>
-                <td class="px-4 py-3 text-white">{{ step.medicine }}</td>
-                <td class="px-4 py-3 text-muted">{{ step.dose_amount }}</td>
-                <td class="px-4 py-3 text-muted">{{ step.dose_unit }}</td>
-                <td class="px-4 py-3 text-muted">{{ step.dose_per }}</td>
+                <td class="px-4 py-3 text-white">{{ step.medicine|default:"—" }}</td>
+                <td class="px-4 py-3 text-muted">{{ step.dose_amount|default:"—" }}</td>
+                <td class="px-4 py-3 text-muted">{{ step.dose_unit|default:"—" }}</td>
+                <td class="px-4 py-3 text-muted">{{ step.dose_per|default:"—" }}</td>
                 <td class="px-4 py-3">
+                    {% if step.method %}
                     <span class="px-2 py-1 rounded text-xs font-bold bg-blue-900/40 text-blue-400">
                         {{ step.method }}
                     </span>
+                    {% else %}—{% endif %}
                 </td>
-                <td class="px-4 py-3 text-muted text-xs">{{ step.remarks }}</td>
+                <td class="px-4 py-3 text-muted">{{ step.feed_rate_per_bird|default:"—" }}</td>
+                <td class="px-4 py-3 text-muted">{{ step.feed_unit|default:"—" }}</td>
+                <td class="px-4 py-3 text-muted text-xs">{{ step.remarks|default:"—" }}</td>
                 {% if request.user|has_group:'admin' %}
                 <td class="px-4 py-3">
-                    <form method="POST" action="{% url 'step_delete' step.pk %}"
-                          onsubmit="return confirm('Delete this step?')"
-                          style="margin:0;padding:0">
-                        {% csrf_token %}
-                        <button type="submit"
-                                class="text-red-400 hover:text-red-300 text-xs font-bold transition-all">
-                            Delete
+                    <div class="flex items-center gap-2">
+                        <button onclick="openEditStepModal(
+                                    {{ step.pk }},
+                                    {{ step.cycle }},
+                                    {{ step.week }},
+                                    {{ step.day }},
+                                    '{{ step.medicine|escapejs }}',
+                                    '{{ step.dose_amount|default:'' }}',
+                                    '{{ step.dose_unit|escapejs }}',
+                                    '{{ step.dose_per|escapejs }}',
+                                    '{{ step.method|escapejs }}',
+                                    '{{ step.remarks|escapejs }}',
+                                    '{{ step.feed_rate_per_bird|default:'' }}',
+                                    '{{ step.feed_unit|escapejs }}'
+                                )"
+                                class="text-blue-400 hover:text-blue-300 text-xs font-bold transition-all">
+                            Edit
                         </button>
-                    </form>
+                        <form method="POST" action="{% url 'step_delete' step.pk %}"
+                              onsubmit="return confirm('Delete this step?')"
+                              style="margin:0;padding:0">
+                            {% csrf_token %}
+                            <button type="submit"
+                                    class="text-red-400 hover:text-red-300 text-xs font-bold transition-all">
+                                Delete
+                            </button>
+                        </form>
+                    </div>
                 </td>
                 {% endif %}
             </tr>
             {% empty %}
             <tr>
-                <td colspan="7" class="px-4 py-6 text-center text-muted text-xs">
-                    No steps yet. Add one below.
+                <td colspan="12" class="px-4 py-6 text-center text-muted text-xs">
+                    No steps yet. Click "+ Add Step" to add one.
                 </td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
     </div>
+</div>
+{% empty %}
+<div class="bg-sidebar border border-border rounded-xl px-4 py-8 text-center text-muted">
+    No Laying programs yet. Create one above.
+</div>
+{% endfor %}
 
-    <!-- add step form (admin only) -->
-    {% if request.user|has_group:'admin' %}
-    <div class="px-4 py-4 border-t border-border">
-        <h3 class="text-xs font-bold text-muted uppercase tracking-wider mb-3">Add Step</h3>
-        <form method="POST" action="{% url 'step_save' program.pk %}">
+<!-- ── Add Step Modal ─────────────────────────────────── -->
+<div id="addStepModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60">
+    <div class="bg-sidebar border border-border rounded-xl p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-sm font-bold text-white uppercase tracking-wider">Add Step</h2>
+            <button onclick="closeAddStepModal()" class="text-muted hover:text-white text-lg">✕</button>
+        </div>
+        <form method="POST" id="addStepForm" action="">
             {% csrf_token %}
-            <div class="grid grid-cols-3 gap-3 mb-3">
+            <div class="grid grid-cols-2 gap-3 mb-3">
+                <div>
+                    <label class="text-xs text-muted block mb-1">Cycle</label>
+                    <input type="number" name="cycle" required placeholder="1" min="1" value="1"
+                           class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber">
+                </div>
                 <div>
                     <label class="text-xs text-muted block mb-1">Week</label>
                     <input type="number" name="week" required placeholder="1" min="1"
-                           class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-green">
+                           class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber">
                 </div>
                 <div>
                     <label class="text-xs text-muted block mb-1">Day</label>
                     <input type="number" name="day" required placeholder="1" min="1"
-                           class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-green">
+                           class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber">
                 </div>
                 <div>
                     <label class="text-xs text-muted block mb-1">Medicine / Vaccine</label>
-                    <select name="medicine" required
-                            class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-green">
-                        <option value="">Select from stock</option>
+                    <select name="medicine"
+                            class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber">
+                        <option value="">— None —</option>
                         {% for item in stock_items %}
                         <option value="{{ item.name }}">{{ item.name }}</option>
                         {% endfor %}
                     </select>
                 </div>
                 <div>
-                    <label class="text-xs text-muted block mb-1">Dose Amount</label>
-                    <input type="number" name="dose_amount" required placeholder="e.g. 1" step="0.01" min="0"
-                           class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-green">
+                    <label class="text-xs text-muted block mb-1">Dose Amount (per bird)</label>
+                    <input type="number" name="dose_amount" placeholder="e.g. 10" step="0.01" min="0"
+                           class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber">
                 </div>
                 <div>
-                    <label class="text-xs text-muted block mb-1">Unit</label>
-                    <select name="dose_unit" required
-                            class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-green">
-                        <option value="">Select unit</option>
-                        <option value="ml">ml</option>
-                        <option value="g">g</option>
-                        <option value="L">L</option>
-                        <option value="tablet">tablet</option>
-                        <option value="drop">drop</option>
+                    <label class="text-xs text-muted block mb-1">Dose Unit</label>
+                    <select name="dose_unit"
+                            class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber">
+                        <option value="">— None —</option>
+                        {% for unit in units %}
+                        <option value="{{ unit.name }}">{{ unit.name }}</option>
+                        {% endfor %}
                     </select>
                 </div>
                 <div>
                     <label class="text-xs text-muted block mb-1">Per</label>
-                    <select name="dose_per" required
-                            class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-green">
-                        <option value="">Select per</option>
+                    <select name="dose_per"
+                            class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber">
+                        <option value="">— None —</option>
                         <option value="chick">chick</option>
                         <option value="liter">liter</option>
                         <option value="kg">kg</option>
@@ -206,9 +253,9 @@
                 </div>
                 <div>
                     <label class="text-xs text-muted block mb-1">Method</label>
-                    <select name="method" required
-                            class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-green">
-                        <option value="">Select method</option>
+                    <select name="method"
+                            class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber">
+                        <option value="">— None —</option>
                         <option value="Drinking Water">Drinking Water</option>
                         <option value="Eye Drop">Eye Drop</option>
                         <option value="Injection">Injection</option>
@@ -216,24 +263,178 @@
                     </select>
                 </div>
                 <div>
+                    <label class="text-xs text-muted block mb-1">Feed Rate (per bird)</label>
+                    <input type="number" name="feed_rate_per_bird" placeholder="e.g. 15" step="0.01" min="0"
+                           class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber">
+                </div>
+                <div>
+                    <label class="text-xs text-muted block mb-1">Feed Unit</label>
+                    <select name="feed_unit"
+                            class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber">
+                        <option value="">— None —</option>
+                        {% for unit in units %}
+                        <option value="{{ unit.name }}">{{ unit.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-span-2">
                     <label class="text-xs text-muted block mb-1">Remarks</label>
                     <input type="text" name="remarks" placeholder="Optional"
-                           class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-green">
+                           class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber">
                 </div>
             </div>
-            <button type="submit"
-                    class="bg-green hover:bg-[#27AE60] text-white text-xs font-bold px-4 py-2 rounded-lg transition-all">
-                + Add Step
-            </button>
+            <div class="flex justify-end gap-2 mt-4">
+                <button type="button" onclick="closeAddStepModal()"
+                        class="px-4 py-2 text-xs font-bold text-muted border border-border rounded-lg hover:border-white transition-all">
+                    Cancel
+                </button>
+                <button type="submit"
+                        class="bg-amber hover:bg-[#B5720A] text-white text-xs font-bold px-6 py-2 rounded-lg transition-all">
+                    + Add Step
+                </button>
+            </div>
         </form>
     </div>
-    {% endif %}
+</div>
 
+<!-- ── Edit Step Modal ────────────────────────────────── -->
+<div id="editStepModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60">
+    <div class="bg-sidebar border border-border rounded-xl p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-sm font-bold text-white uppercase tracking-wider">Edit Step</h2>
+            <button onclick="closeEditStepModal()" class="text-muted hover:text-white text-lg">✕</button>
+        </div>
+        <form method="POST" id="editStepForm" action="">
+            {% csrf_token %}
+            <div class="grid grid-cols-2 gap-3 mb-3">
+                <div>
+                    <label class="text-xs text-muted block mb-1">Cycle</label>
+                    <input type="number" name="cycle" id="edit_cycle" required min="1"
+                           class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber">
+                </div>
+                <div>
+                    <label class="text-xs text-muted block mb-1">Week</label>
+                    <input type="number" name="week" id="edit_week" required min="1"
+                           class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber">
+                </div>
+                <div>
+                    <label class="text-xs text-muted block mb-1">Day</label>
+                    <input type="number" name="day" id="edit_day" required min="1"
+                           class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber">
+                </div>
+                <div>
+                    <label class="text-xs text-muted block mb-1">Medicine / Vaccine</label>
+                    <select name="medicine" id="edit_medicine"
+                            class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber">
+                        <option value="">— None —</option>
+                        {% for item in stock_items %}
+                        <option value="{{ item.name }}">{{ item.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="text-xs text-muted block mb-1">Dose Amount (per bird)</label>
+                    <input type="number" name="dose_amount" id="edit_dose_amount" step="0.01" min="0"
+                           class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber">
+                </div>
+                <div>
+                    <label class="text-xs text-muted block mb-1">Dose Unit</label>
+                    <select name="dose_unit" id="edit_dose_unit"
+                            class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber">
+                        <option value="">— None —</option>
+                        {% for unit in units %}
+                        <option value="{{ unit.name }}">{{ unit.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="text-xs text-muted block mb-1">Per</label>
+                    <select name="dose_per" id="edit_dose_per"
+                            class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber">
+                        <option value="">— None —</option>
+                        <option value="chick">chick</option>
+                        <option value="liter">liter</option>
+                        <option value="kg">kg</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-xs text-muted block mb-1">Method</label>
+                    <select name="method" id="edit_method"
+                            class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber">
+                        <option value="">— None —</option>
+                        <option value="Drinking Water">Drinking Water</option>
+                        <option value="Eye Drop">Eye Drop</option>
+                        <option value="Injection">Injection</option>
+                        <option value="Spray">Spray</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-xs text-muted block mb-1">Feed Rate (per bird)</label>
+                    <input type="number" name="feed_rate_per_bird" id="edit_feed_rate" step="0.01" min="0"
+                           class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber">
+                </div>
+                <div>
+                    <label class="text-xs text-muted block mb-1">Feed Unit</label>
+                    <select name="feed_unit" id="edit_feed_unit"
+                            class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber">
+                        <option value="">— None —</option>
+                        {% for unit in units %}
+                        <option value="{{ unit.name }}">{{ unit.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-span-2">
+                    <label class="text-xs text-muted block mb-1">Remarks</label>
+                    <input type="text" name="remarks" id="edit_remarks" placeholder="Optional"
+                           class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber">
+                </div>
+            </div>
+            <div class="flex justify-end gap-2 mt-4">
+                <button type="button" onclick="closeEditStepModal()"
+                        class="px-4 py-2 text-xs font-bold text-muted border border-border rounded-lg hover:border-white transition-all">
+                    Cancel
+                </button>
+                <button type="submit"
+                        class="bg-amber hover:bg-[#B5720A] text-white text-xs font-bold px-6 py-2 rounded-lg transition-all">
+                    Save Changes
+                </button>
+            </div>
+        </form>
+    </div>
 </div>
-{% empty %}
-<div class="bg-sidebar border border-border rounded-xl px-4 py-8 text-center text-muted">
-    No Laying programs yet. Create one above.
-</div>
-{% endfor %}
+
+<script>
+function openAddStepModal(programPk) {
+    document.getElementById('addStepForm').action = `/program/${programPk}/step/save/`;
+    document.getElementById('addStepModal').classList.remove('hidden');
+    document.getElementById('addStepModal').classList.add('flex');
+}
+function closeAddStepModal() {
+    document.getElementById('addStepModal').classList.add('hidden');
+    document.getElementById('addStepModal').classList.remove('flex');
+}
+function openEditStepModal(pk, cycle, week, day, medicine, doseAmount, doseUnit, dosePer, method, remarks, feedRate, feedUnit) {
+    document.getElementById('editStepForm').action = `/program/step/update/${pk}/`;
+    document.getElementById('edit_cycle').value       = cycle;
+    document.getElementById('edit_week').value        = week;
+    document.getElementById('edit_day').value         = day;
+    document.getElementById('edit_dose_amount').value = doseAmount;
+    document.getElementById('edit_remarks').value     = remarks;
+    document.getElementById('edit_feed_rate').value   = feedRate;
+
+    ['edit_medicine', 'edit_dose_unit', 'edit_dose_per', 'edit_method', 'edit_feed_unit'].forEach(id => {
+        const el  = document.getElementById(id);
+        const val = { edit_medicine: medicine, edit_dose_unit: doseUnit, edit_dose_per: dosePer, edit_method: method, edit_feed_unit: feedUnit }[id];
+        for (let opt of el.options) { opt.selected = opt.value === val; }
+    });
+
+    document.getElementById('editStepModal').classList.remove('hidden');
+    document.getElementById('editStepModal').classList.add('flex');
+}
+function closeEditStepModal() {
+    document.getElementById('editStepModal').classList.add('hidden');
+    document.getElementById('editStepModal').classList.remove('flex');
+}
+</script>
 
 {% endblock %}
