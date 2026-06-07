@@ -213,3 +213,111 @@ def export_program(request, pk):
     response['Content-Disposition'] = f'attachment; filename="{program.name}_{program.type}.xlsx"'
     wb.save(response)
     return response
+
+@login_required
+def view_growing(request):
+    from flock.models import Flock
+    from consumption.models import Consumption
+    from erp_config.models import Building
+    from django.db.models import Sum
+
+    programs     = Program.objects.filter(type='Growing').prefetch_related('steps')
+    total_chicks = Flock.objects.filter(status='Active').aggregate(
+                    Sum('current_count'))['current_count__sum'] or 0
+
+    growing_buildings = Building.objects.filter(type='Growing').values_list('name', flat=True)
+
+    consumption_totals = {}
+    consumptions = Consumption.objects.filter(
+                    growing_house__in=growing_buildings
+                   ).values('item_name').annotate(total=Sum('quantity'))
+    for c in consumptions:
+        consumption_totals[c['item_name']] = float(c['total'])
+
+    program_summaries = []
+    for program in programs:
+        medicine_map = {}
+        for step in program.steps.all():
+            med = step.medicine
+            if not med:
+                continue
+            if med not in medicine_map:
+                medicine_map[med] = {
+                    'medicine':    med,
+                    'dose_amount': float(step.dose_amount) if step.dose_amount else 0,
+                    'dose_unit':   step.dose_unit,
+                    'dose_per':    step.dose_per,
+                    'required':    float(step.dose_amount) * total_chicks if step.dose_amount else 0,
+                    'consumed':    consumption_totals.get(med, 0),
+                }
+            else:
+                medicine_map[med]['required'] += float(step.dose_amount) * total_chicks if step.dose_amount else 0
+
+        for med in medicine_map.values():
+            med['percentage'] = round(
+                (med['consumed'] / med['required'] * 100), 1
+            ) if med['required'] > 0 else 0
+
+        program_summaries.append({
+            'program': program,
+            'summary': list(medicine_map.values()),
+        })
+
+    return render(request, 'program/view_growing.html', {
+        'program_summaries': program_summaries,
+        'total_chicks':      total_chicks,
+    })
+
+@login_required
+def view_laying(request):
+    from laying_flock.models import LayingFlock
+    from consumption.models import Consumption
+    from erp_config.models import Building
+    from django.db.models import Sum
+
+    programs     = Program.objects.filter(type='Laying').prefetch_related('steps')
+    total_chicks = LayingFlock.objects.filter(status='Active').aggregate(
+                    Sum('current_count'))['current_count__sum'] or 0
+
+    laying_buildings = Building.objects.filter(type='Laying').values_list('name', flat=True)
+
+    consumption_totals = {}
+    consumptions = Consumption.objects.filter(
+                    growing_house__in=laying_buildings
+                   ).values('item_name').annotate(total=Sum('quantity'))
+    for c in consumptions:
+        consumption_totals[c['item_name']] = float(c['total'])
+
+    program_summaries = []
+    for program in programs:
+        medicine_map = {}
+        for step in program.steps.all():
+            med = step.medicine
+            if not med:
+                continue
+            if med not in medicine_map:
+                medicine_map[med] = {
+                    'medicine':    med,
+                    'dose_amount': float(step.dose_amount) if step.dose_amount else 0,
+                    'dose_unit':   step.dose_unit,
+                    'dose_per':    step.dose_per,
+                    'required':    float(step.dose_amount) * total_chicks if step.dose_amount else 0,
+                    'consumed':    consumption_totals.get(med, 0),
+                }
+            else:
+                medicine_map[med]['required'] += float(step.dose_amount) * total_chicks if step.dose_amount else 0
+
+        for med in medicine_map.values():
+            med['percentage'] = round(
+                (med['consumed'] / med['required'] * 100), 1
+            ) if med['required'] > 0 else 0
+
+        program_summaries.append({
+            'program': program,
+            'summary': list(medicine_map.values()),
+        })
+
+    return render(request, 'program/view_laying.html', {
+        'program_summaries': program_summaries,
+        'total_chicks':      total_chicks,
+    })
