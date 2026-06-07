@@ -20,30 +20,27 @@ class ProgramStep(models.Model):
         ('Injection',      'Injection'),
         ('Spray',          'Spray'),
     ]
-    UNIT_CHOICES = [
-        ('ml',     'ml'),
-        ('g',      'g'),
-        ('L',      'L'),
-        ('tablet', 'tablet'),
-        ('drop',   'drop'),
-    ]
     PER_CHOICES = [
         ('chick', 'chick'),
         ('liter', 'liter'),
         ('kg',    'kg'),
     ]
-    program     = models.ForeignKey(Program, on_delete=models.CASCADE, related_name='steps')
-    week        = models.PositiveIntegerField()
-    day         = models.PositiveIntegerField()
-    medicine    = models.CharField(max_length=100)  # must match stock item_name
-    dose_amount = models.DecimalField(max_digits=8, decimal_places=2)
-    dose_unit   = models.CharField(max_length=10, choices=UNIT_CHOICES)
-    dose_per    = models.CharField(max_length=10, choices=PER_CHOICES)
-    method      = models.CharField(max_length=20, choices=METHOD_CHOICES)
-    remarks     = models.CharField(max_length=255, blank=True)
+
+    program            = models.ForeignKey(Program, on_delete=models.CASCADE, related_name='steps')
+    cycle              = models.PositiveIntegerField(default=1)
+    week               = models.PositiveIntegerField()
+    day                = models.PositiveIntegerField()
+    medicine           = models.CharField(max_length=100, blank=True)
+    dose_amount        = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
+    dose_unit          = models.CharField(max_length=50, blank=True)
+    dose_per           = models.CharField(max_length=10, choices=PER_CHOICES, blank=True)
+    method             = models.CharField(max_length=20, choices=METHOD_CHOICES, blank=True)
+    remarks            = models.CharField(max_length=255, blank=True)
+    feed_rate_per_bird = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
+    feed_unit          = models.CharField(max_length=50, blank=True)
 
     class Meta:
-        ordering = ['week', 'day']
+        ordering = ['cycle', 'week', 'day']
 
     def __str__(self):
-        return f"Week {self.week} Day {self.day} - {self.medicine}"
+        return f"Cycle {self.cycle} Week {self.week} Day {self.day} - {self.medicine}"
