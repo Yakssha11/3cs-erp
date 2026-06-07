@@ -7,25 +7,27 @@ from stock.models import Stock
 @login_required
 def program_growing(request):
     from erp_config.models import Unit
-    programs    = Program.objects.filter(type='Growing').prefetch_related('steps')
-    stock_items = Stock.objects.all().order_by('name')
-    units       = Unit.objects.all()
+    from master_data.models import Material
+    programs  = Program.objects.filter(type='Growing').prefetch_related('steps')
+    materials = Material.objects.all().order_by('name')
+    units     = Unit.objects.all()
     return render(request, 'program/growing.html', {
-        'programs':    programs,
-        'stock_items': stock_items,
-        'units':       units,
+        'programs':  programs,
+        'materials': materials,
+        'units':     units,
     })
 
 @login_required
 def program_laying(request):
     from erp_config.models import Unit
-    programs    = Program.objects.filter(type='Laying').prefetch_related('steps')
-    stock_items = Stock.objects.all().order_by('name')
-    units       = Unit.objects.all()
+    from master_data.models import Material
+    programs  = Program.objects.filter(type='Laying').prefetch_related('steps')
+    materials = Material.objects.all().order_by('name')
+    units     = Unit.objects.all()
     return render(request, 'program/laying.html', {
-        'programs':    programs,
-        'stock_items': stock_items,
-        'units':       units,
+        'programs':  programs,
+        'materials': materials,
+        'units':     units,
     })
 
 @login_required
