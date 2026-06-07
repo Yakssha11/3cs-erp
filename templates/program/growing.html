@@ -75,16 +75,18 @@
         </div>
         <div class="flex items-center gap-3">
             {% if request.user|has_group:'admin' %}
-            <!-- Add Step Button -->
             <button onclick="openAddStepModal({{ program.pk }})"
                     class="bg-green hover:bg-[#27AE60] text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-all">
                 + Add Step
             </button>
-            <!-- Export Button -->
             <a href="{% url 'export_program' program.pk %}"
-            class="bg-content hover:bg-border text-muted hover:text-white text-xs font-bold px-3 py-1.5 rounded-lg border border-border transition-all">
+               class="bg-content hover:bg-border text-muted hover:text-white text-xs font-bold px-3 py-1.5 rounded-lg border border-border transition-all">
                 ⬇ Export Excel
             </a>
+            <button onclick="openImportModal({{ program.pk }})"
+                    class="bg-content hover:bg-border text-muted hover:text-white text-xs font-bold px-3 py-1.5 rounded-lg border border-border transition-all">
+                ⬆ Import Excel
+            </button>
             <form method="POST" action="{% url 'program_delete' program.pk %}"
                   onsubmit="return confirm('Delete {{ program.name }} and all its steps?')"
                   style="margin:0;padding:0">
@@ -111,7 +113,7 @@
                 <th class="px-4 py-3 text-left">Unit</th>
                 <th class="px-4 py-3 text-left">Per</th>
                 <th class="px-4 py-3 text-left">Method</th>
-                <th class="px-4 py-3 text-left">Feed Name</th> 
+                <th class="px-4 py-3 text-left">Feed Name</th>
                 <th class="px-4 py-3 text-left">Feed Rate/Bird</th>
                 <th class="px-4 py-3 text-left">Feed Unit</th>
                 <th class="px-4 py-3 text-left">Remarks</th>
@@ -145,6 +147,7 @@
                     </span>
                     {% else %}—{% endif %}
                 </td>
+                <td class="px-4 py-3 text-white">{{ step.feed|default:"—" }}</td>
                 <td class="px-4 py-3 text-muted">{{ step.feed_rate_per_bird|default:"—" }}</td>
                 <td class="px-4 py-3 text-muted">{{ step.feed_unit|default:"—" }}</td>
                 <td class="px-4 py-3 text-muted text-xs">{{ step.remarks|default:"—" }}</td>
@@ -161,6 +164,7 @@
                                     '{{ step.dose_unit|escapejs }}',
                                     '{{ step.dose_per|escapejs }}',
                                     '{{ step.method|escapejs }}',
+                                    '{{ step.feed|escapejs }}',
                                     '{{ step.remarks|escapejs }}',
                                     '{{ step.feed_rate_per_bird|default:'' }}',
                                     '{{ step.feed_unit|escapejs }}'
@@ -183,7 +187,7 @@
             </tr>
             {% empty %}
             <tr>
-                <td colspan="12" class="px-4 py-6 text-center text-muted text-xs">
+                <td colspan="13" class="px-4 py-6 text-center text-muted text-xs">
                     No steps yet. Click "+ Add Step" to add one.
                 </td>
             </tr>
@@ -267,6 +271,16 @@
                         <option value="Eye Drop">Eye Drop</option>
                         <option value="Injection">Injection</option>
                         <option value="Spray">Spray</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-xs text-muted block mb-1">Feed Name</label>
+                    <select name="feed"
+                            class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-green">
+                        <option value="">— None —</option>
+                        {% for item in stock_items %}
+                        <option value="{{ item.name }}">{{ item.name }}</option>
+                        {% endfor %}
                     </select>
                 </div>
                 <div>
@@ -376,6 +390,16 @@
                     </select>
                 </div>
                 <div>
+                    <label class="text-xs text-muted block mb-1">Feed Name</label>
+                    <select name="feed" id="edit_feed"
+                            class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-green">
+                        <option value="">— None —</option>
+                        {% for item in stock_items %}
+                        <option value="{{ item.name }}">{{ item.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
                     <label class="text-xs text-muted block mb-1">Feed Rate (per bird)</label>
                     <input type="number" name="feed_rate_per_bird" id="edit_feed_rate" step="0.01" min="0"
                            class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-green">
@@ -410,6 +434,37 @@
     </div>
 </div>
 
+<!-- ── Import Excel Modal ─────────────────────────────── -->
+<div id="importModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60">
+    <div class="bg-sidebar border border-border rounded-xl p-6 w-full max-w-md mx-4">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-sm font-bold text-white uppercase tracking-wider">Import Excel</h2>
+            <button onclick="closeImportModal()" class="text-muted hover:text-white text-lg">✕</button>
+        </div>
+        <p class="text-xs text-muted mb-4">
+            ⚠️ This will <span class="text-red-400 font-bold">replace all existing steps</span> for this program. Make sure your Excel matches the export format.
+        </p>
+        <form method="POST" id="importForm" action="" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="mb-4">
+                <label class="text-xs text-muted block mb-1">Select Excel File (.xlsx)</label>
+                <input type="file" name="excel_file" accept=".xlsx"
+                       class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-green">
+            </div>
+            <div class="flex justify-end gap-2">
+                <button type="button" onclick="closeImportModal()"
+                        class="px-4 py-2 text-xs font-bold text-muted border border-border rounded-lg hover:border-white transition-all">
+                    Cancel
+                </button>
+                <button type="submit"
+                        class="bg-green hover:bg-[#27AE60] text-white text-xs font-bold px-6 py-2 rounded-lg transition-all">
+                    Import
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
 function openAddStepModal(programPk) {
     document.getElementById('addStepForm').action = `/program/${programPk}/step/save/`;
@@ -420,7 +475,7 @@ function closeAddStepModal() {
     document.getElementById('addStepModal').classList.add('hidden');
     document.getElementById('addStepModal').classList.remove('flex');
 }
-function openEditStepModal(pk, cycle, week, day, medicine, doseAmount, doseUnit, dosePer, method, remarks, feedRate, feedUnit) {
+function openEditStepModal(pk, cycle, week, day, medicine, doseAmount, doseUnit, dosePer, method, feed, remarks, feedRate, feedUnit) {
     document.getElementById('editStepForm').action = `/program/step/update/${pk}/`;
     document.getElementById('edit_cycle').value       = cycle;
     document.getElementById('edit_week').value        = week;
@@ -429,10 +484,16 @@ function openEditStepModal(pk, cycle, week, day, medicine, doseAmount, doseUnit,
     document.getElementById('edit_remarks').value     = remarks;
     document.getElementById('edit_feed_rate').value   = feedRate;
 
-    // set select values
-    ['edit_medicine', 'edit_dose_unit', 'edit_dose_per', 'edit_method', 'edit_feed_unit'].forEach(id => {
-        const el = document.getElementById(id);
-        const val = { edit_medicine: medicine, edit_dose_unit: doseUnit, edit_dose_per: dosePer, edit_method: method, edit_feed_unit: feedUnit }[id];
+    ['edit_medicine', 'edit_dose_unit', 'edit_dose_per', 'edit_method', 'edit_feed', 'edit_feed_unit'].forEach(id => {
+        const el  = document.getElementById(id);
+        const val = {
+            edit_medicine:  medicine,
+            edit_dose_unit: doseUnit,
+            edit_dose_per:  dosePer,
+            edit_method:    method,
+            edit_feed:      feed,
+            edit_feed_unit: feedUnit
+        }[id];
         for (let opt of el.options) { opt.selected = opt.value === val; }
     });
 
@@ -442,6 +503,15 @@ function openEditStepModal(pk, cycle, week, day, medicine, doseAmount, doseUnit,
 function closeEditStepModal() {
     document.getElementById('editStepModal').classList.add('hidden');
     document.getElementById('editStepModal').classList.remove('flex');
+}
+function openImportModal(programPk) {
+    document.getElementById('importForm').action = `/program/import/${programPk}/`;
+    document.getElementById('importModal').classList.remove('hidden');
+    document.getElementById('importModal').classList.add('flex');
+}
+function closeImportModal() {
+    document.getElementById('importModal').classList.add('hidden');
+    document.getElementById('importModal').classList.remove('flex');
 }
 </script>
 

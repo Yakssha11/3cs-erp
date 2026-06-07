@@ -323,3 +323,79 @@ def view_laying(request):
         'program_summaries': program_summaries,
         'total_chicks':      total_chicks,
     })
+
+@login_required
+def import_program(request, pk):
+    import openpyxl
+    from django.http import JsonResponse
+
+    program = get_object_or_404(Program, pk=pk)
+
+    if request.method == 'POST' and request.FILES.get('excel_file'):
+        file    = request.FILES['excel_file']
+        wb      = openpyxl.load_workbook(file)
+        ws      = wb.active
+
+        # clear existing steps
+        program.steps.all().delete()
+
+        imported = 0
+        errors   = []
+
+        for row_num, row in enumerate(ws.iter_rows(min_row=2, values_only=True), start=2):
+            # skip completely empty rows
+            if not any(row):
+                continue
+
+            try:
+                cycle       = row[0]  # Cycle #
+                age_display = str(row[1]).strip() if row[1] else ''
+                medicine    = str(row[3]).strip() if row[3] else ''
+                dose_unit   = str(row[4]).strip() if row[4] else ''
+                dose_amount = row[5]  # Dosage Rate per Bird
+                feed        = str(row[7]).strip() if row[7] else ''
+                feed_rate   = row[8]  # Feed Rate per Bird
+                feed_unit   = str(row[9]).strip() if row[9] else ''
+                remarks     = str(row[10]).strip() if row[10] else ''
+
+                # parse age display → week + day
+                week = 0
+                day  = 1
+                if age_display.startswith('Week'):
+                    # format: Week X-Day Y
+                    parts = age_display.replace('Week ', '').split('-Day ')
+                    week  = int(parts[0].strip())
+                    day   = int(parts[1].strip())
+                elif age_display.startswith('Day'):
+                    # format: Day X
+                    day  = int(age_display.replace('Day ', '').strip())
+                    week = 0
+
+                ProgramStep.objects.create(
+                    program            = program,
+                    cycle              = int(cycle) if cycle else 1,
+                    week               = week,
+                    day                = day,
+                    medicine           = medicine,
+                    dose_amount        = dose_amount or None,
+                    dose_unit          = dose_unit,
+                    dose_per           = 'chick',  # default
+                    method             = '',
+                    remarks            = remarks,
+                    feed               = feed,
+                    feed_rate_per_bird = feed_rate or None,
+                    feed_unit          = feed_unit,
+                )
+                imported += 1
+
+            except Exception as e:
+                errors.append(f'Row {row_num}: {str(e)}')
+
+        if errors:
+            messages.warning(request, f'Imported {imported} steps with {len(errors)} errors: {"; ".join(errors[:3])}')
+        else:
+            messages.success(request, f'Successfully imported {imported} steps!')
+
+    if program.type == 'Laying':
+        return redirect('program_laying')
+    return redirect('program_growing')

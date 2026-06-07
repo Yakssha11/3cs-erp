@@ -12,4 +12,5 @@ urlpatterns = [
     path('view/growing/',               views.view_growing,    name='view_growing'),
     path('view/laying/',                views.view_laying,     name='view_laying'),
     path('export/<int:pk>/',            views.export_program, name='export_program'),
+    path('import/<int:pk>/', views.import_program, name='import_program'),
 ]

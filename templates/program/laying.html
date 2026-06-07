@@ -83,6 +83,10 @@
                class="bg-content hover:bg-border text-muted hover:text-white text-xs font-bold px-3 py-1.5 rounded-lg border border-border transition-all">
                 ⬇ Export Excel
             </a>
+            <button onclick="openImportModal({{ program.pk }})"
+                    class="bg-content hover:bg-border text-muted hover:text-white text-xs font-bold px-3 py-1.5 rounded-lg border border-border transition-all">
+                ⬆ Import Excel
+            </button>
             <form method="POST" action="{% url 'program_delete' program.pk %}"
                   onsubmit="return confirm('Delete {{ program.name }} and all its steps?')"
                   style="margin:0;padding:0">
@@ -430,6 +434,37 @@
     </div>
 </div>
 
+<!-- ── Import Excel Modal ─────────────────────────────── -->
+<div id="importModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60">
+    <div class="bg-sidebar border border-border rounded-xl p-6 w-full max-w-md mx-4">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-sm font-bold text-white uppercase tracking-wider">Import Excel</h2>
+            <button onclick="closeImportModal()" class="text-muted hover:text-white text-lg">✕</button>
+        </div>
+        <p class="text-xs text-muted mb-4">
+            ⚠️ This will <span class="text-red-400 font-bold">replace all existing steps</span> for this program. Make sure your Excel matches the export format.
+        </p>
+        <form method="POST" id="importForm" action="" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="mb-4">
+                <label class="text-xs text-muted block mb-1">Select Excel File (.xlsx)</label>
+                <input type="file" name="excel_file" accept=".xlsx"
+                       class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber">
+            </div>
+            <div class="flex justify-end gap-2">
+                <button type="button" onclick="closeImportModal()"
+                        class="px-4 py-2 text-xs font-bold text-muted border border-border rounded-lg hover:border-white transition-all">
+                    Cancel
+                </button>
+                <button type="submit"
+                        class="bg-amber hover:bg-[#B5720A] text-white text-xs font-bold px-6 py-2 rounded-lg transition-all">
+                    Import
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
 function openAddStepModal(programPk) {
     document.getElementById('addStepForm').action = `/program/${programPk}/step/save/`;
@@ -468,6 +503,15 @@ function openEditStepModal(pk, cycle, week, day, medicine, doseAmount, doseUnit,
 function closeEditStepModal() {
     document.getElementById('editStepModal').classList.add('hidden');
     document.getElementById('editStepModal').classList.remove('flex');
+}
+function openImportModal(programPk) {
+    document.getElementById('importForm').action = `/program/import/${programPk}/`;
+    document.getElementById('importModal').classList.remove('hidden');
+    document.getElementById('importModal').classList.add('flex');
+}
+function closeImportModal() {
+    document.getElementById('importModal').classList.add('hidden');
+    document.getElementById('importModal').classList.remove('flex');
 }
 </script>
 
