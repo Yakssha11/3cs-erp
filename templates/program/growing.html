@@ -80,6 +80,11 @@
                     class="bg-green hover:bg-[#27AE60] text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-all">
                 + Add Step
             </button>
+            <!-- Export Button -->
+            <a href="{% url 'export_program' program.pk %}"
+            class="bg-content hover:bg-border text-muted hover:text-white text-xs font-bold px-3 py-1.5 rounded-lg border border-border transition-all">
+                ⬇ Export Excel
+            </a>
             <form method="POST" action="{% url 'program_delete' program.pk %}"
                   onsubmit="return confirm('Delete {{ program.name }} and all its steps?')"
                   style="margin:0;padding:0">

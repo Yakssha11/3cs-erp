@@ -11,4 +11,5 @@ urlpatterns = [
     path('step/update/<int:pk>/',       views.step_update,     name='step_update'),
     path('view/growing/',               views.view_growing,    name='view_growing'),
     path('view/laying/',                views.view_laying,     name='view_laying'),
+    path('export/<int:pk>/',            views.export_program, name='export_program'),
 ]
