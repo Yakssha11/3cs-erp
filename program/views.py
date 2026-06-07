@@ -106,7 +106,7 @@ def step_update(request, pk):
 @login_required
 def export_program(request, pk):
     import openpyxl
-    from openpyxl.styles import Font, PatternFill, Alignment, PatternFill
+    from openpyxl.styles import Font, PatternFill, Alignment
     from django.http import HttpResponse
     from flock.models import Flock
     from laying_flock.models import LayingFlock
