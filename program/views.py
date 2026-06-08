@@ -4,6 +4,37 @@ from django.contrib import messages
 from .models import Program, ProgramStep
 from stock.models import Stock
 
+
+def convert_to_program_unit(consumed_base, program_unit, material):
+    """Convert consumed quantity (always in base_unit) to program unit."""
+    base_unit         = material.base_unit or ''
+    stock_unit        = material.stock_unit or ''
+    conversion_factor = float(material.conversion_factor) if material.conversion_factor else None
+
+    # 1. Same unit
+    if program_unit == base_unit:
+        return consumed_base, True
+
+    # 2. Material stock unit (e.g. sacks, bottles)
+    if program_unit == stock_unit and conversion_factor:
+        return consumed_base / conversion_factor, True
+
+    # 3. Standard metric conversions
+    METRIC = {
+        ('g',  'kg'): 1000,
+        ('kg', 'g' ): 0.001,
+        ('ml', 'L' ): 1000,
+        ('L',  'ml'): 0.001,
+        ('g',  'L' ): 1000,
+        ('ml', 'kg'): 1000,
+    }
+    if (program_unit, base_unit) in METRIC:
+        return consumed_base * METRIC[(program_unit, base_unit)], True
+
+    # 4. Unknown
+    return None, False
+
+
 @login_required
 def program_growing(request):
     from erp_config.models import Unit
@@ -16,6 +47,7 @@ def program_growing(request):
         'materials': materials,
         'units':     units,
     })
+
 
 @login_required
 def program_laying(request):
@@ -30,6 +62,7 @@ def program_laying(request):
         'units':     units,
     })
 
+
 @login_required
 def program_save(request):
     if request.method == 'POST':
@@ -41,6 +74,7 @@ def program_save(request):
         messages.success(request, 'Program created!')
     return redirect(request.POST.get('next', 'program_growing'))
 
+
 @login_required
 def program_delete(request, pk):
     program = get_object_or_404(Program, pk=pk)
@@ -50,6 +84,7 @@ def program_delete(request, pk):
     if ptype == 'Laying':
         return redirect('program_laying')
     return redirect('program_growing')
+
 
 @login_required
 def step_save(request, program_pk):
@@ -76,6 +111,7 @@ def step_save(request, program_pk):
         return redirect('program_laying')
     return redirect('program_growing')
 
+
 @login_required
 def step_delete(request, pk):
     step  = get_object_or_404(ProgramStep, pk=pk)
@@ -85,6 +121,7 @@ def step_delete(request, pk):
     if ptype == 'Laying':
         return redirect('program_laying')
     return redirect('program_growing')
+
 
 @login_required
 def step_update(request, pk):
@@ -108,6 +145,7 @@ def step_update(request, pk):
     if step.program.type == 'Laying':
         return redirect('program_laying')
     return redirect('program_growing')
+
 
 @login_required
 def export_program(request, pk):
@@ -143,23 +181,22 @@ def export_program(request, pk):
     orange_fill = PatternFill(fill_type='solid', fgColor='C55A11')
     green_fill  = PatternFill(fill_type='solid', fgColor='375623')
 
-    # col[0..13] — must match import indices exactly
     headers = [
         ('Cycle #',                blue_fill),    # 0
         ('Age Display',            blue_fill),    # 1
-        ('Date',                   blue_fill),    # 2  new
-        ('Population',             blue_fill),    # 2
-        ('Medicine Name',          purple_fill),  # 3  display only
-        ('Medicine Item ID',       purple_fill),  # 4  used by import
-        ('UoM',                    purple_fill),  # 5
-        ('Dosage Rate (per Bird)', purple_fill),  # 6
-        ('Total Dosage',           purple_fill),  # 7  computed, skip on import
-        ('Feed Name',              orange_fill),  # 8  display only
-        ('Feed Item ID',           orange_fill),  # 9  used by import
-        ('Feed Rate (per Bird)',   orange_fill),  # 10
-        ('Total Feed',             orange_fill),  # 11 computed, skip on import
-        ('Feed Unit',              orange_fill),  # 12
-        ('Remarks',                green_fill),   # 13
+        ('Date',                   blue_fill),    # 2
+        ('Population',             blue_fill),    # 3
+        ('Medicine Name',          purple_fill),  # 4
+        ('Medicine Item ID',       purple_fill),  # 5
+        ('UoM',                    purple_fill),  # 6
+        ('Dosage Rate (per Bird)', purple_fill),  # 7
+        ('Total Dosage',           purple_fill),  # 8
+        ('Feed Name',              orange_fill),  # 9
+        ('Feed Item ID',           orange_fill),  # 10
+        ('Feed Rate (per Bird)',   orange_fill),  # 11
+        ('Total Feed',             orange_fill),  # 12
+        ('Feed Unit',              orange_fill),  # 13
+        ('Remarks',                green_fill),   # 14
     ]
 
     for col, (header, fill) in enumerate(headers, 1):
@@ -182,7 +219,7 @@ def export_program(request, pk):
         row_data = [
             step.cycle,
             age_display,
-            str(step.date) if step.date else '',                             # 2
+            str(step.date) if step.date else '',
             total_birds,
             medicine_name,
             step.medicine or '',
@@ -215,6 +252,7 @@ def export_program(request, pk):
     wb.save(response)
     return response
 
+
 @login_required
 def import_program(request, pk):
     import openpyxl
@@ -241,29 +279,27 @@ def import_program(request, pk):
             try:
                 cycle       = row[0]
                 age_display = str(row[1]).strip() if row[1] not in (None, '') else ''
-                date        = row[2]  # Date — new
+                date        = row[2]
                 # row[3] = Population — skip
-                # row[4] = Medicine Name (display) — skip
+                # row[4] = Medicine Name — skip
                 medicine_id = str(row[5]).strip() if row[5] not in (None, '') else ''
                 dose_unit   = str(row[6]).strip() if row[6] not in (None, '') else ''
                 dose_amount = row[7]
                 # row[8] = Total Dosage — skip
-                # row[9] = Feed Name (display) — skip
+                # row[9] = Feed Name — skip
                 feed_id     = str(row[10]).strip() if row[10] not in (None, '') else ''
                 feed_rate   = row[11]
                 # row[12] = Total Feed — skip
                 feed_unit   = str(row[13]).strip() if row[13] not in (None, '') else ''
                 remarks     = str(row[14]).strip() if row[14] not in (None, '') else ''
 
-                # validate item IDs
                 if medicine_id and medicine_id not in valid_ids:
-                    errors.append(f'Row {row_num}: Medicine "{medicine_id}" not found in materials — skipped')
+                    errors.append(f'Row {row_num}: Medicine "{medicine_id}" not found — skipped')
                     continue
                 if feed_id and feed_id not in valid_ids:
-                    errors.append(f'Row {row_num}: Feed "{feed_id}" not found in materials — skipped')
+                    errors.append(f'Row {row_num}: Feed "{feed_id}" not found — skipped')
                     continue
 
-                # parse age display → week + day
                 week = 0
                 day  = 1
                 if age_display.startswith('Week'):
@@ -304,6 +340,7 @@ def import_program(request, pk):
         return redirect('program_laying')
     return redirect('program_growing')
 
+
 @login_required
 def view_growing(request):
     from flock.models import Flock
@@ -317,8 +354,8 @@ def view_growing(request):
                          Sum('current_count'))['current_count__sum'] or 0
     growing_buildings = Building.objects.filter(type='Growing').values_list('name', flat=True)
     material_map      = {m.item_id: m.name for m in Material.objects.all()}
+    material_objects  = {m.item_id: m for m in Material.objects.all()}
 
-    # build consumption lookup: {item_id: {date: quantity}}
     consumption_by_date = {}
     consumptions = Consumption.objects.filter(
                     growing_house__in=growing_buildings
@@ -334,11 +371,11 @@ def view_growing(request):
     for program in programs:
         steps = program.steps.all()
 
-        # ── Medicine summary ──────────────────────────────
+        # ── Medicine ─────────────────────────────────────
         med_map = {}
         for step in steps:
             iid = step.medicine
-            if not iid:
+            if not iid or not step.dose_amount:
                 continue
             if iid not in med_map:
                 med_map[iid] = {
@@ -348,36 +385,42 @@ def view_growing(request):
                     'consumed': 0,
                     'daily':    [],
                 }
-            planned_day = float(step.dose_amount) * total_chicks if step.dose_amount else 0
+            planned_day = float(step.dose_amount) * total_chicks
             med_map[iid]['planned'] += planned_day
 
             if step.date:
-                date_str    = str(step.date)
-                consumed_day = consumption_by_date.get(iid, {}).get(date_str, 0)
-                med_map[iid]['consumed'] += consumed_day
-                remaining   = planned_day - consumed_day
-                if consumed_day >= planned_day:
-                    status = 'met'
-                elif consumed_day > 0:
-                    status = 'short'
+                date_str      = str(step.date)
+                consumed_base = consumption_by_date.get(iid, {}).get(date_str, 0)
+                material      = material_objects.get(iid)
+
+                if material:
+                    consumed_converted, can_convert = convert_to_program_unit(
+                        consumed_base, step.dose_unit, material
+                    )
                 else:
-                    status = 'none'
-                med_map[iid]['daily'].append({
-                    'date':        date_str,
-                    'planned':     planned_day,
-                    'consumed':    consumed_day,
-                    'remaining':   remaining,
-                    'status':      status,
-                    'has_date':    True,
-                })
+                    consumed_converted, can_convert = consumed_base, True
+
+                if can_convert:
+                    consumed_day = consumed_converted or 0
+                    med_map[iid]['consumed'] += consumed_day
+                    remaining = planned_day - consumed_day
+                    status    = 'met' if consumed_day >= planned_day else ('short' if consumed_day > 0 else 'none')
+                    med_map[iid]['daily'].append({
+                        'date': date_str, 'planned': planned_day,
+                        'consumed': consumed_day, 'remaining': remaining,
+                        'status': status, 'has_date': True, 'unit_ok': True,
+                    })
+                else:
+                    med_map[iid]['daily'].append({
+                        'date': date_str, 'planned': planned_day,
+                        'consumed': 0, 'remaining': planned_day,
+                        'status': 'unit_mismatch', 'has_date': True, 'unit_ok': False,
+                    })
             else:
                 med_map[iid]['daily'].append({
-                    'date':      None,
-                    'planned':   planned_day,
-                    'consumed':  0,
-                    'remaining': planned_day,
-                    'status':    'no_date',
-                    'has_date':  False,
+                    'date': None, 'planned': planned_day, 'consumed': 0,
+                    'remaining': planned_day, 'status': 'no_date',
+                    'has_date': False, 'unit_ok': True,
                 })
 
         for m in med_map.values():
@@ -385,11 +428,11 @@ def view_growing(request):
                 (m['consumed'] / m['planned'] * 100), 1
             ) if m['planned'] > 0 else 0
 
-        # ── Feed summary ──────────────────────────────────
+        # ── Feed ─────────────────────────────────────────
         feed_map = {}
         for step in steps:
             iid = step.feed
-            if not iid:
+            if not iid or not step.feed_rate_per_bird:
                 continue
             if iid not in feed_map:
                 feed_map[iid] = {
@@ -399,36 +442,42 @@ def view_growing(request):
                     'consumed': 0,
                     'daily':    [],
                 }
-            planned_day = float(step.feed_rate_per_bird) * total_chicks if step.feed_rate_per_bird else 0
+            planned_day = float(step.feed_rate_per_bird) * total_chicks
             feed_map[iid]['planned'] += planned_day
 
             if step.date:
-                date_str     = str(step.date)
-                consumed_day = consumption_by_date.get(iid, {}).get(date_str, 0)
-                feed_map[iid]['consumed'] += consumed_day
-                remaining    = planned_day - consumed_day
-                if consumed_day >= planned_day:
-                    status = 'met'
-                elif consumed_day > 0:
-                    status = 'short'
+                date_str      = str(step.date)
+                consumed_base = consumption_by_date.get(iid, {}).get(date_str, 0)
+                material      = material_objects.get(iid)
+
+                if material:
+                    consumed_converted, can_convert = convert_to_program_unit(
+                        consumed_base, step.feed_unit, material
+                    )
                 else:
-                    status = 'none'
-                feed_map[iid]['daily'].append({
-                    'date':      date_str,
-                    'planned':   planned_day,
-                    'consumed':  consumed_day,
-                    'remaining': remaining,
-                    'status':    status,
-                    'has_date':  True,
-                })
+                    consumed_converted, can_convert = consumed_base, True
+
+                if can_convert:
+                    consumed_day = consumed_converted or 0
+                    feed_map[iid]['consumed'] += consumed_day
+                    remaining = planned_day - consumed_day
+                    status    = 'met' if consumed_day >= planned_day else ('short' if consumed_day > 0 else 'none')
+                    feed_map[iid]['daily'].append({
+                        'date': date_str, 'planned': planned_day,
+                        'consumed': consumed_day, 'remaining': remaining,
+                        'status': status, 'has_date': True, 'unit_ok': True,
+                    })
+                else:
+                    feed_map[iid]['daily'].append({
+                        'date': date_str, 'planned': planned_day,
+                        'consumed': 0, 'remaining': planned_day,
+                        'status': 'unit_mismatch', 'has_date': True, 'unit_ok': False,
+                    })
             else:
                 feed_map[iid]['daily'].append({
-                    'date':      None,
-                    'planned':   planned_day,
-                    'consumed':  0,
-                    'remaining': planned_day,
-                    'status':    'no_date',
-                    'has_date':  False,
+                    'date': None, 'planned': planned_day, 'consumed': 0,
+                    'remaining': planned_day, 'status': 'no_date',
+                    'has_date': False, 'unit_ok': True,
                 })
 
         for f in feed_map.values():
@@ -447,6 +496,7 @@ def view_growing(request):
         'total_chicks':      total_chicks,
     })
 
+
 @login_required
 def view_laying(request):
     from laying_flock.models import LayingFlock
@@ -460,6 +510,7 @@ def view_laying(request):
                         Sum('current_count'))['current_count__sum'] or 0
     laying_buildings = Building.objects.filter(type='Laying').values_list('name', flat=True)
     material_map     = {m.item_id: m.name for m in Material.objects.all()}
+    material_objects = {m.item_id: m for m in Material.objects.all()}
 
     consumption_by_date = {}
     consumptions = Consumption.objects.filter(
@@ -476,10 +527,11 @@ def view_laying(request):
     for program in programs:
         steps = program.steps.all()
 
+        # ── Medicine ─────────────────────────────────────
         med_map = {}
         for step in steps:
             iid = step.medicine
-            if not iid:
+            if not iid or not step.dose_amount:
                 continue
             if iid not in med_map:
                 med_map[iid] = {
@@ -489,36 +541,42 @@ def view_laying(request):
                     'consumed': 0,
                     'daily':    [],
                 }
-            planned_day = float(step.dose_amount) * total_chicks if step.dose_amount else 0
+            planned_day = float(step.dose_amount) * total_chicks
             med_map[iid]['planned'] += planned_day
 
             if step.date:
-                date_str     = str(step.date)
-                consumed_day = consumption_by_date.get(iid, {}).get(date_str, 0)
-                med_map[iid]['consumed'] += consumed_day
-                remaining    = planned_day - consumed_day
-                if consumed_day >= planned_day:
-                    status = 'met'
-                elif consumed_day > 0:
-                    status = 'short'
+                date_str      = str(step.date)
+                consumed_base = consumption_by_date.get(iid, {}).get(date_str, 0)
+                material      = material_objects.get(iid)
+
+                if material:
+                    consumed_converted, can_convert = convert_to_program_unit(
+                        consumed_base, step.dose_unit, material
+                    )
                 else:
-                    status = 'none'
-                med_map[iid]['daily'].append({
-                    'date':      date_str,
-                    'planned':   planned_day,
-                    'consumed':  consumed_day,
-                    'remaining': remaining,
-                    'status':    status,
-                    'has_date':  True,
-                })
+                    consumed_converted, can_convert = consumed_base, True
+
+                if can_convert:
+                    consumed_day = consumed_converted or 0
+                    med_map[iid]['consumed'] += consumed_day
+                    remaining = planned_day - consumed_day
+                    status    = 'met' if consumed_day >= planned_day else ('short' if consumed_day > 0 else 'none')
+                    med_map[iid]['daily'].append({
+                        'date': date_str, 'planned': planned_day,
+                        'consumed': consumed_day, 'remaining': remaining,
+                        'status': status, 'has_date': True, 'unit_ok': True,
+                    })
+                else:
+                    med_map[iid]['daily'].append({
+                        'date': date_str, 'planned': planned_day,
+                        'consumed': 0, 'remaining': planned_day,
+                        'status': 'unit_mismatch', 'has_date': True, 'unit_ok': False,
+                    })
             else:
                 med_map[iid]['daily'].append({
-                    'date':      None,
-                    'planned':   planned_day,
-                    'consumed':  0,
-                    'remaining': planned_day,
-                    'status':    'no_date',
-                    'has_date':  False,
+                    'date': None, 'planned': planned_day, 'consumed': 0,
+                    'remaining': planned_day, 'status': 'no_date',
+                    'has_date': False, 'unit_ok': True,
                 })
 
         for m in med_map.values():
@@ -526,10 +584,11 @@ def view_laying(request):
                 (m['consumed'] / m['planned'] * 100), 1
             ) if m['planned'] > 0 else 0
 
+        # ── Feed ─────────────────────────────────────────
         feed_map = {}
         for step in steps:
             iid = step.feed
-            if not iid:
+            if not iid or not step.feed_rate_per_bird:
                 continue
             if iid not in feed_map:
                 feed_map[iid] = {
@@ -539,36 +598,42 @@ def view_laying(request):
                     'consumed': 0,
                     'daily':    [],
                 }
-            planned_day = float(step.feed_rate_per_bird) * total_chicks if step.feed_rate_per_bird else 0
+            planned_day = float(step.feed_rate_per_bird) * total_chicks
             feed_map[iid]['planned'] += planned_day
 
             if step.date:
-                date_str     = str(step.date)
-                consumed_day = consumption_by_date.get(iid, {}).get(date_str, 0)
-                feed_map[iid]['consumed'] += consumed_day
-                remaining    = planned_day - consumed_day
-                if consumed_day >= planned_day:
-                    status = 'met'
-                elif consumed_day > 0:
-                    status = 'short'
+                date_str      = str(step.date)
+                consumed_base = consumption_by_date.get(iid, {}).get(date_str, 0)
+                material      = material_objects.get(iid)
+
+                if material:
+                    consumed_converted, can_convert = convert_to_program_unit(
+                        consumed_base, step.feed_unit, material
+                    )
                 else:
-                    status = 'none'
-                feed_map[iid]['daily'].append({
-                    'date':      date_str,
-                    'planned':   planned_day,
-                    'consumed':  consumed_day,
-                    'remaining': remaining,
-                    'status':    status,
-                    'has_date':  True,
-                })
+                    consumed_converted, can_convert = consumed_base, True
+
+                if can_convert:
+                    consumed_day = consumed_converted or 0
+                    feed_map[iid]['consumed'] += consumed_day
+                    remaining = planned_day - consumed_day
+                    status    = 'met' if consumed_day >= planned_day else ('short' if consumed_day > 0 else 'none')
+                    feed_map[iid]['daily'].append({
+                        'date': date_str, 'planned': planned_day,
+                        'consumed': consumed_day, 'remaining': remaining,
+                        'status': status, 'has_date': True, 'unit_ok': True,
+                    })
+                else:
+                    feed_map[iid]['daily'].append({
+                        'date': date_str, 'planned': planned_day,
+                        'consumed': 0, 'remaining': planned_day,
+                        'status': 'unit_mismatch', 'has_date': True, 'unit_ok': False,
+                    })
             else:
                 feed_map[iid]['daily'].append({
-                    'date':      None,
-                    'planned':   planned_day,
-                    'consumed':  0,
-                    'remaining': planned_day,
-                    'status':    'no_date',
-                    'has_date':  False,
+                    'date': None, 'planned': planned_day, 'consumed': 0,
+                    'remaining': planned_day, 'status': 'no_date',
+                    'has_date': False, 'unit_ok': True,
                 })
 
         for f in feed_map.values():
@@ -577,7 +642,7 @@ def view_laying(request):
             ) if f['planned'] > 0 else 0
 
         program_summaries.append({
-            'program': program,
+            'program':   program,
             'medicines': list(med_map.values()),
             'feeds':     list(feed_map.values()),
         })
