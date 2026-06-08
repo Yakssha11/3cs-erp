@@ -103,17 +103,18 @@
     </table>
     </div>
 
-    <!-- consumption summary -->
-    {% if ps.summary %}
+    <!-- ── Medicine Summary ─────────────────────────────── -->
+    {% if ps.medicines %}
     <div class="px-4 py-4 border-t border-border">
         <h3 class="text-xs font-bold text-muted uppercase tracking-wider mb-4">
-            Consumption Summary
+            💊 Medicine Consumption Summary
         </h3>
         <div class="grid grid-cols-1 gap-4">
-            {% for med in ps.summary %}
+            {% for med in ps.medicines %}
             <div class="bg-content rounded-xl p-4">
+                <!-- header -->
                 <div class="flex items-center justify-between mb-2">
-                    <span class="text-white font-bold text-sm">{{ med.medicine }}</span>
+                    <span class="text-white font-bold text-sm">{{ med.name }}</span>
                     <span class="text-xs font-bold
                         {% if med.percentage >= 80 %}text-green
                         {% elif med.percentage >= 50 %}text-amber
@@ -121,6 +122,7 @@
                         {{ med.percentage }}%
                     </span>
                 </div>
+                <!-- progress bar -->
                 <div class="w-full bg-border rounded-full h-2 mb-3">
                     <div class="h-2 rounded-full
                         {% if med.percentage >= 80 %}bg-green
@@ -129,31 +131,167 @@
                          style="width: {% if med.percentage > 100 %}100{% else %}{{ med.percentage }}{% endif %}%">
                     </div>
                 </div>
-                <div class="grid grid-cols-3 gap-2 text-xs text-muted">
+                <!-- overall stats -->
+                <div class="grid grid-cols-3 gap-2 text-xs text-muted mb-3">
                     <div>
-                        <p class="mb-0.5">Required</p>
-                        <p class="text-white font-semibold">
-                            {{ med.required|floatformat:2 }} {{ med.dose_unit }}
-                        </p>
-                        <p class="text-muted">{{ med.dose_amount }} {{ med.dose_unit }}/{{ med.dose_per }} × {{ total_chicks }} chicks</p>
+                        <p class="mb-0.5">Total Planned</p>
+                        <p class="text-white font-semibold">{{ med.planned|floatformat:2 }} {{ med.unit }}</p>
                     </div>
                     <div>
-                        <p class="mb-0.5">Consumed</p>
-                        <p class="text-white font-semibold">
-                            {{ med.consumed|floatformat:2 }} {{ med.dose_unit }}
-                        </p>
+                        <p class="mb-0.5">Total Consumed</p>
+                        <p class="text-white font-semibold">{{ med.consumed|floatformat:2 }} {{ med.unit }}</p>
                     </div>
                     <div>
                         <p class="mb-0.5">Remaining</p>
-                        <p class="font-semibold
-                            {% if med.required > med.consumed %}text-red-400{% else %}text-green{% endif %}">
-                            {% if med.required > med.consumed %}
-                                {{ med.required|floatformat:2 }} {{ med.dose_unit }} needed
+                        <p class="font-semibold {% if med.planned > med.consumed %}text-red-400{% else %}text-green{% endif %}">
+                            {% if med.planned > med.consumed %}
+                                {{ med.planned|floatformat:2 }} {{ med.unit }} needed
                             {% else %}
                                 ✅ Sufficient
                             {% endif %}
                         </p>
                     </div>
+                </div>
+                <!-- daily breakdown toggle -->
+                <button onclick="toggleBreakdown('med-{{ forloop.parentloop.counter }}-{{ forloop.counter }}')"
+                        class="text-xs text-muted hover:text-white transition-all mb-2">
+                    ▼ Show daily breakdown
+                </button>
+                <div id="med-{{ forloop.parentloop.counter }}-{{ forloop.counter }}" class="hidden">
+                    <table class="w-full text-xs mt-2">
+                        <thead>
+                            <tr class="text-muted border-b border-border">
+                                <th class="py-1 text-left">Date</th>
+                                <th class="py-1 text-right">Planned</th>
+                                <th class="py-1 text-right">Consumed</th>
+                                <th class="py-1 text-right">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for day in med.daily %}
+                            <tr class="border-b border-border/50">
+                                <td class="py-1.5">
+                                    {% if day.has_date %}
+                                        <span class="text-muted">{{ day.date }}</span>
+                                    {% else %}
+                                        <span class="px-2 py-0.5 rounded text-xs bg-yellow-900/40 text-yellow-400">⚠️ No date set</span>
+                                    {% endif %}
+                                </td>
+                                <td class="py-1.5 text-right text-muted">{{ day.planned|floatformat:2 }}</td>
+                                <td class="py-1.5 text-right text-white">
+                                    {% if day.has_date %}{{ day.consumed|floatformat:2 }}{% else %}—{% endif %}
+                                </td>
+                                <td class="py-1.5 text-right">
+                                    {% if day.status == 'met' %}
+                                        <span class="text-green">✅ Met</span>
+                                    {% elif day.status == 'short' %}
+                                        <span class="text-amber">⚠️ Short</span>
+                                    {% elif day.status == 'none' %}
+                                        <span class="text-red-400">❌ Not done</span>
+                                    {% else %}
+                                        <span class="text-yellow-400">❓ Unknown</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- ── Feed Summary ─────────────────────────────────── -->
+    {% if ps.feeds %}
+    <div class="px-4 py-4 border-t border-border">
+        <h3 class="text-xs font-bold text-muted uppercase tracking-wider mb-4">
+            🌾 Feed Consumption Summary
+        </h3>
+        <div class="grid grid-cols-1 gap-4">
+            {% for feed in ps.feeds %}
+            <div class="bg-content rounded-xl p-4">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-white font-bold text-sm">{{ feed.name }}</span>
+                    <span class="text-xs font-bold
+                        {% if feed.percentage >= 80 %}text-green
+                        {% elif feed.percentage >= 50 %}text-amber
+                        {% else %}text-red-400{% endif %}">
+                        {{ feed.percentage }}%
+                    </span>
+                </div>
+                <div class="w-full bg-border rounded-full h-2 mb-3">
+                    <div class="h-2 rounded-full
+                        {% if feed.percentage >= 80 %}bg-green
+                        {% elif feed.percentage >= 50 %}bg-amber
+                        {% else %}bg-red-400{% endif %}"
+                         style="width: {% if feed.percentage > 100 %}100{% else %}{{ feed.percentage }}{% endif %}%">
+                    </div>
+                </div>
+                <div class="grid grid-cols-3 gap-2 text-xs text-muted mb-3">
+                    <div>
+                        <p class="mb-0.5">Total Planned</p>
+                        <p class="text-white font-semibold">{{ feed.planned|floatformat:2 }} {{ feed.unit }}</p>
+                    </div>
+                    <div>
+                        <p class="mb-0.5">Total Consumed</p>
+                        <p class="text-white font-semibold">{{ feed.consumed|floatformat:2 }} {{ feed.unit }}</p>
+                    </div>
+                    <div>
+                        <p class="mb-0.5">Remaining</p>
+                        <p class="font-semibold {% if feed.planned > feed.consumed %}text-red-400{% else %}text-green{% endif %}">
+                            {% if feed.planned > feed.consumed %}
+                                {{ feed.planned|floatformat:2 }} {{ feed.unit }} needed
+                            {% else %}
+                                ✅ Sufficient
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+                <button onclick="toggleBreakdown('feed-{{ forloop.parentloop.counter }}-{{ forloop.counter }}')"
+                        class="text-xs text-muted hover:text-white transition-all mb-2">
+                    ▼ Show daily breakdown
+                </button>
+                <div id="feed-{{ forloop.parentloop.counter }}-{{ forloop.counter }}" class="hidden">
+                    <table class="w-full text-xs mt-2">
+                        <thead>
+                            <tr class="text-muted border-b border-border">
+                                <th class="py-1 text-left">Date</th>
+                                <th class="py-1 text-right">Planned</th>
+                                <th class="py-1 text-right">Consumed</th>
+                                <th class="py-1 text-right">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for day in feed.daily %}
+                            <tr class="border-b border-border/50">
+                                <td class="py-1.5">
+                                    {% if day.has_date %}
+                                        <span class="text-muted">{{ day.date }}</span>
+                                    {% else %}
+                                        <span class="px-2 py-0.5 rounded text-xs bg-yellow-900/40 text-yellow-400">⚠️ No date set</span>
+                                    {% endif %}
+                                </td>
+                                <td class="py-1.5 text-right text-muted">{{ day.planned|floatformat:2 }}</td>
+                                <td class="py-1.5 text-right text-white">
+                                    {% if day.has_date %}{{ day.consumed|floatformat:2 }}{% else %}—{% endif %}
+                                </td>
+                                <td class="py-1.5 text-right">
+                                    {% if day.status == 'met' %}
+                                        <span class="text-green">✅ Met</span>
+                                    {% elif day.status == 'short' %}
+                                        <span class="text-amber">⚠️ Short</span>
+                                    {% elif day.status == 'none' %}
+                                        <span class="text-red-400">❌ Not done</span>
+                                    {% else %}
+                                        <span class="text-yellow-400">❓ Unknown</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
             </div>
             {% endfor %}
@@ -167,5 +305,19 @@
     No Growing programs yet. <a href="{% url 'program_growing' %}" class="text-green underline">Create one here.</a>
 </div>
 {% endfor %}
+
+<script>
+function toggleBreakdown(id) {
+    const el  = document.getElementById(id);
+    const btn = el.previousElementSibling;
+    if (el.classList.contains('hidden')) {
+        el.classList.remove('hidden');
+        btn.textContent = '▲ Hide daily breakdown';
+    } else {
+        el.classList.add('hidden');
+        btn.textContent = '▼ Show daily breakdown';
+    }
+}
+</script>
 
 {% endblock %}
