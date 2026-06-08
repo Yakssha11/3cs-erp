@@ -60,6 +60,7 @@ def step_save(request, program_pk):
             cycle              = request.POST.get('cycle', 1),
             week               = request.POST['week'],
             day                = request.POST['day'],
+            date               = request.POST.get('date') or None,
             medicine           = request.POST.get('medicine', ''),
             dose_amount        = request.POST.get('dose_amount') or None,
             dose_unit          = request.POST.get('dose_unit', ''),
@@ -92,6 +93,7 @@ def step_update(request, pk):
         step.cycle              = request.POST.get('cycle', 1)
         step.week               = request.POST['week']
         step.day                = request.POST['day']
+        step.date               = request.POST.get('date') or None
         step.medicine           = request.POST.get('medicine', '')
         step.dose_amount        = request.POST.get('dose_amount') or None
         step.dose_unit          = request.POST.get('dose_unit', '')
@@ -145,6 +147,7 @@ def export_program(request, pk):
     headers = [
         ('Cycle #',                blue_fill),    # 0
         ('Age Display',            blue_fill),    # 1
+        ('Date',                   blue_fill),    # 2  new
         ('Population',             blue_fill),    # 2
         ('Medicine Name',          purple_fill),  # 3  display only
         ('Medicine Item ID',       purple_fill),  # 4  used by import
@@ -165,7 +168,7 @@ def export_program(request, pk):
         cell.fill      = fill
         cell.alignment = center
 
-    col_widths = [10, 16, 12, 22, 16, 8, 22, 14, 22, 16, 20, 14, 12, 20]
+    col_widths = [10, 16, 14, 12, 22, 16, 8, 22, 14, 22, 16, 20, 14, 12, 20]
     for col, width in enumerate(col_widths, 1):
         ws.column_dimensions[openpyxl.utils.get_column_letter(col)].width = width
 
@@ -177,20 +180,21 @@ def export_program(request, pk):
         total_feed    = float(step.feed_rate_per_bird) * total_birds if step.feed_rate_per_bird else ''
 
         row_data = [
-            step.cycle,                                               # 0
-            age_display,                                              # 1
-            total_birds,                                              # 2
-            medicine_name,                                            # 3
-            step.medicine or '',                                      # 4
-            step.dose_unit or '',                                     # 5
-            float(step.dose_amount) if step.dose_amount else '',     # 6
-            total_dosage,                                             # 7
-            feed_name,                                                # 8
-            step.feed or '',                                          # 9
-            float(step.feed_rate_per_bird) if step.feed_rate_per_bird else '',  # 10
-            total_feed,                                               # 11
-            step.feed_unit or '',                                     # 12
-            step.remarks or '',                                       # 13
+            step.cycle,
+            age_display,
+            str(step.date) if step.date else '',                             # 2
+            total_birds,
+            medicine_name,
+            step.medicine or '',
+            step.dose_unit or '',
+            float(step.dose_amount) if step.dose_amount else '',
+            total_dosage,
+            feed_name,
+            step.feed or '',
+            float(step.feed_rate_per_bird) if step.feed_rate_per_bird else '',
+            total_feed,
+            step.feed_unit or '',
+            step.remarks or '',
         ]
 
         for col, value in enumerate(row_data, 1):
@@ -237,18 +241,19 @@ def import_program(request, pk):
             try:
                 cycle       = row[0]
                 age_display = str(row[1]).strip() if row[1] not in (None, '') else ''
-                # row[2] = Population — skip
-                # row[3] = Medicine Name (display) — skip
-                medicine_id = str(row[4]).strip() if row[4] not in (None, '') else ''
-                dose_unit   = str(row[5]).strip() if row[5] not in (None, '') else ''
-                dose_amount = row[6]
-                # row[7] = Total Dosage (computed) — skip
-                # row[8] = Feed Name (display) — skip
-                feed_id     = str(row[9]).strip() if row[9] not in (None, '') else ''
-                feed_rate   = row[10]
-                # row[11] = Total Feed (computed) — skip
-                feed_unit   = str(row[12]).strip() if row[12] not in (None, '') else ''
-                remarks     = str(row[13]).strip() if row[13] not in (None, '') else ''
+                date        = row[2]  # Date — new
+                # row[3] = Population — skip
+                # row[4] = Medicine Name (display) — skip
+                medicine_id = str(row[5]).strip() if row[5] not in (None, '') else ''
+                dose_unit   = str(row[6]).strip() if row[6] not in (None, '') else ''
+                dose_amount = row[7]
+                # row[8] = Total Dosage — skip
+                # row[9] = Feed Name (display) — skip
+                feed_id     = str(row[10]).strip() if row[10] not in (None, '') else ''
+                feed_rate   = row[11]
+                # row[12] = Total Feed — skip
+                feed_unit   = str(row[13]).strip() if row[13] not in (None, '') else ''
+                remarks     = str(row[14]).strip() if row[14] not in (None, '') else ''
 
                 # validate item IDs
                 if medicine_id and medicine_id not in valid_ids:
@@ -274,6 +279,7 @@ def import_program(request, pk):
                     cycle              = int(cycle) if cycle else 1,
                     week               = week,
                     day                = day,
+                    date               = date if date not in (None, '') else None,
                     medicine           = medicine_id,
                     dose_amount        = dose_amount if dose_amount not in (None, '') else None,
                     dose_unit          = dose_unit,
