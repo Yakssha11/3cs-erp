@@ -6,30 +6,36 @@ from stock.models import Stock
 
 
 def convert_to_program_unit(consumed_base, program_unit, material):
-    """Convert consumed quantity (always in base_unit) to program unit."""
     base_unit         = material.base_unit or ''
     stock_unit        = material.stock_unit or ''
+    mat_unit          = material.unit or ''
     conversion_factor = float(material.conversion_factor) if material.conversion_factor else None
 
-    # 1. Same unit
-    if program_unit == base_unit:
+    pu = (program_unit or '').lower().strip()
+    bu = base_unit.lower().strip()
+    su = stock_unit.lower().strip()
+    mu = mat_unit.lower().strip()
+
+    # 1. Same as base unit
+    if pu == bu:
         return consumed_base, True
 
-    # 2. Material stock unit (e.g. sacks, bottles)
-    if program_unit == stock_unit and conversion_factor:
+    # 2. Matches stock_unit or material.unit (with or without trailing s)
+    if conversion_factor and (pu == su or pu == mu or pu.rstrip('s') == su.rstrip('s') or pu.rstrip('s') == mu.rstrip('s')):
         return consumed_base / conversion_factor, True
 
     # 3. Standard metric conversions
     METRIC = {
         ('g',  'kg'): 1000,
         ('kg', 'g' ): 0.001,
-        ('ml', 'L' ): 1000,
-        ('L',  'ml'): 0.001,
-        ('g',  'L' ): 1000,
+        ('ml', 'l' ): 1000,
+        ('l',  'ml'): 0.001,
+        ('mg', 'g' ): 1000,
+        ('g',  'l' ): 1000,
         ('ml', 'kg'): 1000,
     }
-    if (program_unit, base_unit) in METRIC:
-        return consumed_base * METRIC[(program_unit, base_unit)], True
+    if (pu, bu) in METRIC:
+        return consumed_base * METRIC[(pu, bu)], True
 
     # 4. Unknown
     return None, False
