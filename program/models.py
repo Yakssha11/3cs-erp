@@ -30,6 +30,7 @@ class ProgramStep(models.Model):
     cycle              = models.PositiveIntegerField(default=1)
     week               = models.PositiveIntegerField()
     day                = models.PositiveIntegerField()
+    date               = models.DateField(null=True, blank=True)  # new
     medicine           = models.CharField(max_length=10, blank=True)
     dose_amount        = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
     dose_unit          = models.CharField(max_length=50, blank=True)
