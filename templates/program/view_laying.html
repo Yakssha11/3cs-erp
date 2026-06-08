@@ -49,6 +49,7 @@
                 <th class="px-4 py-3 text-left">Cycle</th>
                 <th class="px-4 py-3 text-left">Week</th>
                 <th class="px-4 py-3 text-left">Day</th>
+                <th class="px-4 py-3 text-left">Date</th>
                 <th class="px-4 py-3 text-left">Medicine / Vaccine</th>
                 <th class="px-4 py-3 text-left">Dose/Bird</th>
                 <th class="px-4 py-3 text-left">Unit</th>
@@ -74,6 +75,7 @@
                     </span>
                 </td>
                 <td class="px-4 py-3 text-white font-bold">Day {{ step.day }}</td>
+                <td class="px-4 py-3 text-muted">{{ step.date|default:"—" }}</td>
                 <td class="px-4 py-3 text-white">{{ step.medicine_name }}</td>
                 <td class="px-4 py-3 text-muted">{{ step.dose_amount|default:"—" }}</td>
                 <td class="px-4 py-3 text-muted">{{ step.dose_unit|default:"—" }}</td>
@@ -92,7 +94,7 @@
             </tr>
             {% empty %}
             <tr>
-                <td colspan="12" class="px-4 py-6 text-center text-muted text-xs">
+                <td colspan="13" class="px-4 py-6 text-center text-muted text-xs">
                     No steps defined yet.
                 </td>
             </tr>

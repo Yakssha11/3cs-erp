@@ -108,6 +108,7 @@
                 <th class="px-4 py-3 text-left">Cycle</th>
                 <th class="px-4 py-3 text-left">Week</th>
                 <th class="px-4 py-3 text-left">Day</th>
+                <th class="px-4 py-3 text-left">Date</th>
                 <th class="px-4 py-3 text-left">Medicine / Vaccine</th>
                 <th class="px-4 py-3 text-left">Dose/Bird</th>
                 <th class="px-4 py-3 text-left">Unit</th>
@@ -136,6 +137,7 @@
                     </span>
                 </td>
                 <td class="px-4 py-3 text-white font-bold">Day {{ step.day }}</td>
+                <td class="px-4 py-3 text-muted">{{ step.date|default:"—" }}</td>
                 <td class="px-4 py-3 text-white">{{ step.medicine_name }}</td>
                 <td class="px-4 py-3 text-muted">{{ step.dose_amount|default:"—" }}</td>
                 <td class="px-4 py-3 text-muted">{{ step.dose_unit|default:"—" }}</td>
@@ -159,6 +161,7 @@
                                     {{ step.cycle }},
                                     {{ step.week }},
                                     {{ step.day }},
+                                    '{{ step.date|default:'' }}',
                                     '{{ step.medicine|escapejs }}',
                                     '{{ step.dose_amount|default:'' }}',
                                     '{{ step.dose_unit|escapejs }}',
@@ -187,7 +190,7 @@
             </tr>
             {% empty %}
             <tr>
-                <td colspan="13" class="px-4 py-6 text-center text-muted text-xs">
+                <td colspan="14" class="px-4 py-6 text-center text-muted text-xs">
                     No steps yet. Click "+ Add Step" to add one.
                 </td>
             </tr>
@@ -225,6 +228,11 @@
                 <div>
                     <label class="text-xs text-muted block mb-1">Day</label>
                     <input type="number" name="day" required placeholder="1" min="1"
+                           class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber">
+                </div>
+                <div>
+                    <label class="text-xs text-muted block mb-1">Date</label>
+                    <input type="date" name="date"
                            class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber">
                 </div>
                 <div>
@@ -341,6 +349,11 @@
                 <div>
                     <label class="text-xs text-muted block mb-1">Day</label>
                     <input type="number" name="day" id="edit_day" required min="1"
+                           class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber">
+                </div>
+                <div>
+                    <label class="text-xs text-muted block mb-1">Date</label>
+                    <input type="date" name="date" id="edit_date"
                            class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber">
                 </div>
                 <div>
@@ -475,11 +488,12 @@ function closeAddStepModal() {
     document.getElementById('addStepModal').classList.add('hidden');
     document.getElementById('addStepModal').classList.remove('flex');
 }
-function openEditStepModal(pk, cycle, week, day, medicine, doseAmount, doseUnit, dosePer, method, feed, remarks, feedRate, feedUnit) {
+function openEditStepModal(pk, cycle, week, day, date, medicine, doseAmount, doseUnit, dosePer, method, feed, remarks, feedRate, feedUnit) {
     document.getElementById('editStepForm').action = `/program/step/update/${pk}/`;
     document.getElementById('edit_cycle').value       = cycle;
     document.getElementById('edit_week').value        = week;
     document.getElementById('edit_day').value         = day;
+    document.getElementById('edit_date').value        = date;
     document.getElementById('edit_dose_amount').value = doseAmount;
     document.getElementById('edit_remarks').value     = remarks;
     document.getElementById('edit_feed_rate').value   = feedRate;
