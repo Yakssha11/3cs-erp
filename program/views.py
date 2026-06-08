@@ -312,48 +312,134 @@ def view_growing(request):
     from master_data.models import Material
     from django.db.models import Sum
 
-    programs     = Program.objects.filter(type='Growing').prefetch_related('steps')
-    total_chicks = Flock.objects.filter(status='Active').aggregate(
-                    Sum('current_count'))['current_count__sum'] or 0
-
+    programs          = Program.objects.filter(type='Growing').prefetch_related('steps')
+    total_chicks      = Flock.objects.filter(status='Active').aggregate(
+                         Sum('current_count'))['current_count__sum'] or 0
     growing_buildings = Building.objects.filter(type='Growing').values_list('name', flat=True)
     material_map      = {m.item_id: m.name for m in Material.objects.all()}
 
-    consumption_totals = {}
+    # build consumption lookup: {item_id: {date: quantity}}
+    consumption_by_date = {}
     consumptions = Consumption.objects.filter(
                     growing_house__in=growing_buildings
-                   ).values('item_name').annotate(total=Sum('quantity'))
+                   ).values('item_id', 'date_consumed').annotate(total=Sum('quantity'))
     for c in consumptions:
-        consumption_totals[c['item_name']] = float(c['total'])
+        iid  = c['item_id']
+        date = str(c['date_consumed'])
+        if iid not in consumption_by_date:
+            consumption_by_date[iid] = {}
+        consumption_by_date[iid][date] = float(c['total'])
 
     program_summaries = []
     for program in programs:
-        medicine_map = {}
-        for step in program.steps.all():
-            med = step.medicine
-            if not med:
-                continue
-            med_name = material_map.get(med, med)
-            if med not in medicine_map:
-                medicine_map[med] = {
-                    'medicine':    med_name,
-                    'dose_amount': float(step.dose_amount) if step.dose_amount else 0,
-                    'dose_unit':   step.dose_unit,
-                    'dose_per':    step.dose_per,
-                    'required':    float(step.dose_amount) * total_chicks if step.dose_amount else 0,
-                    'consumed':    consumption_totals.get(med_name, 0),
-                }
-            else:
-                medicine_map[med]['required'] += float(step.dose_amount) * total_chicks if step.dose_amount else 0
+        steps = program.steps.all()
 
-        for med in medicine_map.values():
-            med['percentage'] = round(
-                (med['consumed'] / med['required'] * 100), 1
-            ) if med['required'] > 0 else 0
+        # ── Medicine summary ──────────────────────────────
+        med_map = {}
+        for step in steps:
+            iid = step.medicine
+            if not iid:
+                continue
+            if iid not in med_map:
+                med_map[iid] = {
+                    'name':     material_map.get(iid, iid),
+                    'unit':     step.dose_unit,
+                    'planned':  0,
+                    'consumed': 0,
+                    'daily':    [],
+                }
+            planned_day = float(step.dose_amount) * total_chicks if step.dose_amount else 0
+            med_map[iid]['planned'] += planned_day
+
+            if step.date:
+                date_str    = str(step.date)
+                consumed_day = consumption_by_date.get(iid, {}).get(date_str, 0)
+                med_map[iid]['consumed'] += consumed_day
+                remaining   = planned_day - consumed_day
+                if consumed_day >= planned_day:
+                    status = 'met'
+                elif consumed_day > 0:
+                    status = 'short'
+                else:
+                    status = 'none'
+                med_map[iid]['daily'].append({
+                    'date':        date_str,
+                    'planned':     planned_day,
+                    'consumed':    consumed_day,
+                    'remaining':   remaining,
+                    'status':      status,
+                    'has_date':    True,
+                })
+            else:
+                med_map[iid]['daily'].append({
+                    'date':      None,
+                    'planned':   planned_day,
+                    'consumed':  0,
+                    'remaining': planned_day,
+                    'status':    'no_date',
+                    'has_date':  False,
+                })
+
+        for m in med_map.values():
+            m['percentage'] = round(
+                (m['consumed'] / m['planned'] * 100), 1
+            ) if m['planned'] > 0 else 0
+
+        # ── Feed summary ──────────────────────────────────
+        feed_map = {}
+        for step in steps:
+            iid = step.feed
+            if not iid:
+                continue
+            if iid not in feed_map:
+                feed_map[iid] = {
+                    'name':     material_map.get(iid, iid),
+                    'unit':     step.feed_unit,
+                    'planned':  0,
+                    'consumed': 0,
+                    'daily':    [],
+                }
+            planned_day = float(step.feed_rate_per_bird) * total_chicks if step.feed_rate_per_bird else 0
+            feed_map[iid]['planned'] += planned_day
+
+            if step.date:
+                date_str     = str(step.date)
+                consumed_day = consumption_by_date.get(iid, {}).get(date_str, 0)
+                feed_map[iid]['consumed'] += consumed_day
+                remaining    = planned_day - consumed_day
+                if consumed_day >= planned_day:
+                    status = 'met'
+                elif consumed_day > 0:
+                    status = 'short'
+                else:
+                    status = 'none'
+                feed_map[iid]['daily'].append({
+                    'date':      date_str,
+                    'planned':   planned_day,
+                    'consumed':  consumed_day,
+                    'remaining': remaining,
+                    'status':    status,
+                    'has_date':  True,
+                })
+            else:
+                feed_map[iid]['daily'].append({
+                    'date':      None,
+                    'planned':   planned_day,
+                    'consumed':  0,
+                    'remaining': planned_day,
+                    'status':    'no_date',
+                    'has_date':  False,
+                })
+
+        for f in feed_map.values():
+            f['percentage'] = round(
+                (f['consumed'] / f['planned'] * 100), 1
+            ) if f['planned'] > 0 else 0
 
         program_summaries.append({
-            'program': program,
-            'summary': list(medicine_map.values()),
+            'program':   program,
+            'medicines': list(med_map.values()),
+            'feeds':     list(feed_map.values()),
         })
 
     return render(request, 'program/view_growing.html', {
@@ -369,48 +455,131 @@ def view_laying(request):
     from master_data.models import Material
     from django.db.models import Sum
 
-    programs     = Program.objects.filter(type='Laying').prefetch_related('steps')
-    total_chicks = LayingFlock.objects.filter(status='Active').aggregate(
-                    Sum('current_count'))['current_count__sum'] or 0
-
+    programs         = Program.objects.filter(type='Laying').prefetch_related('steps')
+    total_chicks     = LayingFlock.objects.filter(status='Active').aggregate(
+                        Sum('current_count'))['current_count__sum'] or 0
     laying_buildings = Building.objects.filter(type='Laying').values_list('name', flat=True)
     material_map     = {m.item_id: m.name for m in Material.objects.all()}
 
-    consumption_totals = {}
+    consumption_by_date = {}
     consumptions = Consumption.objects.filter(
                     growing_house__in=laying_buildings
-                   ).values('item_name').annotate(total=Sum('quantity'))
+                   ).values('item_id', 'date_consumed').annotate(total=Sum('quantity'))
     for c in consumptions:
-        consumption_totals[c['item_name']] = float(c['total'])
+        iid  = c['item_id']
+        date = str(c['date_consumed'])
+        if iid not in consumption_by_date:
+            consumption_by_date[iid] = {}
+        consumption_by_date[iid][date] = float(c['total'])
 
     program_summaries = []
     for program in programs:
-        medicine_map = {}
-        for step in program.steps.all():
-            med = step.medicine
-            if not med:
-                continue
-            med_name = material_map.get(med, med)
-            if med not in medicine_map:
-                medicine_map[med] = {
-                    'medicine':    med_name,
-                    'dose_amount': float(step.dose_amount) if step.dose_amount else 0,
-                    'dose_unit':   step.dose_unit,
-                    'dose_per':    step.dose_per,
-                    'required':    float(step.dose_amount) * total_chicks if step.dose_amount else 0,
-                    'consumed':    consumption_totals.get(med_name, 0),
-                }
-            else:
-                medicine_map[med]['required'] += float(step.dose_amount) * total_chicks if step.dose_amount else 0
+        steps = program.steps.all()
 
-        for med in medicine_map.values():
-            med['percentage'] = round(
-                (med['consumed'] / med['required'] * 100), 1
-            ) if med['required'] > 0 else 0
+        med_map = {}
+        for step in steps:
+            iid = step.medicine
+            if not iid:
+                continue
+            if iid not in med_map:
+                med_map[iid] = {
+                    'name':     material_map.get(iid, iid),
+                    'unit':     step.dose_unit,
+                    'planned':  0,
+                    'consumed': 0,
+                    'daily':    [],
+                }
+            planned_day = float(step.dose_amount) * total_chicks if step.dose_amount else 0
+            med_map[iid]['planned'] += planned_day
+
+            if step.date:
+                date_str     = str(step.date)
+                consumed_day = consumption_by_date.get(iid, {}).get(date_str, 0)
+                med_map[iid]['consumed'] += consumed_day
+                remaining    = planned_day - consumed_day
+                if consumed_day >= planned_day:
+                    status = 'met'
+                elif consumed_day > 0:
+                    status = 'short'
+                else:
+                    status = 'none'
+                med_map[iid]['daily'].append({
+                    'date':      date_str,
+                    'planned':   planned_day,
+                    'consumed':  consumed_day,
+                    'remaining': remaining,
+                    'status':    status,
+                    'has_date':  True,
+                })
+            else:
+                med_map[iid]['daily'].append({
+                    'date':      None,
+                    'planned':   planned_day,
+                    'consumed':  0,
+                    'remaining': planned_day,
+                    'status':    'no_date',
+                    'has_date':  False,
+                })
+
+        for m in med_map.values():
+            m['percentage'] = round(
+                (m['consumed'] / m['planned'] * 100), 1
+            ) if m['planned'] > 0 else 0
+
+        feed_map = {}
+        for step in steps:
+            iid = step.feed
+            if not iid:
+                continue
+            if iid not in feed_map:
+                feed_map[iid] = {
+                    'name':     material_map.get(iid, iid),
+                    'unit':     step.feed_unit,
+                    'planned':  0,
+                    'consumed': 0,
+                    'daily':    [],
+                }
+            planned_day = float(step.feed_rate_per_bird) * total_chicks if step.feed_rate_per_bird else 0
+            feed_map[iid]['planned'] += planned_day
+
+            if step.date:
+                date_str     = str(step.date)
+                consumed_day = consumption_by_date.get(iid, {}).get(date_str, 0)
+                feed_map[iid]['consumed'] += consumed_day
+                remaining    = planned_day - consumed_day
+                if consumed_day >= planned_day:
+                    status = 'met'
+                elif consumed_day > 0:
+                    status = 'short'
+                else:
+                    status = 'none'
+                feed_map[iid]['daily'].append({
+                    'date':      date_str,
+                    'planned':   planned_day,
+                    'consumed':  consumed_day,
+                    'remaining': remaining,
+                    'status':    status,
+                    'has_date':  True,
+                })
+            else:
+                feed_map[iid]['daily'].append({
+                    'date':      None,
+                    'planned':   planned_day,
+                    'consumed':  0,
+                    'remaining': planned_day,
+                    'status':    'no_date',
+                    'has_date':  False,
+                })
+
+        for f in feed_map.values():
+            f['percentage'] = round(
+                (f['consumed'] / f['planned'] * 100), 1
+            ) if f['planned'] > 0 else 0
 
         program_summaries.append({
             'program': program,
-            'summary': list(medicine_map.values()),
+            'medicines': list(med_map.values()),
+            'feeds':     list(feed_map.values()),
         })
 
     return render(request, 'program/view_laying.html', {
