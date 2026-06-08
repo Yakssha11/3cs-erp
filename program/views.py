@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from .models import Program, ProgramStep
+from .models import Program, ProgramStep, ProgramBatch
 from stock.models import Stock
 
 
@@ -16,15 +16,12 @@ def convert_to_program_unit(consumed_base, program_unit, material):
     su = stock_unit.lower().strip()
     mu = mat_unit.lower().strip()
 
-    # 1. Same as base unit
     if pu == bu:
         return consumed_base, True
 
-    # 2. Matches stock_unit or material.unit (with or without trailing s)
     if conversion_factor and (pu == su or pu == mu or pu.rstrip('s') == su.rstrip('s') or pu.rstrip('s') == mu.rstrip('s')):
         return consumed_base / conversion_factor, True
 
-    # 3. Standard metric conversions
     METRIC = {
         ('g',  'kg'): 1000,
         ('kg', 'g' ): 0.001,
@@ -37,7 +34,6 @@ def convert_to_program_unit(consumed_base, program_unit, material):
     if (pu, bu) in METRIC:
         return consumed_base * METRIC[(pu, bu)], True
 
-    # 4. Unknown
     return None, False
 
 
@@ -45,13 +41,16 @@ def convert_to_program_unit(consumed_base, program_unit, material):
 def program_growing(request):
     from erp_config.models import Unit
     from master_data.models import Material
-    programs  = Program.objects.filter(type='Growing').prefetch_related('steps')
+    from flock.models import Flock
+    programs  = Program.objects.filter(type='Growing').prefetch_related('steps', 'batches')
     materials = Material.objects.all().order_by('name')
     units     = Unit.objects.all()
+    flocks    = Flock.objects.filter(status='Active').order_by('batch_name')
     return render(request, 'program/growing.html', {
         'programs':  programs,
         'materials': materials,
         'units':     units,
+        'flocks':    flocks,
     })
 
 
@@ -59,13 +58,16 @@ def program_growing(request):
 def program_laying(request):
     from erp_config.models import Unit
     from master_data.models import Material
-    programs  = Program.objects.filter(type='Laying').prefetch_related('steps')
+    from laying_flock.models import LayingFlock
+    programs  = Program.objects.filter(type='Laying').prefetch_related('steps', 'batches')
     materials = Material.objects.all().order_by('name')
     units     = Unit.objects.all()
+    flocks    = LayingFlock.objects.filter(status='Active').order_by('batch_name')
     return render(request, 'program/laying.html', {
         'programs':  programs,
         'materials': materials,
         'units':     units,
+        'flocks':    flocks,
     })
 
 
@@ -93,6 +95,39 @@ def program_delete(request, pk):
 
 
 @login_required
+def batch_save(request):
+    if request.method == 'POST':
+        program    = get_object_or_404(Program, pk=request.POST['program_id'])
+        flock_id   = request.POST['flock_id']
+        flock_type = request.POST['flock_type']
+        date_started = request.POST['date_started']
+        notes      = request.POST.get('notes', '')
+
+        ProgramBatch.objects.create(
+            program      = program,
+            flock_id     = flock_id,
+            flock_type   = flock_type,
+            date_started = date_started,
+            notes        = notes,
+        )
+        messages.success(request, 'Batch assigned to program!')
+    if program.type == 'Laying':
+        return redirect('program_laying')
+    return redirect('program_growing')
+
+
+@login_required
+def batch_delete(request, pk):
+    batch  = get_object_or_404(ProgramBatch, pk=pk)
+    ptype  = batch.program.type
+    batch.delete()
+    messages.success(request, 'Batch removed from program!')
+    if ptype == 'Laying':
+        return redirect('program_laying')
+    return redirect('program_growing')
+
+
+@login_required
 def step_save(request, program_pk):
     program = get_object_or_404(Program, pk=program_pk)
     if request.method == 'POST':
@@ -101,7 +136,6 @@ def step_save(request, program_pk):
             cycle              = request.POST.get('cycle', 1),
             week               = request.POST['week'],
             day                = request.POST['day'],
-            date               = request.POST.get('date') or None,
             medicine           = request.POST.get('medicine', ''),
             dose_amount        = request.POST.get('dose_amount') or None,
             dose_unit          = request.POST.get('dose_unit', ''),
@@ -136,7 +170,6 @@ def step_update(request, pk):
         step.cycle              = request.POST.get('cycle', 1)
         step.week               = request.POST['week']
         step.day                = request.POST['day']
-        step.date               = request.POST.get('date') or None
         step.medicine           = request.POST.get('medicine', '')
         step.dose_amount        = request.POST.get('dose_amount') or None
         step.dose_unit          = request.POST.get('dose_unit', '')
@@ -188,21 +221,20 @@ def export_program(request, pk):
     green_fill  = PatternFill(fill_type='solid', fgColor='375623')
 
     headers = [
-        ('Cycle #',                blue_fill),    # 0
-        ('Age Display',            blue_fill),    # 1
-        ('Date',                   blue_fill),    # 2
-        ('Population',             blue_fill),    # 3
-        ('Medicine Name',          purple_fill),  # 4
-        ('Medicine Item ID',       purple_fill),  # 5
-        ('UoM',                    purple_fill),  # 6
-        ('Dosage Rate (per Bird)', purple_fill),  # 7
-        ('Total Dosage',           purple_fill),  # 8
-        ('Feed Name',              orange_fill),  # 9
-        ('Feed Item ID',           orange_fill),  # 10
-        ('Feed Rate (per Bird)',   orange_fill),  # 11
-        ('Total Feed',             orange_fill),  # 12
-        ('Feed Unit',              orange_fill),  # 13
-        ('Remarks',                green_fill),   # 14
+        ('Cycle #',                blue_fill),
+        ('Age Display',            blue_fill),
+        ('Population',             blue_fill),
+        ('Medicine Name',          purple_fill),
+        ('Medicine Item ID',       purple_fill),
+        ('UoM',                    purple_fill),
+        ('Dosage Rate (per Bird)', purple_fill),
+        ('Total Dosage',           purple_fill),
+        ('Feed Name',              orange_fill),
+        ('Feed Item ID',           orange_fill),
+        ('Feed Rate (per Bird)',   orange_fill),
+        ('Total Feed',             orange_fill),
+        ('Feed Unit',              orange_fill),
+        ('Remarks',                green_fill),
     ]
 
     for col, (header, fill) in enumerate(headers, 1):
@@ -211,7 +243,7 @@ def export_program(request, pk):
         cell.fill      = fill
         cell.alignment = center
 
-    col_widths = [10, 16, 14, 12, 22, 16, 8, 22, 14, 22, 16, 20, 14, 12, 20]
+    col_widths = [10, 16, 12, 22, 16, 8, 22, 14, 22, 16, 20, 14, 12, 20]
     for col, width in enumerate(col_widths, 1):
         ws.column_dimensions[openpyxl.utils.get_column_letter(col)].width = width
 
@@ -225,7 +257,6 @@ def export_program(request, pk):
         row_data = [
             step.cycle,
             age_display,
-            str(step.date) if step.date else '',
             total_birds,
             medicine_name,
             step.medicine or '',
@@ -272,7 +303,6 @@ def import_program(request, pk):
         ws   = wb.active
 
         valid_ids = set(Material.objects.values_list('item_id', flat=True))
-
         program.steps.all().delete()
 
         imported = 0
@@ -281,23 +311,21 @@ def import_program(request, pk):
         for row_num, row in enumerate(ws.iter_rows(min_row=2, values_only=True), start=2):
             if not any(row):
                 continue
-
             try:
                 cycle       = row[0]
                 age_display = str(row[1]).strip() if row[1] not in (None, '') else ''
-                date        = row[2]
-                # row[3] = Population — skip
-                # row[4] = Medicine Name — skip
-                medicine_id = str(row[5]).strip() if row[5] not in (None, '') else ''
-                dose_unit   = str(row[6]).strip() if row[6] not in (None, '') else ''
-                dose_amount = row[7]
-                # row[8] = Total Dosage — skip
-                # row[9] = Feed Name — skip
-                feed_id     = str(row[10]).strip() if row[10] not in (None, '') else ''
-                feed_rate   = row[11]
-                # row[12] = Total Feed — skip
-                feed_unit   = str(row[13]).strip() if row[13] not in (None, '') else ''
-                remarks     = str(row[14]).strip() if row[14] not in (None, '') else ''
+                # row[2] = Population — skip
+                # row[3] = Medicine Name — skip
+                medicine_id = str(row[4]).strip() if row[4] not in (None, '') else ''
+                dose_unit   = str(row[5]).strip() if row[5] not in (None, '') else ''
+                dose_amount = row[6]
+                # row[7] = Total Dosage — skip
+                # row[8] = Feed Name — skip
+                feed_id     = str(row[9]).strip() if row[9] not in (None, '') else ''
+                feed_rate   = row[10]
+                # row[11] = Total Feed — skip
+                feed_unit   = str(row[12]).strip() if row[12] not in (None, '') else ''
+                remarks     = str(row[13]).strip() if row[13] not in (None, '') else ''
 
                 if medicine_id and medicine_id not in valid_ids:
                     errors.append(f'Row {row_num}: Medicine "{medicine_id}" not found — skipped')
@@ -321,7 +349,6 @@ def import_program(request, pk):
                     cycle              = int(cycle) if cycle else 1,
                     week               = week,
                     day                = day,
-                    date               = date if date not in (None, '') else None,
                     medicine           = medicine_id,
                     dose_amount        = dose_amount if dose_amount not in (None, '') else None,
                     dose_unit          = dose_unit,
@@ -354,55 +381,64 @@ def view_growing(request):
     from erp_config.models import Building
     from master_data.models import Material
     from django.db.models import Sum
+    from datetime import timedelta
 
-    programs          = Program.objects.filter(type='Growing').prefetch_related('steps')
-    total_chicks      = Flock.objects.filter(status='Active').aggregate(
-                         Sum('current_count'))['current_count__sum'] or 0
-    growing_buildings = Building.objects.filter(type='Growing').values_list('name', flat=True)
-    material_map      = {m.item_id: m.name for m in Material.objects.all()}
-    material_objects  = {m.item_id: m for m in Material.objects.all()}
+    programs         = Program.objects.filter(type='Growing').prefetch_related('steps', 'batches')
+    material_map     = {m.item_id: m.name for m in Material.objects.all()}
+    material_objects = {m.item_id: m for m in Material.objects.all()}
 
-    consumption_by_date = {}
-    consumptions = Consumption.objects.filter(
-                    growing_house__in=growing_buildings
-                   ).values('item_id', 'date_consumed').annotate(total=Sum('quantity'))
+    # build consumption lookup: {item_id: {growing_house: {date: quantity}}}
+    consumption_lookup = {}
+    consumptions = Consumption.objects.values(
+                    'item_id', 'growing_house', 'date_consumed'
+                   ).annotate(total=Sum('quantity'))
     for c in consumptions:
-        iid  = c['item_id']
-        date = str(c['date_consumed'])
-        if iid not in consumption_by_date:
-            consumption_by_date[iid] = {}
-        consumption_by_date[iid][date] = float(c['total'])
+        iid   = c['item_id']
+        house = c['growing_house']
+        date  = str(c['date_consumed'])
+        if iid not in consumption_lookup:
+            consumption_lookup[iid] = {}
+        if house not in consumption_lookup[iid]:
+            consumption_lookup[iid][house] = {}
+        consumption_lookup[iid][house][date] = float(c['total'])
 
     program_summaries = []
     for program in programs:
-        steps = program.steps.all()
+        steps   = list(program.steps.all())
+        batches = list(program.batches.filter(flock_type='Growing'))
 
-        # ── Medicine ─────────────────────────────────────
-        med_map = {}
-        for step in steps:
-            iid = step.medicine
-            if not iid or not step.dose_amount:
+        batch_summaries = []
+        for batch in batches:
+            flock = batch.flock
+            if not flock:
                 continue
-            if iid not in med_map:
-                med_map[iid] = {
-                    'name':     material_map.get(iid, iid),
-                    'unit':     step.dose_unit,
-                    'planned':  0,
-                    'consumed': 0,
-                    'daily':    [],
-                }
-            planned_day = float(step.dose_amount) * total_chicks
-            med_map[iid]['planned'] += planned_day
+            population = batch.population
+            house      = batch.flock_house
 
-            if step.date:
-                date_str      = str(step.date)
-                consumed_base = consumption_by_date.get(iid, {}).get(date_str, 0)
+            # ── Medicine ─────────────────────────────
+            med_map = {}
+            for step in steps:
+                iid = step.medicine
+                if not iid or not step.dose_amount:
+                    continue
+                if iid not in med_map:
+                    med_map[iid] = {
+                        'name':     material_map.get(iid, iid),
+                        'unit':     step.dose_unit,
+                        'planned':  0,
+                        'consumed': 0,
+                        'daily':    [],
+                    }
+                planned_day  = float(step.dose_amount) * population
+                med_map[iid]['planned'] += planned_day
+                step_date    = batch.step_date(step.week, step.day)
+                date_str     = str(step_date)
+                consumed_base = consumption_lookup.get(iid, {}).get(house, {}).get(date_str, 0)
                 material      = material_objects.get(iid)
 
                 if material:
                     consumed_converted, can_convert = convert_to_program_unit(
-                        consumed_base, step.dose_unit, material
-                    )
+                        consumed_base, step.dose_unit, material)
                 else:
                     consumed_converted, can_convert = consumed_base, True
 
@@ -422,44 +458,36 @@ def view_growing(request):
                         'consumed': 0, 'remaining': planned_day,
                         'status': 'unit_mismatch', 'has_date': True, 'unit_ok': False,
                     })
-            else:
-                med_map[iid]['daily'].append({
-                    'date': None, 'planned': planned_day, 'consumed': 0,
-                    'remaining': planned_day, 'status': 'no_date',
-                    'has_date': False, 'unit_ok': True,
-                })
 
-        for m in med_map.values():
-            m['percentage'] = round(
-                (m['consumed'] / m['planned'] * 100), 1
-            ) if m['planned'] > 0 else 0
+            for m in med_map.values():
+                m['percentage'] = round(
+                    (m['consumed'] / m['planned'] * 100), 1
+                ) if m['planned'] > 0 else 0
 
-        # ── Feed ─────────────────────────────────────────
-        feed_map = {}
-        for step in steps:
-            iid = step.feed
-            if not iid or not step.feed_rate_per_bird:
-                continue
-            if iid not in feed_map:
-                feed_map[iid] = {
-                    'name':     material_map.get(iid, iid),
-                    'unit':     step.feed_unit,
-                    'planned':  0,
-                    'consumed': 0,
-                    'daily':    [],
-                }
-            planned_day = float(step.feed_rate_per_bird) * total_chicks
-            feed_map[iid]['planned'] += planned_day
-
-            if step.date:
-                date_str      = str(step.date)
-                consumed_base = consumption_by_date.get(iid, {}).get(date_str, 0)
+            # ── Feed ─────────────────────────────────
+            feed_map = {}
+            for step in steps:
+                iid = step.feed
+                if not iid or not step.feed_rate_per_bird:
+                    continue
+                if iid not in feed_map:
+                    feed_map[iid] = {
+                        'name':     material_map.get(iid, iid),
+                        'unit':     step.feed_unit,
+                        'planned':  0,
+                        'consumed': 0,
+                        'daily':    [],
+                    }
+                planned_day   = float(step.feed_rate_per_bird) * population
+                feed_map[iid]['planned'] += planned_day
+                step_date     = batch.step_date(step.week, step.day)
+                date_str      = str(step_date)
+                consumed_base = consumption_lookup.get(iid, {}).get(house, {}).get(date_str, 0)
                 material      = material_objects.get(iid)
 
                 if material:
                     consumed_converted, can_convert = convert_to_program_unit(
-                        consumed_base, step.feed_unit, material
-                    )
+                        consumed_base, step.feed_unit, material)
                 else:
                     consumed_converted, can_convert = consumed_base, True
 
@@ -479,27 +507,25 @@ def view_growing(request):
                         'consumed': 0, 'remaining': planned_day,
                         'status': 'unit_mismatch', 'has_date': True, 'unit_ok': False,
                     })
-            else:
-                feed_map[iid]['daily'].append({
-                    'date': None, 'planned': planned_day, 'consumed': 0,
-                    'remaining': planned_day, 'status': 'no_date',
-                    'has_date': False, 'unit_ok': True,
-                })
 
-        for f in feed_map.values():
-            f['percentage'] = round(
-                (f['consumed'] / f['planned'] * 100), 1
-            ) if f['planned'] > 0 else 0
+            for f in feed_map.values():
+                f['percentage'] = round(
+                    (f['consumed'] / f['planned'] * 100), 1
+                ) if f['planned'] > 0 else 0
+
+            batch_summaries.append({
+                'batch':     batch,
+                'medicines': list(med_map.values()),
+                'feeds':     list(feed_map.values()),
+            })
 
         program_summaries.append({
-            'program':   program,
-            'medicines': list(med_map.values()),
-            'feeds':     list(feed_map.values()),
+            'program':          program,
+            'batch_summaries':  batch_summaries,
         })
 
     return render(request, 'program/view_growing.html', {
         'program_summaries': program_summaries,
-        'total_chicks':      total_chicks,
     })
 
 
@@ -510,55 +536,62 @@ def view_laying(request):
     from erp_config.models import Building
     from master_data.models import Material
     from django.db.models import Sum
+    from datetime import timedelta
 
-    programs         = Program.objects.filter(type='Laying').prefetch_related('steps')
-    total_chicks     = LayingFlock.objects.filter(status='Active').aggregate(
-                        Sum('current_count'))['current_count__sum'] or 0
-    laying_buildings = Building.objects.filter(type='Laying').values_list('name', flat=True)
+    programs         = Program.objects.filter(type='Laying').prefetch_related('steps', 'batches')
     material_map     = {m.item_id: m.name for m in Material.objects.all()}
     material_objects = {m.item_id: m for m in Material.objects.all()}
 
-    consumption_by_date = {}
-    consumptions = Consumption.objects.filter(
-                    growing_house__in=laying_buildings
-                   ).values('item_id', 'date_consumed').annotate(total=Sum('quantity'))
+    consumption_lookup = {}
+    consumptions = Consumption.objects.values(
+                    'item_id', 'growing_house', 'date_consumed'
+                   ).annotate(total=Sum('quantity'))
     for c in consumptions:
-        iid  = c['item_id']
-        date = str(c['date_consumed'])
-        if iid not in consumption_by_date:
-            consumption_by_date[iid] = {}
-        consumption_by_date[iid][date] = float(c['total'])
+        iid   = c['item_id']
+        house = c['growing_house']
+        date  = str(c['date_consumed'])
+        if iid not in consumption_lookup:
+            consumption_lookup[iid] = {}
+        if house not in consumption_lookup[iid]:
+            consumption_lookup[iid][house] = {}
+        consumption_lookup[iid][house][date] = float(c['total'])
 
     program_summaries = []
     for program in programs:
-        steps = program.steps.all()
+        steps   = list(program.steps.all())
+        batches = list(program.batches.filter(flock_type='Laying'))
 
-        # ── Medicine ─────────────────────────────────────
-        med_map = {}
-        for step in steps:
-            iid = step.medicine
-            if not iid or not step.dose_amount:
+        batch_summaries = []
+        for batch in batches:
+            flock = batch.flock
+            if not flock:
                 continue
-            if iid not in med_map:
-                med_map[iid] = {
-                    'name':     material_map.get(iid, iid),
-                    'unit':     step.dose_unit,
-                    'planned':  0,
-                    'consumed': 0,
-                    'daily':    [],
-                }
-            planned_day = float(step.dose_amount) * total_chicks
-            med_map[iid]['planned'] += planned_day
+            population = batch.population
+            house      = batch.flock_house
 
-            if step.date:
-                date_str      = str(step.date)
-                consumed_base = consumption_by_date.get(iid, {}).get(date_str, 0)
+            med_map = {}
+            for step in steps:
+                iid = step.medicine
+                if not iid or not step.dose_amount:
+                    continue
+                if iid not in med_map:
+                    med_map[iid] = {
+                        'name':     material_map.get(iid, iid),
+                        'unit':     step.dose_unit,
+                        'planned':  0,
+                        'consumed': 0,
+                        'daily':    [],
+                    }
+                planned_day   = float(step.dose_amount) * population
+                med_map[iid]['planned'] += planned_day
+                step_date     = batch.step_date(step.week, step.day)
+                date_str      = str(step_date)
+                consumed_base = consumption_lookup.get(iid, {}).get(house, {}).get(date_str, 0)
                 material      = material_objects.get(iid)
 
                 if material:
                     consumed_converted, can_convert = convert_to_program_unit(
-                        consumed_base, step.dose_unit, material
-                    )
+                        consumed_base, step.dose_unit, material)
                 else:
                     consumed_converted, can_convert = consumed_base, True
 
@@ -578,44 +611,35 @@ def view_laying(request):
                         'consumed': 0, 'remaining': planned_day,
                         'status': 'unit_mismatch', 'has_date': True, 'unit_ok': False,
                     })
-            else:
-                med_map[iid]['daily'].append({
-                    'date': None, 'planned': planned_day, 'consumed': 0,
-                    'remaining': planned_day, 'status': 'no_date',
-                    'has_date': False, 'unit_ok': True,
-                })
 
-        for m in med_map.values():
-            m['percentage'] = round(
-                (m['consumed'] / m['planned'] * 100), 1
-            ) if m['planned'] > 0 else 0
+            for m in med_map.values():
+                m['percentage'] = round(
+                    (m['consumed'] / m['planned'] * 100), 1
+                ) if m['planned'] > 0 else 0
 
-        # ── Feed ─────────────────────────────────────────
-        feed_map = {}
-        for step in steps:
-            iid = step.feed
-            if not iid or not step.feed_rate_per_bird:
-                continue
-            if iid not in feed_map:
-                feed_map[iid] = {
-                    'name':     material_map.get(iid, iid),
-                    'unit':     step.feed_unit,
-                    'planned':  0,
-                    'consumed': 0,
-                    'daily':    [],
-                }
-            planned_day = float(step.feed_rate_per_bird) * total_chicks
-            feed_map[iid]['planned'] += planned_day
-
-            if step.date:
-                date_str      = str(step.date)
-                consumed_base = consumption_by_date.get(iid, {}).get(date_str, 0)
+            feed_map = {}
+            for step in steps:
+                iid = step.feed
+                if not iid or not step.feed_rate_per_bird:
+                    continue
+                if iid not in feed_map:
+                    feed_map[iid] = {
+                        'name':     material_map.get(iid, iid),
+                        'unit':     step.feed_unit,
+                        'planned':  0,
+                        'consumed': 0,
+                        'daily':    [],
+                    }
+                planned_day   = float(step.feed_rate_per_bird) * population
+                feed_map[iid]['planned'] += planned_day
+                step_date     = batch.step_date(step.week, step.day)
+                date_str      = str(step_date)
+                consumed_base = consumption_lookup.get(iid, {}).get(house, {}).get(date_str, 0)
                 material      = material_objects.get(iid)
 
                 if material:
                     consumed_converted, can_convert = convert_to_program_unit(
-                        consumed_base, step.feed_unit, material
-                    )
+                        consumed_base, step.feed_unit, material)
                 else:
                     consumed_converted, can_convert = consumed_base, True
 
@@ -635,25 +659,23 @@ def view_laying(request):
                         'consumed': 0, 'remaining': planned_day,
                         'status': 'unit_mismatch', 'has_date': True, 'unit_ok': False,
                     })
-            else:
-                feed_map[iid]['daily'].append({
-                    'date': None, 'planned': planned_day, 'consumed': 0,
-                    'remaining': planned_day, 'status': 'no_date',
-                    'has_date': False, 'unit_ok': True,
-                })
 
-        for f in feed_map.values():
-            f['percentage'] = round(
-                (f['consumed'] / f['planned'] * 100), 1
-            ) if f['planned'] > 0 else 0
+            for f in feed_map.values():
+                f['percentage'] = round(
+                    (f['consumed'] / f['planned'] * 100), 1
+                ) if f['planned'] > 0 else 0
+
+            batch_summaries.append({
+                'batch':     batch,
+                'medicines': list(med_map.values()),
+                'feeds':     list(feed_map.values()),
+            })
 
         program_summaries.append({
-            'program':   program,
-            'medicines': list(med_map.values()),
-            'feeds':     list(feed_map.values()),
+            'program':         program,
+            'batch_summaries': batch_summaries,
         })
 
     return render(request, 'program/view_laying.html', {
         'program_summaries': program_summaries,
-        'total_chicks':      total_chicks,
     })

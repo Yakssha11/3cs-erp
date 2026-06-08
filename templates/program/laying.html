@@ -15,7 +15,6 @@
 {% endfor %}
 {% endif %}
 
-<!-- header -->
 <div class="flex items-center justify-between mb-6">
     <div>
         <h1 class="text-2xl font-bold text-white">💉 Program — Laying</h1>
@@ -33,7 +32,6 @@
     </div>
 </div>
 
-<!-- add program form (admin only) -->
 {% if request.user|has_group:'admin' %}
 <div class="bg-sidebar border border-border rounded-xl p-6 mb-6">
     <h2 class="text-sm font-bold text-muted uppercase tracking-wider mb-4">New Program</h2>
@@ -61,11 +59,8 @@
 </div>
 {% endif %}
 
-<!-- programs list -->
 {% for program in programs %}
 <div class="bg-sidebar border border-border rounded-xl mb-6">
-
-    <!-- program header -->
     <div class="px-4 py-3 border-b border-border flex items-center justify-between">
         <div>
             <h2 class="text-sm font-bold text-white">🥚 {{ program.name }}</h2>
@@ -79,6 +74,10 @@
                     class="bg-amber hover:bg-[#B5720A] text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-all">
                 + Add Step
             </button>
+            <button onclick="openBatchModal({{ program.pk }})"
+                    class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-all">
+                + Assign Batch
+            </button>
             <a href="{% url 'export_program' program.pk %}"
                class="bg-content hover:bg-border text-muted hover:text-white text-xs font-bold px-3 py-1.5 rounded-lg border border-border transition-all">
                 ⬇ Export Excel
@@ -91,8 +90,7 @@
                   onsubmit="return confirm('Delete {{ program.name }} and all its steps?')"
                   style="margin:0;padding:0">
                 {% csrf_token %}
-                <button type="submit"
-                        class="text-red-400 hover:text-red-300 text-xs font-bold transition-all">
+                <button type="submit" class="text-red-400 hover:text-red-300 text-xs font-bold transition-all">
                     Delete Program
                 </button>
             </form>
@@ -100,7 +98,30 @@
         </div>
     </div>
 
-    <!-- steps table -->
+    {% if program.batches.exists %}
+    <div class="px-4 py-3 border-b border-border bg-content/30">
+        <p class="text-xs text-muted font-bold uppercase tracking-wider mb-2">Assigned Batches</p>
+        <div class="flex flex-wrap gap-2">
+            {% for batch in program.batches.all %}
+            <div class="flex items-center gap-2 bg-sidebar border border-border rounded-lg px-3 py-1.5">
+                <span class="text-xs text-white font-bold">{{ batch.flock_name }}</span>
+                <span class="text-xs text-muted">— {{ batch.flock_house }}</span>
+                <span class="text-xs text-amber font-bold">{{ batch.population }} hens</span>
+                <span class="text-xs text-muted">started {{ batch.date_started }}</span>
+                {% if request.user|has_group:'admin' %}
+                <form method="POST" action="{% url 'batch_delete' batch.pk %}"
+                      onsubmit="return confirm('Remove this batch?')"
+                      style="margin:0;padding:0">
+                    {% csrf_token %}
+                    <button type="submit" class="text-red-400 hover:text-red-300 text-xs transition-all">✕</button>
+                </form>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
     <div class="overflow-x-auto">
     <table class="w-full text-sm whitespace-nowrap">
         <thead>
@@ -108,7 +129,6 @@
                 <th class="px-4 py-3 text-left">Cycle</th>
                 <th class="px-4 py-3 text-left">Week</th>
                 <th class="px-4 py-3 text-left">Day</th>
-                <th class="px-4 py-3 text-left">Date</th>
                 <th class="px-4 py-3 text-left">Medicine / Vaccine</th>
                 <th class="px-4 py-3 text-left">Dose/Bird</th>
                 <th class="px-4 py-3 text-left">Unit</th>
@@ -137,7 +157,6 @@
                     </span>
                 </td>
                 <td class="px-4 py-3 text-white font-bold">Day {{ step.day }}</td>
-                <td class="px-4 py-3 text-muted">{{ step.date|default:"—" }}</td>
                 <td class="px-4 py-3 text-white">{{ step.medicine_name }}</td>
                 <td class="px-4 py-3 text-muted">{{ step.dose_amount|default:"—" }}</td>
                 <td class="px-4 py-3 text-muted">{{ step.dose_unit|default:"—" }}</td>
@@ -161,7 +180,6 @@
                                     {{ step.cycle }},
                                     {{ step.week }},
                                     {{ step.day }},
-                                    '{{ step.date|default:'' }}',
                                     '{{ step.medicine|escapejs }}',
                                     '{{ step.dose_amount|default:'' }}',
                                     '{{ step.dose_unit|escapejs }}',
@@ -179,8 +197,7 @@
                               onsubmit="return confirm('Delete this step?')"
                               style="margin:0;padding:0">
                             {% csrf_token %}
-                            <button type="submit"
-                                    class="text-red-400 hover:text-red-300 text-xs font-bold transition-all">
+                            <button type="submit" class="text-red-400 hover:text-red-300 text-xs font-bold transition-all">
                                 Delete
                             </button>
                         </form>
@@ -190,7 +207,7 @@
             </tr>
             {% empty %}
             <tr>
-                <td colspan="14" class="px-4 py-6 text-center text-muted text-xs">
+                <td colspan="13" class="px-4 py-6 text-center text-muted text-xs">
                     No steps yet. Click "+ Add Step" to add one.
                 </td>
             </tr>
@@ -228,11 +245,6 @@
                 <div>
                     <label class="text-xs text-muted block mb-1">Day</label>
                     <input type="number" name="day" required placeholder="1" min="1"
-                           class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber">
-                </div>
-                <div>
-                    <label class="text-xs text-muted block mb-1">Date</label>
-                    <input type="date" name="date"
                            class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber">
                 </div>
                 <div>
@@ -352,11 +364,6 @@
                            class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber">
                 </div>
                 <div>
-                    <label class="text-xs text-muted block mb-1">Date</label>
-                    <input type="date" name="date" id="edit_date"
-                           class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber">
-                </div>
-                <div>
                     <label class="text-xs text-muted block mb-1">Medicine / Vaccine</label>
                     <select name="medicine" id="edit_medicine"
                             class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber">
@@ -447,6 +454,53 @@
     </div>
 </div>
 
+<!-- ── Assign Batch Modal ─────────────────────────────── -->
+<div id="batchModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60">
+    <div class="bg-sidebar border border-border rounded-xl p-6 w-full max-w-md mx-4">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-sm font-bold text-white uppercase tracking-wider">Assign Batch</h2>
+            <button onclick="closeBatchModal()" class="text-muted hover:text-white text-lg">✕</button>
+        </div>
+        <form method="POST" action="{% url 'batch_save' %}">
+            {% csrf_token %}
+            <input type="hidden" name="program_id" id="batch_program_id">
+            <input type="hidden" name="flock_type" value="Laying">
+            <div class="grid grid-cols-1 gap-3 mb-4">
+                <div>
+                    <label class="text-xs text-muted block mb-1">Flock Batch</label>
+                    <select name="flock_id" required
+                            class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber">
+                        <option value="">— Select flock —</option>
+                        {% for flock in flocks %}
+                        <option value="{{ flock.pk }}">{{ flock.batch_name }} — {{ flock.building }} ({{ flock.current_count }} hens)</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="text-xs text-muted block mb-1">Date Started</label>
+                    <input type="date" name="date_started" required
+                           class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber">
+                </div>
+                <div>
+                    <label class="text-xs text-muted block mb-1">Notes</label>
+                    <input type="text" name="notes" placeholder="Optional"
+                           class="w-full bg-content border border-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber">
+                </div>
+            </div>
+            <div class="flex justify-end gap-2">
+                <button type="button" onclick="closeBatchModal()"
+                        class="px-4 py-2 text-xs font-bold text-muted border border-border rounded-lg hover:border-white transition-all">
+                    Cancel
+                </button>
+                <button type="submit"
+                        class="bg-amber hover:bg-[#B5720A] text-white text-xs font-bold px-6 py-2 rounded-lg transition-all">
+                    Assign
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <!-- ── Import Excel Modal ─────────────────────────────── -->
 <div id="importModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60">
     <div class="bg-sidebar border border-border rounded-xl p-6 w-full max-w-md mx-4">
@@ -455,7 +509,7 @@
             <button onclick="closeImportModal()" class="text-muted hover:text-white text-lg">✕</button>
         </div>
         <p class="text-xs text-muted mb-4">
-            ⚠️ This will <span class="text-red-400 font-bold">replace all existing steps</span> for this program. Make sure your Excel matches the export format.
+            ⚠️ This will <span class="text-red-400 font-bold">replace all existing steps</span> for this program.
         </p>
         <form method="POST" id="importForm" action="" enctype="multipart/form-data">
             {% csrf_token %}
@@ -488,35 +542,37 @@ function closeAddStepModal() {
     document.getElementById('addStepModal').classList.add('hidden');
     document.getElementById('addStepModal').classList.remove('flex');
 }
-function openEditStepModal(pk, cycle, week, day, date, medicine, doseAmount, doseUnit, dosePer, method, feed, remarks, feedRate, feedUnit) {
+function openEditStepModal(pk, cycle, week, day, medicine, doseAmount, doseUnit, dosePer, method, feed, remarks, feedRate, feedUnit) {
     document.getElementById('editStepForm').action = `/program/step/update/${pk}/`;
     document.getElementById('edit_cycle').value       = cycle;
     document.getElementById('edit_week').value        = week;
     document.getElementById('edit_day').value         = day;
-    document.getElementById('edit_date').value        = date;
     document.getElementById('edit_dose_amount').value = doseAmount;
     document.getElementById('edit_remarks').value     = remarks;
     document.getElementById('edit_feed_rate').value   = feedRate;
-
     ['edit_medicine', 'edit_dose_unit', 'edit_dose_per', 'edit_method', 'edit_feed', 'edit_feed_unit'].forEach(id => {
         const el  = document.getElementById(id);
         const val = {
-            edit_medicine:  medicine,
-            edit_dose_unit: doseUnit,
-            edit_dose_per:  dosePer,
-            edit_method:    method,
-            edit_feed:      feed,
-            edit_feed_unit: feedUnit
+            edit_medicine: medicine, edit_dose_unit: doseUnit, edit_dose_per: dosePer,
+            edit_method: method, edit_feed: feed, edit_feed_unit: feedUnit
         }[id];
         for (let opt of el.options) { opt.selected = opt.value === val; }
     });
-
     document.getElementById('editStepModal').classList.remove('hidden');
     document.getElementById('editStepModal').classList.add('flex');
 }
 function closeEditStepModal() {
     document.getElementById('editStepModal').classList.add('hidden');
     document.getElementById('editStepModal').classList.remove('flex');
+}
+function openBatchModal(programPk) {
+    document.getElementById('batch_program_id').value = programPk;
+    document.getElementById('batchModal').classList.remove('hidden');
+    document.getElementById('batchModal').classList.add('flex');
+}
+function closeBatchModal() {
+    document.getElementById('batchModal').classList.add('hidden');
+    document.getElementById('batchModal').classList.remove('flex');
 }
 function openImportModal(programPk) {
     document.getElementById('importForm').action = `/program/import/${programPk}/`;
